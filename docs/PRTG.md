@@ -120,3 +120,8 @@ verifiziert (wohlgeformtes XML, korrekte `kind`-Werte
 gegengeprüft. Da dieses Board noch nicht real getestet wurde, unbedingt
 vor dem produktiven Einsatz testweise importieren und die Sensorwerte
 gegen `snmpget` (siehe oben) gegenprüfen.
+
+## Siehe auch
+
+[docs/ZABBIX.md](ZABBIX.md) – gleichwertiges Template für Zabbix (gleiches
+OID-Schema, unabhängiges Werkzeug).
