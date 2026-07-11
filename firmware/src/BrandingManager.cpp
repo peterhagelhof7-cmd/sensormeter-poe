@@ -2,6 +2,8 @@
 
 #include <LittleFS.h>
 
+#include "DefaultLogo.h"
+
 namespace {
 const char* LOGO_PATH = "/branding-logo.bin";
 const char* LOGO_TMP_PATH = "/branding-logo.bin.tmp";
@@ -9,7 +11,12 @@ const char* LOGO_TMP_PATH = "/branding-logo.bin.tmp";
 
 BrandingManager::BrandingManager(ConfigManager& configManager) : _config(configManager) {}
 
-void BrandingManager::begin() { _logoPresent = checkLogoOnDisk(); }
+void BrandingManager::begin() {
+  _logoPresent = checkLogoOnDisk();
+  if (!_logoPresent) {
+    provisionDefaultLogo();
+  }
+}
 
 bool BrandingManager::hasVendorName() const {
   return _config.getConfig().brandingVendorName.length() > 0;
@@ -92,6 +99,32 @@ bool BrandingManager::endLogoUpload() {
   Serial.println("[BRANDING] Logo gespeichert");
   _logoPresent = true;
   return true;
+}
+
+void BrandingManager::provisionDefaultLogo() {
+  if (kDefaultLogoBytes != LOGO_BYTES) {
+    Serial.println("[BRANDING] Standard-Logo-Groesse passt nicht zum Display, uebersprungen");
+    return;
+  }
+  File f = LittleFS.open(LOGO_TMP_PATH, "w");
+  if (!f) {
+    Serial.println("[BRANDING] Konnte Standard-Logo nicht schreiben (Tmp-Datei)");
+    return;
+  }
+  size_t written = f.write(kDefaultLogo, kDefaultLogoBytes);
+  f.close();
+  if (written != LOGO_BYTES) {
+    Serial.println("[BRANDING] Standard-Logo unvollstaendig geschrieben, verworfen");
+    LittleFS.remove(LOGO_TMP_PATH);
+    return;
+  }
+  LittleFS.remove(LOGO_PATH);
+  if (!LittleFS.rename(LOGO_TMP_PATH, LOGO_PATH)) {
+    Serial.println("[BRANDING] Konnte Standard-Logo nicht aktivieren");
+    return;
+  }
+  Serial.println("[BRANDING] Standard-Logo (Familienmarke) automatisch eingerichtet");
+  _logoPresent = true;
 }
 
 bool BrandingManager::deleteLogo() {

@@ -73,6 +73,11 @@ class BrandingManager {
   // begin()/endLogoUpload()/deleteLogo() aufgerufen, nie aus dem heissen
   // Pfad (siehe Klassenkommentar).
   bool checkLogoOnDisk() const;
+  // Schreibt das in DefaultLogo.h eingebettete Familien-Standardlogo einmalig
+  // auf LittleFS - nur aus begin() aufgerufen, und dort auch nur, wenn
+  // checkLogoOnDisk() kein eigenes (hochgeladenes) Logo gefunden hat, siehe
+  // docs/entscheidungen.md.
+  void provisionDefaultLogo();
 
   File _uploadFile;
   size_t _uploadBytesWritten = 0;

@@ -370,3 +370,36 @@ Nur per `pio run` gebaut (kein Board für Sensormeter PoE vorhanden), Build
 erfolgreich (Flash 21,6 %, RAM 19,3 %, minimal gestiegen gegenüber der
 vorherigen Fassung). Noch nicht auf echter Hardware verifiziert - bereits
 bekannter offener Punkt (s.o.).
+
+## Familien-Standardlogo automatisch provisioniert, außer eigenes Logo bereits vorhanden
+
+Analog zu Sensormeter WLAN (dort zuerst umgesetzt und auf echter Hardware
+verifiziert, siehe dessen `entscheidungen.md`): das Standard-Branding-Logo
+(Tri-Orbit + Dial Mark, siehe sensormeter-family) musste bisher nach jedem
+Flash manuell über die Einstellungsseite hochgeladen werden. Jetzt
+automatisch: `BrandingManager::begin()` prüft zuerst `checkLogoOnDisk()`
+wie bisher, ruft bei fehlendem Logo aber zusätzlich neu
+`provisionDefaultLogo()` auf, das das in `DefaultLogo.h` eingebettete
+Rohbild einmalig auf LittleFS schreibt - Tmp-Datei-plus-Umbenennen-Muster
+wie beim regulären Web-Upload. Anders als bei den beiden 128×64-OLED-
+Geschwisterprojekten ist das Logo hier 128×128 (SH1107, siehe
+BrandingManager.h), exakt 2048 Byte - `DefaultLogo.h` wurde entsprechend
+aus der `-oled-128x128`-Variante des Familienlogos generiert, nicht aus
+der 128×64-Variante der anderen drei Projekte.
+
+**Genau das erwartete Verhalten, kein Entweder-Oder:** Ist bereits ein
+Logo vorhanden (eigenes hochgeladenes ODER schon einmal automatisch
+provisioniertes), bleibt es unangetastet - `provisionDefaultLogo()` wird
+dann gar nicht erst aufgerufen. Ein Kunden-eigenes Logo wird also nie
+überschrieben, auch nicht bei einem erneuten Firmware-Flash (ein normaler
+`pio run --target upload` rührt die LittleFS-Datenpartition ohnehin nicht
+an).
+
+`DefaultLogo.h` liegt im Repo (kein Klartext-Geheimnis, nur Bilddaten) und
+wird aus der vorkonvertierten Datei in `sensormeter-family/logo/` generiert
+- bei einem neuen Default-Logo einfach neu konvertieren und den
+Array-Inhalt ersetzen, nicht von Hand editieren.
+
+Nur per `pio run` gebaut (kein Board für Sensormeter PoE vorhanden) - beide
+Zweige (Logo fehlt → automatisch schreiben; Logo vorhanden → nichts tun)
+nur per Code-Review verifiziert, nicht auf echter Hardware getestet.
