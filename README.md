@@ -51,6 +51,7 @@ Erstellungszeitpunkt vorhanden). Siehe
 | [docs/zabbix-template-sensormeter-poe.yaml](docs/zabbix-template-sensormeter-poe.yaml) | Fertiges Zabbix-Template |
 | [board-recherche.md](board-recherche.md) | Board-Auswahl, Preisvergleich, GPIO-Budget-Begründung |
 | [docs/ESP32-S3-ETH-Datenblatt.pdf](docs/ESP32-S3-ETH-Datenblatt.pdf) | Zusammengestelltes Hersteller-Datenblatt (Pinout, Maße, Bestückung) |
+| [scripts/flash.ps1](scripts/flash.ps1) | PowerShell-Skript (fragt zuerst nach Projekt: Sensormeter/WLAN/Display/PoE): Abhängigkeiten installieren, Repo holen, bauen, flashen |
 
 ## Hardware
 
@@ -70,10 +71,20 @@ das offizielle PlatformIO-`espressif32`-Platform bündelt das noch nicht,
 daher nutzt `platformio.ini` den Community-Fork
 [pioarduino](https://github.com/pioarduino/platform-espressif32) mit
 einem eigenen, isolierten `core_dir` (`firmware/.pio-core/`), damit die
-Pakete nicht mit denen der beiden Schwesterprojekte kollidieren. **Alle
+Pakete nicht mit denen der drei Schwesterprojekte kollidieren. **Alle
 `pio`-Befehle müssen über PowerShell laufen, nicht Git-Bash/MSYS** (der
 Toolchain-Installer bricht dort ab). Details siehe
 [docs/entscheidungen.md](docs/entscheidungen.md).
+
+Am schnellsten per PowerShell-Skript einrichten (installiert Python/Git/
+PlatformIO bei Bedarf automatisch, klont/aktualisiert das Repo, baut und
+flasht):
+
+```
+scripts\flash.ps1 -Project poe
+```
+
+Manuelle Alternative ohne Skript:
 
 ```
 cd firmware
