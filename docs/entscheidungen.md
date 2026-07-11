@@ -293,3 +293,20 @@ korrektes Hervorheben (1 aktiv, 14 gedimmt), korrekten Info-Text, korrektes
 Zurücksetzen bei erneutem Klick auf denselben Draht sowie bei Klick auf die
 freie Fläche. Kein echtes Board nötig, da rein clientseitiges HTML/JS ohne
 Firmware-Bezug.
+
+## docs/projektfamilie.html neu ergänzt (fehlte bisher komplett)
+
+Anders als die drei Geschwisterprojekte hatte dieses Repo noch nie eine
+Architekturübersicht - `docs/projektfamilie.html` neu aus dem inzwischen
+auf vier Karten erweiterten Familien-Diagramm übernommen (identische Kopie
+wie in den anderen vier Repos, siehe dortige `entscheidungen.md`: Karte
+"Sensormeter PoE" mit neuer Akzentfarbe `--rust` und Blitz-Icon ergänzt,
+Layout neu vermessen wegen der längeren PoE-Kartentexte).
+
+README ergänzt: `<picture>`-Vorschaubild oben (wie bei den Geschwistern),
+Dokutabellen-Eintrag, "Schwesterprojekte"-Zeile um Sensormeter Display
+erweitert (fehlte dort bisher, obwohl es das dritte Geschwisterprojekt
+ist - vermutlich vor dessen Fertigstellung geschrieben und nie
+nachgezogen).
+
+Rein statisches HTML/CSS/SVG ohne Firmware-Bezug, kein Board nötig.

@@ -1,12 +1,20 @@
 # Sensormeter PoE
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/projektfamilie-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="docs/projektfamilie-light.png">
+  <img alt="Sensormeter Projektfamilie: Sensormeter (LAN), Sensormeter WLAN (WLAN), Sensormeter PoE (LAN+PoE) und Sensormeter Display (Touchscreen), verbunden über gemeinsame Architektur und SNMP" src="docs/projektfamilie-light.png">
+</picture>
+
 ESP32-S3-basierter Umweltsensor (2× DHT-22, OLED SH1107) auf dem
 **Waveshare ESP32-S3-ETH** (W5500-Ethernet + WLAN, optionales
-PoE-Huckepack-Modul). Dritter Familienzweig neben
+PoE-Huckepack-Modul). Vierter Familienzweig neben
 [Sensormeter](https://github.com/peterhagelhof7-cmd/sensormeter)
-(WT32-ETH01) und
+(WT32-ETH01),
 [Sensormeter WLAN](https://github.com/peterhagelhof7-cmd/sensormeter-wlan)
-(ESP32-WROOM-32) - übernimmt deren vollen Funktionsumfang 1:1, plus
+(ESP32-WROOM-32) und
+[Sensormeter Display](https://github.com/peterhagelhof7-cmd/sensormeter-display)
+(Touchscreen-Betrachter) - übernimmt deren vollen Funktionsumfang 1:1, plus
 BOOT-Taster-Bedienung (bei Sensormeter aus Hardware-Gründen nicht
 möglich, GPIO0 dort fest am Ethernet-Takt), automatische
 RJ45-Modul-Erkennung und Relais/Aktor-Steuerung. MQTT/Home-Assistant-
@@ -24,13 +32,15 @@ Erstellungszeitpunkt vorhanden). Siehe
 
 **Schwesterprojekte:**
 [Sensormeter](https://github.com/peterhagelhof7-cmd/sensormeter) (WT32-ETH01, Ethernet + bis zu 2 Sensoren) ·
-[Sensormeter WLAN](https://github.com/peterhagelhof7-cmd/sensormeter-wlan) (ESP32-WROOM-32, WLAN-only)
+[Sensormeter WLAN](https://github.com/peterhagelhof7-cmd/sensormeter-wlan) (ESP32-WROOM-32, WLAN-only) ·
+[Sensormeter Display](https://github.com/peterhagelhof7-cmd/sensormeter-display) (ESP32-Touchdisplay, fragt Sensormeter-Geräte per SNMP ab)
 
 ## Dokumentation
 
 | Datei | Inhalt |
 |---|---|
 | [docs/sensormeter-poe-onepager.html](docs/sensormeter-poe-onepager.html) | One-Pager: Projektübersicht, Architektur, Kennzahlen auf einer Seite |
+| [docs/projektfamilie.html](docs/projektfamilie.html) | Architekturskizze: wie die vier Sensormeter-Projekte zusammenhängen |
 | [docs/lastenheft.txt](docs/lastenheft.txt) | Fachliche Anforderungen: Webseite, Einstellungen, SNMP-OIDs, RJ45-Modularanschluss, Aktor, MQTT |
 | [docs/pflichtenheft.txt](docs/pflichtenheft.txt) | Technische Umsetzung: Tasks, Softwaremodule, Speicherlayout |
 | [docs/verdrahtungsplan.html](docs/verdrahtungsplan.html) | Pinbelegung + Verdrahtungsschema (ungeprüft, siehe Hinweis dort) |
