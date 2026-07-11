@@ -137,10 +137,12 @@
     <section>
       <h2>Überblick</h2>
       <p>Dritter Familienzweig: übernimmt den vollständigen Funktionsumfang
-      von Sensormeter (WT32-ETH01) 1:1, plus vier neue Features, die dort
-      aus Hardware-Gründen nicht möglich waren - BOOT-Taster-Bedienung,
-      automatische RJ45-Modul-Erkennung, Relais/Aktor-Steuerung und
-      MQTT/Home-Assistant-Anbindung.</p>
+      von Sensormeter (WT32-ETH01) 1:1, plus BOOT-Taster-Bedienung
+      (bei Sensormeter aus Hardware-Gründen nicht möglich, GPIO0 dort fest
+      am Ethernet-Takt), automatische RJ45-Modul-Erkennung und
+      Relais/Aktor-Steuerung. MQTT/Home-Assistant-Anbindung gibt es
+      inzwischen auch bei Sensormeter (Sensor-Rolle) - hier zusätzlich um
+      die Aktor-Rolle (Relais) erweitert.</p>
       <p>Ethernet läuft hier über einen W5500-Chip per SPI statt eines
       nativen RMII-PHY (anderes Board-Design, siehe
       board-recherche.md) - WLAN zusätzlich als paralleles Interface
