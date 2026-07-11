@@ -12,19 +12,16 @@
   sondern fuer die monochromen OLEDs auf echte 1-Bit-Schwarzweiss-Werte
   reduziert (kein Graustufen-"so tun als ob").
 
-  Bekannte Displays der Familie:
+  Bekannte Displays der Familie - alle vier Projekte haben inzwischen ein
+  implementiertes Branding-Feature (BrandingManager, siehe jeweiliges
+  docs/entscheidungen.md):
     - Sensormeter (WT32-ETH01) / Sensormeter WLAN: OLED SSD1306, 128x64,
-      1 Bit monochrom. Branding-Feature aktuell nur bei Sensormeter WLAN
-      implementiert (BrandingManager, siehe dortige docs/entscheidungen.md);
-      dieses Skript erzeugt bereits jetzt das exakt passende Format fuer
-      eine spaetere Portierung auf Sensormeter selbst.
-    - Sensormeter PoE: OLED SH1107, 128x128, 1 Bit monochrom. Branding dort
-      noch nicht implementiert, gleiches Zielformat vorbereitet.
-    - Sensormeter Display: TFT ST7789P3, 240x320, 16-Bit Farbe (RGB565).
-      Branding dort noch nicht implementiert - Farbausgabe hier bewusst als
-      EXPERIMENTELL markiert, Format (Groesse/Byte-Reihenfolge) kann sich
-      noch aendern, sobald ein echtes BrandingManager-Pendant fuer dieses
-      Projekt entsteht.
+      1 Bit monochrom.
+    - Sensormeter PoE: OLED SH1107, 128x128, 1 Bit monochrom.
+    - Sensormeter Display: TFT ST7789P3 (Farbe) - bewusst DIESELBE
+      Zielgroesse 128x64 wie die OLED-Projekte (nur RGB565 statt 1bpp),
+      damit dieses Skript fuer alle vier Projekte eine einheitliche
+      Logo-Groesse nutzt.
 
   Monochromes Ausgabeformat (Sensormeter/Sensormeter WLAN/Sensormeter PoE):
   exakt Breite/8 * Hoehe Byte, MSB-zuerst je Zeile, kein Padding - identisch
@@ -33,8 +30,13 @@
   sensormeter-wlan/repo/firmware/src/BrandingManager.h als
   LOGO_WIDTH/LOGO_HEIGHT/LOGO_BYTES vorschreibt.
 
-  Farb-Ausgabeformat (Sensormeter Display, experimentell): RGB565, 2 Byte
-  pro Pixel, Little-Endian, zeilenweise ohne Padding.
+  Farb-Ausgabeformat (Sensormeter Display): RGB565, 2 Byte pro Pixel,
+  Little-Endian, zeilenweise ohne Padding. ACHTUNG - nicht auf echter
+  Hardware verifiziert: dieses Panel laeuft mit TFT_RGB_ORDER=0 (BGR) und
+  zeigte selbst dabei einzelne falsch interpretierte Farben (siehe
+  sensormeter-display/repo/docs/entscheidungen.md) - faerbt ein
+  hochgeladenes Logo auf echter Hardware sichtbar falsch (Rot/Blau
+  vertauscht), hilft der Schalter -SwapRedBlue.
 
   Das Quellbild wird seitenverhaeltnistreu in die Zielgroesse eingepasst
   (nicht verzerrt) und mit der Padding-Farbe (Default: Schwarz, der
@@ -78,6 +80,13 @@
   Jeder von .NET Color.FromName erkannte Farbname oder ein Hex-Code
   (#RRGGBB) ist gueltig.
 
+.PARAMETER SwapRedBlue
+  Nur fuer Farbziele (-Display display / -Display custom -ColorMode
+  color): vertauscht Rot- und Blau-Kanal beim RGB565-Packen. Escape-Hatch
+  fuer den Fall, dass ein Logo auf Sensormeter Display sichtbar
+  falschfarbig erscheint (siehe Hinweis oben zu TFT_RGB_ORDER) - einfach
+  ausprobieren, ob mit oder ohne Schalter die Farben stimmen.
+
 .EXAMPLE
   .\convert-logo.ps1 -InputPath .\firmenlogo.png -Display wlan
   Fragt nichts weiter, erzeugt firmenlogo-wlan-128x64.bin (1024 Byte).
@@ -108,10 +117,12 @@ param(
 
     [switch]$Invert,
 
-    [string]$PadColor = 'Black'
+    [string]$PadColor = 'Black',
+
+    [switch]$SwapRedBlue
 )
 
-$ScriptVersion = '1.0.0'
+$ScriptVersion = '1.1.0'
 
 Add-Type -AssemblyName System.Drawing
 
@@ -130,7 +141,7 @@ $Presets = [ordered]@{
     'sensormeter' = @{ Name = 'Sensormeter / Sensormeter WLAN'; Note = 'OLED SSD1306'; W = 128; H = 64; Mode = 'mono' }
     'wlan'        = @{ Name = 'Sensormeter / Sensormeter WLAN'; Note = 'OLED SSD1306'; W = 128; H = 64; Mode = 'mono' }
     'poe'         = @{ Name = 'Sensormeter PoE'; Note = 'OLED SH1107'; W = 128; H = 128; Mode = 'mono' }
-    'display'     = @{ Name = 'Sensormeter Display'; Note = 'TFT ST7789P3 - EXPERIMENTELL, Branding dort noch nicht implementiert'; W = 240; H = 320; Mode = 'color' }
+    'display'     = @{ Name = 'Sensormeter Display'; Note = 'TFT ST7789P3, Farbe'; W = 128; H = 64; Mode = 'color' }
 }
 
 if (-not $Display) {
@@ -138,7 +149,7 @@ if (-not $Display) {
     Write-Host 'Fuer welches Display soll konvertiert werden?'
     Write-Host '  1) Sensormeter / Sensormeter WLAN - OLED SSD1306, 128x64, 1-Bit monochrom'
     Write-Host '  2) Sensormeter PoE                - OLED SH1107, 128x128, 1-Bit monochrom'
-    Write-Host '  3) Sensormeter Display             - TFT ST7789P3, 240x320, 16-Bit Farbe (experimentell)'
+    Write-Host '  3) Sensormeter Display             - TFT ST7789P3, 128x64, 16-Bit Farbe (RGB565)'
     Write-Host '  4) Eigene Groesse / Farbtiefe (manuell)'
     $choice = Read-Host 'Auswahl (1-4)'
     switch ($choice) {
@@ -246,9 +257,7 @@ if ($TargetMode -eq 'mono') {
     Write-Host ''
     Write-Host "Farbtiefe reduziert: $srcBpp Bit/Pixel -> 1 Bit/Pixel (2 Farben, Schwellwert $Threshold$(if ($Invert) { ', invertiert' }))." -ForegroundColor Green
     Write-Host "Geschrieben: $OutputPath ($($bytes.Length) Byte, erwartet $($rowBytes * $TargetH) Byte fuer ${TargetW}x${TargetH})" -ForegroundColor Green
-    if ($Display -eq 'wlan' -or $Display -eq 'sensormeter') {
-        Write-Host "Direkt ueber die Einstellungsseite (Anbieter-Branding -> Logo hochladen) hochladbar." -ForegroundColor Green
-    }
+    Write-Host "Direkt ueber die Einstellungsseite (Anbieter-Branding -> Logo hochladen) hochladbar." -ForegroundColor Green
 } else {
     $bytes = New-Object byte[] ($TargetW * $TargetH * 2)
     $i = 0
@@ -263,6 +272,11 @@ if ($TargetMode -eq 'mono') {
             $r5 = [int]$px.R -shr 3
             $g6 = [int]$px.G -shr 2
             $b5 = [int]$px.B -shr 3
+            # -SwapRedBlue: Escape-Hatch fuer Panels mit vertauschter
+            # Farbkanal-Interpretation (siehe Sensormeter Display,
+            # TFT_RGB_ORDER=0/BGR - nicht auf echter Hardware verifiziert,
+            # ob Standard-RGB565 oder getauschtes Packen richtig ist).
+            if ($SwapRedBlue) { $tmp = $r5; $r5 = $b5; $b5 = $tmp }
             $rgb565 = ([int]$r5 -shl 11) -bor ([int]$g6 -shl 5) -bor [int]$b5
             # Little-Endian (Low-Byte zuerst) - passend zu einem direkten
             # memcpy eines uint16_t[]-Arrays auf der (Little-Endian-)
@@ -277,7 +291,10 @@ if ($TargetMode -eq 'mono') {
     Write-Host ''
     Write-Host "Farbtiefe reduziert: $srcBpp Bit/Pixel -> 16 Bit/Pixel RGB565 (65.536 Farben)." -ForegroundColor Green
     Write-Host "Geschrieben: $OutputPath ($($bytes.Length) Byte, erwartet $($TargetW * $TargetH * 2) Byte fuer ${TargetW}x${TargetH})" -ForegroundColor Green
-    Write-Host "Hinweis: Sensormeter Display hat noch keine Branding-Firmware, die dieses Format konsumiert - Format experimentell." -ForegroundColor Yellow
+    Write-Host "Direkt ueber die Einstellungsseite (Branding-Logo -> Logo hochladen) hochladbar." -ForegroundColor Green
+    if (-not $SwapRedBlue) {
+        Write-Host "Hinweis: Faerbt das Logo auf dem Geraet sichtbar falsch (Rot/Blau vertauscht), erneut mit -SwapRedBlue versuchen - nicht auf echter Hardware verifiziert, welche Variante hier korrekt ist." -ForegroundColor Yellow
+    }
 }
 
 $canvas.Dispose()
