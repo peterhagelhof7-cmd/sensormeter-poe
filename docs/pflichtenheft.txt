@@ -1,0 +1,338 @@
+
+PFLICHTENHEFT – SENSORMETER POE (ESP32-S3-ETH)
+
+1. SYSTEMARCHITEKTUR
+
+Das System basiert auf einem ESP32-S3 (Waveshare ESP32-S3-ETH) mit
+folgenden Software-Komponenten:
+
+- FreeRTOS (ESP32 Standard)
+- AsyncWebServer (Web UI)
+- SNMP v1 Stack (Read Only)
+- Syslog Client (UDP 514)
+- NTP Client
+- LittleFS Dateisystem
+- Arduino Framework (wie bei allen drei Geschwisterprojekten)
+- W5500-Ethernet-Treiber (SPI) statt nativem EMAC-Treiber (Unterschied
+  zu Sensormeter/WT32-ETH01, siehe Abschnitt 2 im Lastenheft)
+
+------------------------------------------------------------
+
+2. SOFTWARESTRUKTUR
+
+2.1 Tasks (FreeRTOS / loop()-getrieben, wie bei den Geschwisterprojekten)
+
+Task: SensorTask
+- Intervall: 60 Sekunden
+- Funktion:
+  - Sensorwerte lesen (Temperatur, Luftfeuchte, DHT-22 intern + optional
+    extern über RJ45)
+  - Plausibilitätsprüfung
+  - Übergabe an DataManager
+  - Trigger: Syslog-Sendung
+
+Task: NetworkTask
+- Verwaltung Ethernet (W5500) & WLAN
+- DHCP / Static-IP-Handling je Interface
+- Link-Status-Monitoring
+- Fallback-Access-Point-Hosting (echtes SoftAP, kein Join)
+- Ping-Kollisions-Check bzw. DHCP-Lease-Test vor Übernahme einer neuen
+  IP-Konfiguration (siehe Abschnitt 6)
+
+Task: NTPTask
+- Initial nach 60s
+- danach alle 5h
+- Sync via de.pool.ntp.org
+- Fehlerhandling + Fallback-Logik (DHCP-Test, Restore)
+
+Task: WebServerTask
+- Async HTTP Server
+- REST API + HTML UI
+- Chart.js-Datenbereitstellung
+
+Task: DisplayTask
+- OLED-Update alle 10 Sekunden (SH1107, 128x128, I2C)
+- Rotation der Informationsseiten, zentriert mit fester Schrift, langer
+  Text läuft waagerecht durch statt zu schrumpfen
+
+Task: SyslogTask
+- UDP-Versand bei jedem Sensorzyklus
+- Fehler-Events sofort senden
+
+Task: ButtonTask
+- Polling des BOOT-Tasters (GPIO0), Entprellung ab 50ms
+- Zustandsautomat: Tipp (<3s) → Seitenwechsel; Halten (≥3s) →
+  Reset-Bestätigung + 20s-Countdown; Auslösung nur beim Loslassen NACH
+  vollem Countdown (Fail-Safe), siehe Lastenheft Abschnitt 11.1 - analog
+  Sensormeter WLAN, dort bereits produktiv im Einsatz
+
+Task: ModuleDetectionTask
+- Läuft einmalig während des Boot-Countdowns (BOOT/INIT/NETWORK_CHECK,
+  parallel zur ohnehin laufenden Netzwerk-Wartezeit - siehe Lastenheft
+  Abschnitt 15.1) - NICHT als zusätzlicher, sequenzieller Schritt vor
+  oder nach der Netzwerksuche, um den Boot-Vorgang nicht zusätzlich zu
+  verzögern; nach I2C-/GPIO-Init, vor dem ersten SensorTask-Zyklus
+  abgeschlossen. Zusätzlich on-demand über den Button "Erkennung neu
+  starten" (Abschnitt 6 im Lastenheft)
+- Ablauf siehe Lastenheft Abschnitt 15.1: I2C-Scan (Adressen aus Tabelle
+  15.2) → bei Fehlschlag DHT-Leseversuch auf RJ45 Pin 5 → Ergebnis in
+  DataManager (Modul-Kategorie + ggf. Chip-Name) und ConfigManager
+  (sensor2Enabled-Vorbelegung, siehe 3.2) ablegen
+
+Task: MqttTask
+- Hält die Broker-Verbindung, publiziert Sensor-States im 60s-Zyklus,
+  Relais-State sofort bei Änderung, verarbeitet eingehende
+  command_topic-Nachrichten für die Relais-Entity
+- Nur aktiv, wenn "MQTT aktiv" gesetzt ist (Lastenheft Abschnitt 16.3)
+
+------------------------------------------------------------
+
+3. SOFTWAREMODULE
+
+3.1 DataManager
+Zentrale Datenhaltung:
+- Sensorwerte (Sensor 1 intern, Sensor 2 extern optional)
+- Systemstatus
+- Netzwerkstatus
+- Zeitstempel
+- Ringbuffer für 7 Tage Stundenwerte (persistiert nach history.csv,
+  übersteht Neustart und Neuflashen der Firmware - separate
+  LittleFS-Partition, siehe Abschnitt 9)
+
+3.2 ConfigManager
+- Laden config.xml aus LittleFS
+- Speichern config.xml
+- XML-Parser (tinyxml2, wie bei Sensormeter/Sensormeter WLAN)
+- Default-Werte-Fallback bei fehlenden/ungültigen Feldern
+- Einmal-Flag "wlanPendingTest" für den kurzen Verbindungstest nach
+  "Verbinden & testen"
+- systemType kein eigenständiges Feld, sondern per deriveSystemType()
+  immer aus sensor2Enabled abgeleitet (identisches Muster wie
+  Sensormeter: sensor2Enabled ? "Sensormeter PoE PRO" : "Sensormeter
+  PoE") - Neuberechnung bei jedem begin()/load() UND bei jedem
+  setConfig() (nicht nur beim Boot, auch sofort bei Sensor-2-Umschaltung
+  über die Einstellungsseite)
+
+3.3 NetworkManager
+- Ethernet-Init (W5500 über SPI)
+- WLAN-Init (parallel zu Ethernet, ESP32-S3 hat natives WiFi)
+- Fallback-Access-Point "installer" (WiFi.softAP(), nicht WiFi.begin())
+- DHCP/static-Switching-Logik je Interface
+- Ping-basierter Kollisions-Check vor dem Setzen einer statischen IP
+  (ESP32Ping-Bibliothek, count=1, ~1s Timeout - kurz genug für den
+  synchronen AsyncWebServerRequest-Handler)
+- Live-DHCP-Lease-Test (Interface testweise auf DHCP umschalten, bis zu
+  8s auf tatsächlich erhaltene Lease warten) für den
+  "IP-Einstellungen übernehmen"-Button
+
+3.4 TimeManager
+- NTP-Sync
+- Sommer-/Winterzeit (CET/CEST)
+- Uptime-Tracking
+
+3.5 StorageManager
+- LittleFS-Zugriff
+- values.csv-Schreiben (Zeitspalte ISO 8601: YYYY-MM-DD HH:MM:SS, nicht
+  roher Unix-Timestamp)
+- JSON-Puffer für den Graph
+
+3.6 DisplayManager
+- SH1107-Ansteuerung über Adafruit_SH110X (NICHT Adafruit_SSD1306 - die
+  bei Sensormeter/Sensormeter WLAN verwendete Bibliothek ist mit diesem
+  Controller nicht kompatibel, siehe board-recherche.md)
+
+3.7 ButtonManager
+- Entprellung + Zustandsautomat für den BOOT-Taster (GPIO0)
+- Konstanten (wie Sensormeter WLAN): BUTTON_TAP_MIN_MS=50,
+  BUTTON_RESET_HOLD_MS=3000, BUTTON_RESET_COUNTDOWN_MS=20000
+- Löst bei Reset-Auslösung denselben Codepfad wie
+  "Werksreset (nur Einstellungen)" über die Weboberfläche aus (siehe
+  Abschnitt 6 im Lastenheft)
+
+3.8 SensorDetector
+- I2C-Scan (Wire.beginTransmission()/endTransmission() über alle
+  Adressen 0x08-0x77 außer 0x3C/Display), Abgleich gegen eine feste
+  Tabelle bekannter Sensor-Adressen (Lastenheft Abschnitt 15.2)
+- Bei keinem I2C-Treffer: DHT-Leseversuch auf RJ45 Pin 5 (Timeout kurz
+  genug, um den Boot-Ablauf nicht spürbar zu verzögern - Zielwert <1s,
+  siehe Performance-Design Abschnitt 8)
+- Ergebnis-Enum: ModuleType { NONE, DHT_SENSOR, I2C_SENSOR_KNOWN(chip),
+  I2C_SENSOR_UNKNOWN(address) }
+- Schreibt bei DHT_SENSOR/I2C_SENSOR_* automatisch
+  ConfigManager::sensor2Enabled = true, sofern nicht zuvor manuell
+  deaktiviert (Override, siehe Lastenheft Abschnitt 15.4) - reine
+  Konstruktions-/Boot-Logik, keine periodische Neubewertung im laufenden
+  Betrieb (nur bei explizitem "Erkennung neu starten")
+- Erkennt AUSDRÜCKLICH nicht DHT-11 vs. DHT-22 (siehe Lastenheft
+  Abschnitt 15) und nicht das Vorhandensein eines Relais-Moduls (siehe
+  Lastenheft Abschnitt 15.3)
+
+3.9 RelayManager
+- Treibt RJ45 Pin 6 (Steuersignal, active LOW) und liest Pin 7
+  (optionales Status-Feedback, sofern das gesteckte Modul es liefert)
+- Nur aktiv, wenn "Relais (Aktor) aktiv" gesetzt ist (Lastenheft
+  Abschnitt 6/16.2) - rein manuell, keine Kopplung an SensorDetector
+  (3.8), da Relais-Präsenz dort nicht erkennbar ist
+- Definierter, sicherer Startzustand (Relais OFF) bei Boot und Reset,
+  bevor irgendein GPIO-Ausgang aktiv geschaltet wird - verhindert ein
+  kurzes unbeabsichtigtes Schalten während der Boot-Phase
+- Ein Codepfad für alle drei Steuerwege (Web-Formular, /api/relay,
+  MQTT command_topic), damit der Zustand nie auseinanderlaufen kann
+
+3.10 MqttManager
+- PubSubClient (Arduino-Bibliothek, kein ESP-IDF nötig - siehe
+  docs/entscheidungen.md zur Matter-vs-MQTT-Abwägung)
+- Verbindungsaufbau zum konfigurierten Broker (Lastenheft Abschnitt
+  16.3), automatischer Reconnect bei Verbindungsverlust
+- Home-Assistant-Discovery beim (Re-)Connect: publiziert Config-Payloads
+  für Sensor 1, Sensor 2 (falls aktiv) und die Relais-Switch-Entity
+  (falls aktiv) - Topic-Schema siehe Lastenheft Abschnitt 16.1/16.2
+- State-Updates im 60s-Sensorzyklus (Sensoren) bzw. sofort bei
+  Zustandsänderung (Relais)
+- Abonniert command_topic der Relais-Entity, delegiert an RelayManager
+
+------------------------------------------------------------
+
+4. DATENSPEICHERUNG
+
+4.1 Ringbuffer (7 Tage)
+- 168 Stundenwerte pro Sensor
+- Struktur:
+
+struct HourValue {
+  timestamp;
+  temperature;
+  humidity;
+}
+
+4.2 values.csv
+- Logging aller Stundenwerte, Zeitspalte im ISO-8601-Format
+- Export für Web-UI und externe Auswertung (Excel/Numbers/Python)
+
+4.3 config.xml
+- Systemkonfiguration
+- Netzwerkparameter (Ethernet + WLAN getrennt)
+- Sensorparameter (Kalibrierung, Sensor-2-Aktivierung/-Name)
+- SNMP-Community, Syslog-Server-IP
+
+------------------------------------------------------------
+
+5. WEBARCHITEKTUR
+
+5.1 Backend (ESP32-S3)
+- JSON-API-Endpoints:
+  /api/status
+  /api/sensors
+  /api/network
+  /api/logs
+  /api/config (GET/POST)
+  /api/config/export
+  /api/config/import
+  /api/wifi/scan (nicht-blockierend, WiFi.scanComplete()-Polling)
+  /api/wifi/connect ("Verbinden & testen")
+  /api/network/apply ("IP-Einstellungen übernehmen & neu starten",
+  iface=lan|wlan)
+  /api/factory-reset (scope=settings|all)
+  /api/reboot
+  /api/ota/upload
+  /api/relay (GET/POST, nur aktiv wenn "Relais (Aktor) aktiv" gesetzt
+  ist - siehe Lastenheft Abschnitt 16.2, gemeinsamer Codepfad mit dem
+  MQTT-command_topic-Handler, damit Web/REST/MQTT immer denselben
+  Zustand sehen)
+
+5.2 Frontend
+- HTML + CSS (helles Design, einheitliche Navy/Orange/Creme-Palette wie
+  alle drei Geschwisterprojekte)
+- Chart.js-Integration
+- Auto-Refresh via JS
+
+------------------------------------------------------------
+
+6. FEHLERBEHANDLUNG
+
+6.1 Netzwerkfehler
+- WLAN-Reconnect
+- Fallback-Access-Point "installer" (echtes Hosting)
+- DHCP-Recovery
+- Ping-Kollisions-Check verhindert das Setzen einer bereits belegten
+  statischen IP (LAN und WLAN getrennt geprüft)
+- DHCP-Lease-Test verhindert das Umschalten auf DHCP ohne verfügbaren
+  DHCP-Server im Zielnetz
+
+6.2 NTP-Fehler
+- Retry nach 5 min
+- Temporärer DHCP-Modus auf statisch konfigurierten Interfaces
+- Restore der statischen Konfiguration, falls DHCP-Test erfolglos bleibt
+
+6.3 Sensorfehler
+- Syslog-Event
+- Ungültige Werte markiert statt falscher Zahlen angezeigt
+
+------------------------------------------------------------
+
+7. SNMP-IMPLEMENTATION
+
+- SNMP v1 Agent
+- Read-only, Community konfigurierbar
+- Polling-optimiert (kein Dauer-Refresh)
+- Dieselbe Basis-OID (.1.3.6.1.4.1.99999) wie Sensormeter und
+  Sensormeter WLAN - ein Sensormeter-Display kann alle drei
+  Produktvarianten ohne Codeänderung abfragen
+
+------------------------------------------------------------
+
+8. PERFORMANCE-DESIGN
+
+Zielwerte:
+- CPU-Last < 40%
+- RAM-Nutzung < 60% (deutlich mehr Reserve als bei Sensormeter/-WLAN
+  dank 8 MB PSRAM statt 0 MB)
+- Sensor-Polling minimal (60s)
+- Webserver non-blocking (Async)
+- Keine blockierenden Netzwerkoperationen >1-2s im Request-Handler
+  (siehe die WiFi.scanNetworks()-Erfahrung bei Sensormeter WLAN, die zu
+  Watchdog-Resets führte - Ping-Check und DHCP-Lease-Test bewusst kurz
+  timeoutet gehalten)
+
+------------------------------------------------------------
+
+9. MEMORY LAYOUT (EMPFOHLEN)
+
+Flash (16 MB gesamt, deutlich mehr Reserve als bei Sensormeter mit 4 MB):
+- Firmware: ~1,2-1,5 MB je App-Partition (OTA-fähig, zwei Partitionen)
+- LittleFS: separate Datenpartition für config.xml/history.csv - bleibt
+  bei einem normalen Firmware-Reflash unangetastet
+
+RAM:
+- Heap-Reserve: >150 kB minimum (bei 8 MB PSRAM unkritisch)
+
+------------------------------------------------------------
+
+10. STARTUP FLOW
+
+BOOT →
+  Init Hardware (OLED, DHT-22 intern, W5500) →
+  Load Config →
+  Init Network (Ethernet + ggf. WLAN parallel) →
+  Start Services →
+  Wait bis zu 5 min →
+  NTP Sync →
+  Normal Operation
+
+Fallback:
+  eigener Access Point "installer" (SoftAP) →
+  DHCP-Server aktiv →
+  Wartet auf Konfiguration über Weboberfläche
+
+------------------------------------------------------------
+
+11. ERWEITERBARKEIT
+
+- Sensor 3+ über zusätzliche I2C-Module am RJ45-Anschluss möglich
+- Relais-Modul am RJ45-Anschluss bereits im Pin-Schema vorgesehen
+  (Pin 6/7, siehe Lastenheft Abschnitt 14) - Software-Ansteuerung noch
+  nicht Teil dieses Pflichtenhefts
+- MQTT optional
+- Cloud-Integration bewusst ausgeschlossen
+
+------------------------------------------------------------

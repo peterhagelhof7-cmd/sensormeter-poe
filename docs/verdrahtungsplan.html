@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Sensormeter PoE — Verdrahtungsplan</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  @page { size: A4; margin: 18mm 16mm 20mm 16mm; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #1c2430;
+    background: #ffffff;
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+  header {
+    background: #0f1f3d;
+    color: #fff;
+    margin: -18mm -16mm 8mm -16mm;
+    padding: 10mm 16mm 8mm 16mm;
+  }
+  .eyebrow { font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: #9fb3d9; margin-bottom: 3mm; }
+  h1 { margin: 0 0 2mm 0; font-size: 22px; }
+  .subtitle { color: #cdd8ec; font-size: 12px; }
+  .badges { margin-top: 5mm; display: flex; gap: 6px; flex-wrap: wrap; }
+  .badge { display: inline-block; padding: 3px 9px; border-radius: 3px; font-size: 10px; font-weight: 600; background: #24365c; color: #cdd8ec; }
+  .badge-orange { background: #c8622a; color: #fff; }
+
+  h2 { font-size: 13.5px; color: #8f4a1e; margin: 7mm 0 3mm 0; border-bottom: 1px solid #e4e1d8; padding-bottom: 1.5mm; }
+  h3 { font-size: 12px; color: #1c2430; margin: 5mm 0 2mm 0; }
+  p { margin: 0 0 3mm 0; }
+  code { font-family: Consolas, "Cascadia Mono", "Courier New", monospace; background: #f2f0e9; border: 1px solid #e4e1d8; border-radius: 3px; padding: 1px 5px; font-size: 11px; }
+  table { border-collapse: collapse; width: 100%; margin: 2mm 0 4mm 0; }
+  table th, table td { border: 1px solid #e4e1d8; padding: 1.8mm 3mm; font-size: 11.5px; text-align: left; vertical-align: middle; }
+  table th { background: #f2f0e9; }
+  .dot { display: inline-block; width: 3mm; height: 3mm; border-radius: 50%; margin-right: 2mm; vertical-align: middle; }
+  .callout { border-left: 3px solid #c8622a; background: #fbf3ee; padding: 3mm 4mm; margin: 3mm 0; border-radius: 0 3px 3px 0; }
+  .callout-title { font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #8f4a1e; margin-bottom: 1mm; }
+  .callout.warn { border-left-color: #a63d2e; background: #fbeeec; }
+  .callout.warn .callout-title { color: #a63d2e; }
+
+  footer { margin-top: 10mm; padding-top: 3mm; border-top: 1px solid #e4e1d8; font-size: 9.5px; color: #6b7280; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Firmware-Projekt · Hobby / Privat · Erste Fassung, ungeprueft auf echter Hardware</div>
+  <h1>SENSORMETER POE — VERDRAHTUNGSPLAN</h1>
+  <div class="subtitle">Waveshare ESP32-S3-ETH + DHT-22 (intern) + OLED SH1107 (1,5", 128×128) + RJ45-Modularanschluss</div>
+  <div class="badges">
+    <span class="badge badge-orange">GPIO15 · DHT-22 intern</span>
+    <span class="badge">GPIO1/2 · I2C OLED + RJ45</span>
+    <span class="badge">GPIO16-19 · RJ45-Modul</span>
+    <span class="badge">github.com/peterhagelhof7-cmd/sensormeter-poe</span>
+  </div>
+</header>
+
+<div class="callout warn">
+  <div class="callout-title">Status: ungeprueft</div>
+  Dieser Verdrahtungsplan beschreibt die erste Firmware-Fassung
+  (<code>0.1.0-p0</code>) - zum Erstellungszeitpunkt lag noch kein Board
+  vor, nichts wurde geflasht oder an echter Hardware nachgemessen. Die
+  GPIO-Zuordnung basiert auf dem Hersteller-Pinout
+  (<code>docs/ESP32-S3-ETH-Datenblatt.pdf</code>), ist aber nicht
+  durchmessen.
+</div>
+
+<h2>Bauteile</h2>
+<table>
+  <tr><th>Bauteil</th><th>Anschlüsse</th></tr>
+  <tr><td>Waveshare ESP32-S3-ETH (ESP32-S3R8, W5500 onboard)</td><td>Ethernet/W5500 ist fest auf der Platine verdrahtet (SPI, GPIO9-14) - keine externe Verkabelung noetig, siehe Abschnitt „Onboard-Ethernet" unten</td></tr>
+  <tr><td>DHT-22 / AM2302, 3-Pin-Modul (mit eingebautem Pull-up)</td><td>VCC, GND, DATA</td></tr>
+  <tr><td>OLED SH1107, 1,5", 128×128, I2C, 4-Pin</td><td>VCC, GND, SCL, SDA</td></tr>
+  <tr><td>RJ45-Buchse (8-polig) für den Modularanschluss</td><td>siehe Abschnitt „RJ45-Modularanschluss" - Sensor 2 (DHT-22 oder I2C-Sensor) oder Relais, je nach gestecktem Modul</td></tr>
+</table>
+
+<h2>Pinbelegung (Hauptplatine)</h2>
+<table>
+  <tr><th>ESP32-S3-Pin</th><th>Verbindet mit</th><th>Funktion</th></tr>
+  <tr><td><code>3V3</code></td><td>DHT-22 VCC <b>und</b> OLED VCC</td><td><span class="dot" style="background:#c0392b;"></span>Versorgung 3,3V (beide Module 3,3V-tolerant)</td></tr>
+  <tr><td><code>GND</code></td><td>DHT-22 GND <b>und</b> OLED GND</td><td><span class="dot" style="background:#1c2430;"></span>Masse (beliebiger GND-Pin)</td></tr>
+  <tr><td><code>GPIO15</code></td><td>DHT-22 (intern) DATA</td><td><span class="dot" style="background:#2e6da4;"></span>1-Wire-Digitalsignal, Pull-up 10k nach 3,3V</td></tr>
+  <tr><td><code>GPIO1</code></td><td>OLED SDA <b>und</b> RJ45 Pin 4</td><td><span class="dot" style="background:#5c9e6c;"></span>I2C-Datenleitung, gemeinsamer Bus (Display + externer I2C-Sensor)</td></tr>
+  <tr><td><code>GPIO2</code></td><td>OLED SCL <b>und</b> RJ45 Pin 3</td><td><span class="dot" style="background:#c8622a;"></span>I2C-Taktleitung, gemeinsamer Bus</td></tr>
+  <tr><td><code>GPIO16</code></td><td>RJ45 Pin 5</td><td><span class="dot" style="background:#7a5cad;"></span>Sensor-2-DATA (externer DHT-22)</td></tr>
+  <tr><td><code>GPIO17</code></td><td>RJ45 Pin 6</td><td><span class="dot" style="background:#a63d2e;"></span>Relais-Steuersignal, active LOW</td></tr>
+  <tr><td><code>GPIO18</code></td><td>RJ45 Pin 7</td><td><span class="dot" style="background:#c9a227;"></span>Relais-Status-Feedback (optional)</td></tr>
+  <tr><td><code>GPIO19</code></td><td>RJ45 Pin 8</td><td><span class="dot" style="background:#8a93a3;"></span>Reserve, unbenutzt</td></tr>
+  <tr><td><code>GPIO0</code></td><td>—</td><td>Onboard-BOOT-Taster, keine externe Verkabelung noetig</td></tr>
+</table>
+
+<h2>Schema</h2>
+<svg viewBox="0 0 800 460" style="width:100%; max-width:170mm; height:auto; font-family:inherit;">
+  <!-- ESP32-S3-ETH board -->
+  <rect x="30" y="20" width="170" height="420" rx="6" fill="#2b2f36"/>
+  <rect x="90" y="170" width="50" height="60" fill="#c9c9c9"/>
+  <text x="115" y="205" text-anchor="middle" font-size="9" fill="#333">S3</text>
+  <text x="115" y="40" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">Waveshare</text>
+  <text x="115" y="54" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">ESP32-S3-ETH</text>
+  <text x="115" y="68" text-anchor="middle" font-size="8" fill="#9fb3d9">W5500 onboard</text>
+
+  <g font-size="9" fill="#1c2430">
+    <text x="25" y="87" text-anchor="end">3V3</text>
+    <text x="25" y="111" text-anchor="end">GND</text>
+    <text x="25" y="135" text-anchor="end" font-weight="700" fill="#2e6da4">GPIO15</text>
+    <text x="25" y="159" text-anchor="end" font-weight="700" fill="#5c9e6c">GPIO1</text>
+    <text x="25" y="183" text-anchor="end" font-weight="700" fill="#c8622a">GPIO2</text>
+    <text x="25" y="207" text-anchor="end" font-weight="700" fill="#7a5cad">GPIO16</text>
+    <text x="25" y="231" text-anchor="end" font-weight="700" fill="#a63d2e">GPIO17</text>
+    <text x="25" y="255" text-anchor="end" font-weight="700" fill="#c9a227">GPIO18</text>
+    <text x="25" y="279" text-anchor="end" font-weight="700" fill="#8a93a3">GPIO19</text>
+    <text x="25" y="303" text-anchor="end">GPIO0 (BOOT)</text>
+  </g>
+  <g fill="#8a93a3">
+    <circle cx="30" cy="83" r="2.5" fill="#c0392b"/>
+    <circle cx="30" cy="107" r="2.5" fill="#1c2430"/>
+    <circle cx="30" cy="131" r="2.5" fill="#2e6da4"/>
+    <circle cx="30" cy="155" r="2.5" fill="#5c9e6c"/>
+    <circle cx="30" cy="179" r="2.5" fill="#c8622a"/>
+    <circle cx="30" cy="203" r="2.5" fill="#7a5cad"/>
+    <circle cx="30" cy="227" r="2.5" fill="#a63d2e"/>
+    <circle cx="30" cy="251" r="2.5" fill="#c9a227"/>
+    <circle cx="30" cy="275" r="2.5" fill="#8a93a3"/>
+    <circle cx="30" cy="299" r="2.5"/>
+  </g>
+
+  <!-- RJ45 jack, integriert auf der Platine -->
+  <rect x="60" y="330" width="80" height="40" rx="3" fill="#4a5568"/>
+  <text x="100" y="354" text-anchor="middle" font-size="8" fill="#fff">RJ45</text>
+  <text x="100" y="385" text-anchor="middle" font-size="8" fill="#6b7280">Ethernet (W5500), onboard</text>
+
+  <!-- DHT22 module -->
+  <rect x="500" y="50" width="150" height="110" rx="4" fill="#f2f0e9" stroke="#c7c2b4"/>
+  <text x="575" y="70" text-anchor="middle" font-size="10" font-weight="700">DHT-22 (intern)</text>
+  <text x="575" y="83" text-anchor="middle" font-size="8" fill="#6b7280">3-Pin-Modul</text>
+  <circle cx="520" cy="105" r="3" fill="#c0392b"/><text x="530" y="109" font-size="9">VCC</text>
+  <circle cx="520" cy="125" r="3" fill="#1c2430"/><text x="530" y="129" font-size="9">GND</text>
+  <circle cx="520" cy="145" r="3" fill="#2e6da4"/><text x="530" y="149" font-size="9">DATA</text>
+
+  <!-- OLED module -->
+  <rect x="500" y="185" width="150" height="130" rx="4" fill="#f2f0e9" stroke="#c7c2b4"/>
+  <text x="575" y="205" text-anchor="middle" font-size="10" font-weight="700">OLED SH1107</text>
+  <text x="575" y="218" text-anchor="middle" font-size="8" fill="#6b7280">1,5" · 128×128 · I2C</text>
+  <circle cx="520" cy="240" r="3" fill="#c0392b"/><text x="530" y="244" font-size="9">VCC</text>
+  <circle cx="520" cy="260" r="3" fill="#1c2430"/><text x="530" y="264" font-size="9">GND</text>
+  <circle cx="520" cy="280" r="3" fill="#5c9e6c"/><text x="530" y="284" font-size="9">SDA</text>
+  <circle cx="520" cy="300" r="3" fill="#c8622a"/><text x="530" y="304" font-size="9">SCL</text>
+
+  <!-- RJ45 Buchse zum Modularanschluss (8 Pins) -->
+  <rect x="500" y="335" width="180" height="115" rx="4" fill="#f2f0e9" stroke="#c7c2b4"/>
+  <text x="590" y="352" text-anchor="middle" font-size="10" font-weight="700">RJ45-Buchse (Modul)</text>
+  <text x="590" y="364" text-anchor="middle" font-size="8" fill="#6b7280">Sensor 2 / Relais / Reserve</text>
+  <circle cx="520" cy="380" r="2.5" fill="#c0392b"/><text x="528" y="383" font-size="8">Pin1 3V3</text>
+  <circle cx="520" cy="393" r="2.5" fill="#1c2430"/><text x="528" y="396" font-size="8">Pin2 GND</text>
+  <circle cx="520" cy="406" r="2.5" fill="#c8622a"/><text x="528" y="409" font-size="8">Pin3 SCL</text>
+  <circle cx="520" cy="419" r="2.5" fill="#5c9e6c"/><text x="528" y="422" font-size="8">Pin4 SDA</text>
+  <circle cx="610" cy="380" r="2.5" fill="#7a5cad"/><text x="618" y="383" font-size="8">Pin5 DHT</text>
+  <circle cx="610" cy="393" r="2.5" fill="#a63d2e"/><text x="618" y="396" font-size="8">Pin6 Relais</text>
+  <circle cx="610" cy="406" r="2.5" fill="#c9a227"/><text x="618" y="409" font-size="8">Pin7 Fdbk</text>
+  <circle cx="610" cy="419" r="2.5" fill="#8a93a3"/><text x="618" y="422" font-size="8">Pin8 Res.</text>
+
+  <!-- Wires: 3V3 -> both VCC (red) -->
+  <path d="M30,83 C 300,83 300,105 500,105" fill="none" stroke="#c0392b" stroke-width="1.6"/>
+  <path d="M30,83 C 300,83 300,240 500,240" fill="none" stroke="#c0392b" stroke-width="1.6"/>
+  <path d="M30,83 C 300,83 300,380 520,380" fill="none" stroke="#c0392b" stroke-width="1.6"/>
+  <!-- Wires: GND -> all GND (black) -->
+  <path d="M30,107 C 310,107 310,125 500,125" fill="none" stroke="#1c2430" stroke-width="1.6"/>
+  <path d="M30,107 C 310,107 310,260 500,260" fill="none" stroke="#1c2430" stroke-width="1.6"/>
+  <path d="M30,107 C 310,107 310,393 520,393" fill="none" stroke="#1c2430" stroke-width="1.6"/>
+  <!-- Wire: GPIO15 -> DHT22 DATA (blue) -->
+  <path d="M30,131 C 320,131 320,145 500,145" fill="none" stroke="#2e6da4" stroke-width="1.6"/>
+  <!-- Wire: GPIO1 -> OLED SDA + RJ45 Pin4 (green) -->
+  <path d="M30,155 C 330,155 330,280 500,280" fill="none" stroke="#5c9e6c" stroke-width="1.6"/>
+  <path d="M30,155 C 340,155 340,419 520,419" fill="none" stroke="#5c9e6c" stroke-width="1.6" stroke-dasharray="4 3"/>
+  <!-- Wire: GPIO2 -> OLED SCL + RJ45 Pin3 (orange) -->
+  <path d="M30,179 C 350,179 350,300 500,300" fill="none" stroke="#c8622a" stroke-width="1.6"/>
+  <path d="M30,179 C 360,179 360,406 520,406" fill="none" stroke="#c8622a" stroke-width="1.6" stroke-dasharray="4 3"/>
+  <!-- Wire: GPIO16 -> RJ45 Pin5 (purple) -->
+  <path d="M30,203 C 400,203 400,380 610,380" fill="none" stroke="#7a5cad" stroke-width="1.6"/>
+  <!-- Wire: GPIO17 -> RJ45 Pin6 (dark red) -->
+  <path d="M30,227 C 420,227 420,393 610,393" fill="none" stroke="#a63d2e" stroke-width="1.6"/>
+  <!-- Wire: GPIO18 -> RJ45 Pin7 (yellow) -->
+  <path d="M30,251 C 440,251 440,406 610,406" fill="none" stroke="#c9a227" stroke-width="1.6"/>
+  <!-- Wire: GPIO19 -> RJ45 Pin8 (grey) -->
+  <path d="M30,275 C 460,275 460,419 610,419" fill="none" stroke="#8a93a3" stroke-width="1.6"/>
+</svg>
+<p class="hint" style="font-size:10px;color:#6b7280;">Gestrichelte Linien = derselbe I2C-Bus (Display + RJ45 Pin 3/4), kein zweites Signal.</p>
+
+<h2>RJ45-Modularanschluss</h2>
+<p>Identisches Pin-<b>Rollen</b>-Schema wie beim Sensormeter-Projekt
+(WT32-ETH01) - austauschbare Module (DHT-Sensor, I2C-Sensor, Relais)
+funktionieren auf beiden Boards gleich, nur die konkreten GPIO-Nummern
+unterscheiden sich (anderer Chip). Siehe
+<code>docs/lastenheft.txt</code> Abschnitt 14.</p>
+<table>
+  <tr><th>RJ45-Pin</th><th>Belegung</th><th>ESP32-S3-Pin</th></tr>
+  <tr><td>1</td><td>3,3V (Strom)</td><td><code>3V3</code></td></tr>
+  <tr><td>2</td><td>GND (Masse)</td><td><code>GND</code></td></tr>
+  <tr><td>3</td><td>I2C SCL (gemeinsamer Bus mit Display)</td><td><code>GPIO2</code></td></tr>
+  <tr><td>4</td><td>I2C SDA (gemeinsamer Bus mit Display)</td><td><code>GPIO1</code></td></tr>
+  <tr><td>5</td><td>GPIO Reserve / externer DHT-22, DATA</td><td><code>GPIO16</code></td></tr>
+  <tr><td>6</td><td>Relais-Steuerung, active LOW</td><td><code>GPIO17</code></td></tr>
+  <tr><td>7</td><td>Relais-Feedback / Interrupt</td><td><code>GPIO18</code></td></tr>
+  <tr><td>8</td><td>Reserve</td><td><code>GPIO19</code></td></tr>
+</table>
+
+<h3>Modul-Typen (identisch zu Sensormeter)</h3>
+<table>
+  <tr><th>Modul</th><th>Genutzte Pins</th><th>Hinweis</th></tr>
+  <tr><td>1: DHT-Sensor</td><td>1 (VCC), 2 (GND), 5 (DATA)</td><td>4,7k Pull-up zwischen Pin 1 und Pin 5</td></tr>
+  <tr><td>2: I2C-Sensor (z.B. BME280/BH1750/SHT30)</td><td>1 (VCC), 2 (GND), 3 (SCL), 4 (SDA)</td><td>I2C-Adresse darf sich nicht mit dem Display (0x3C) überschneiden</td></tr>
+  <tr><td>3: Relais</td><td>1 (VCC), 2 (GND), 6 (Steuersignal), 7 (optionales Feedback)</td><td>Sensor- und Relais-Pins überschneiden sich nicht - ein Kombi-Modul ist elektrisch möglich</td></tr>
+</table>
+
+<h2>Onboard-Ethernet (W5500)</h2>
+<p>Der W5500-Ethernet-Chip ist fest auf der ESP32-S3-ETH-Platine verdrahtet
+(SPI: <code>GPIO11</code> MOSI, <code>GPIO12</code> MISO, <code>GPIO13</code>
+CLK, <code>GPIO14</code> CS, <code>GPIO10</code> IRQ, <code>GPIO9</code>
+RST) - keine externe Verkabelung noetig, nur die RJ45-Netzwerkbuchse am
+Board mit einem Ethernet-Kabel verbinden. Details siehe
+<code>docs/ESP32-S3-ETH-Datenblatt.pdf</code>.</p>
+
+<div class="callout">
+  <div class="callout-title">Hinweis</div>
+  Alle drei Module (DHT-22 intern, OLED, RJ45-Bus) dürfen sich denselben
+  <code>3V3</code>- und <code>GND</code>-Pin teilen - alle GND-Pins des
+  Boards sind intern verbunden.
+</div>
+<div class="callout warn">
+  <div class="callout-title">GPIO35-37 bewusst vermieden</div>
+  Der verbaute ESP32-S3R8 nutzt bei Octal-PSRAM (das „R8" in der
+  Chipbezeichnung) diese drei Pins silizium-seitig für die PSRAM-Anbindung.
+  Das Hersteller-Pinout markiert sie zwar als frei nutzbares GPIO (grün),
+  das ließ sich ohne echte Hardware aber nicht verifizieren - deshalb hier
+  vorsorglich für keine neue Peripherie verwendet. Siehe
+  <code>docs/entscheidungen.md</code>.
+</div>
+
+<h2>Vermiedene Pins</h2>
+<p>Bewusst nicht belegt: <code>GPIO3/45/46</code> (Boot-Strapping-Pins,
+könnten den Bootvorgang stören - Ausnahme <code>GPIO0</code>, dort
+bewusst als vorhandener BOOT-Taster genutzt), <code>GPIO4-7</code>
+(Micro-SD-Slot, in diesem Projekt ungenutzt), <code>GPIO9-14</code>
+(W5500-Ethernet, siehe oben), <code>GPIO43/44</code> (UART0/seriell),
+<code>GPIO35-37</code> (siehe Warnhinweis oben). Details siehe
+<code>docs/entscheidungen.md</code>.</p>
+
+<footer>
+  Sensormeter PoE — Verdrahtungsplan (erste Fassung, ungeprüft) · github.com/peterhagelhof7-cmd/sensormeter-poe ·
+  Entwickelt mit Unterstützung von Claude (Anthropic) als Coding-Assistent
+</footer>
+
+</body>
+</html>

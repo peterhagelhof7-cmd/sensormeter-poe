@@ -1,0 +1,12 @@
+#pragma once
+
+// ============================================================================
+// Kopiere diese Datei nach "config.h" (wird von Git ignoriert, siehe .gitignore).
+//
+// Laufzeitkonfiguration (Netzwerk, Passwoerter, Sensor2, Syslog-Server, ...)
+// kommt gemaess docs/lastenheft.txt aus config.xml auf LittleFS (siehe
+// ConfigManager) - NICHT aus dieser Datei. Hier stehen nur Werte, die zur
+// Kompilierzeit feststehen muessen.
+// ============================================================================
+
+#define DEVICE_FIRMWARE_VERSION "0.1.0-p0"

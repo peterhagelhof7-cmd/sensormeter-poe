@@ -1,0 +1,6 @@
+.pio/
+firmware/.pio-core/
+.vscode/
+**/include/config.h
+*.bin
+firmware/logs/

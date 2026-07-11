@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Sensormeter PoE — One-Pager</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #1c2430;
+    background: #ffffff;
+    font-size: 10.5px;
+    line-height: 1.32;
+  }
+  .page { width: 210mm; min-height: 297mm; margin: 0 auto; padding: 0 0 3mm 0; }
+
+  header {
+    background: #0f1f3d;
+    color: #ffffff;
+    padding: 6mm 12mm 4mm 12mm;
+  }
+  .eyebrow {
+    font-size: 8.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #9fb3d9;
+    margin-bottom: 2.5mm;
+  }
+  h1 {
+    margin: 0 0 1.5mm 0;
+    font-size: 23px;
+    letter-spacing: 0.02em;
+  }
+  .subtitle { color: #cdd8ec; font-size: 11px; margin-bottom: 3mm; }
+  .badges { display: flex; gap: 6px; flex-wrap: wrap; }
+  .badge {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .badge-orange { background: #c8622a; color: #fff; }
+  .badge-navy { background: #24365c; color: #cdd8ec; }
+  .badge-warn { background: #a63d2e; color: #fff; }
+
+  main {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8mm;
+    padding: 5mm 12mm 0 12mm;
+  }
+  h2 {
+    font-size: 9.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #c8622a;
+    border-bottom: 1px solid #e4e1d8;
+    padding-bottom: 1.2mm;
+    margin: 0 0 2mm 0;
+  }
+  section + section { margin-top: 3.5mm; }
+  p { margin: 0 0 1.5mm 0; }
+  ul { margin: 0; padding-left: 4mm; }
+  li { margin-bottom: 0.8mm; }
+
+  .modgroup { margin-bottom: 2mm; }
+  .modgroup-label {
+    font-size: 8px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #8a93a3;
+    margin-bottom: 1mm;
+  }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 2.5px; }
+  .pill {
+    background: #f2f0e9;
+    border: 1px solid #e4e1d8;
+    border-radius: 3px;
+    padding: 1.5px 5px;
+    font-size: 9px;
+    color: #33261b;
+  }
+  .pill-new { background: #eaf3ef; border-color: #b9d9cc; color: #1f5c46; font-weight: 600; }
+
+  .flow-box {
+    border: 1px solid #e4e1d8;
+    border-left: 3px solid #c8622a;
+    border-radius: 3px;
+    padding: 2mm 3mm;
+    margin-bottom: 1.5mm;
+    background: #fbfaf7;
+  }
+  .flow-title { font-weight: 700; font-size: 10px; }
+  .flow-sub { color: #6b7280; font-size: 9px; }
+  .flow-arrow { text-align: center; color: #b0b6c0; font-size: 10px; margin: 0.5mm 0; }
+
+  table.kpi { width: 100%; border-collapse: collapse; }
+  table.kpi td { padding: 1.2mm 0; border-bottom: 1px solid #eeece5; font-size: 10px; }
+  table.kpi td:last-child { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  footer {
+    margin: 3mm 12mm 0 12mm;
+    padding-top: 2mm;
+    border-top: 1px solid #e4e1d8;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    font-size: 9px;
+    color: #6b7280;
+  }
+  footer a { color: #c8622a; text-decoration: none; }
+  footer .repo { font-weight: 600; color: #1c2430; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <div class="eyebrow">Firmware-Projekt · Hobby / Privat</div>
+  <h1>SENSORMETER POE</h1>
+  <div class="subtitle">Waveshare ESP32-S3-ETH (W5500) — DHT-22 ×2, OLED SH1107, RJ45-Modularanschluss, Relais, MQTT/Home Assistant</div>
+  <div class="badges">
+    <span class="badge-orange badge">v0.1.0-p0 · erste Fassung</span>
+    <span class="badge-warn badge">ungeprüft auf Hardware</span>
+    <span class="badge badge-navy">ESP32-S3-ETH · W5500 + WLAN</span>
+    <span class="badge badge-navy">SNMP · Syslog · MQTT · OTA</span>
+    <span class="badge badge-navy">Schwesterprojekte: Sensormeter, Sensormeter WLAN</span>
+  </div>
+</header>
+
+<main>
+  <div>
+    <section>
+      <h2>Überblick</h2>
+      <p>Dritter Familienzweig: übernimmt den vollständigen Funktionsumfang
+      von Sensormeter (WT32-ETH01) 1:1, plus vier neue Features, die dort
+      aus Hardware-Gründen nicht möglich waren - BOOT-Taster-Bedienung,
+      automatische RJ45-Modul-Erkennung, Relais/Aktor-Steuerung und
+      MQTT/Home-Assistant-Anbindung.</p>
+      <p>Ethernet läuft hier über einen W5500-Chip per SPI statt eines
+      nativen RMII-PHY (anderes Board-Design, siehe
+      board-recherche.md) - WLAN zusätzlich als paralleles Interface
+      nutzbar, PoE optional über ein aufsteckbares Huckepack-Modul.</p>
+    </section>
+
+    <section>
+      <h2>Hardware</h2>
+      <ul>
+        <li>Waveshare ESP32-S3-ETH (ESP32-S3R8, 16MB Flash, 8MB PSRAM)</li>
+        <li>DHT-22 intern (GPIO15) + DHT-22/I2C-Sensor extern über RJ45</li>
+        <li>OLED SH1107, 1,5", 128×128, I2C (GPIO1/2)</li>
+        <li>RJ45-Modularanschluss (Sensor 2 / Relais, Pin-Rollen wie Sensormeter)</li>
+        <li>Onboard-BOOT-Taster (GPIO0) als Bedienelement nutzbar</li>
+        <li>PoE optional (aufsteckbares 802.3af-Modul, nicht im Lieferumfang)</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Architektur-Abstammung</h2>
+      <p>Dieselbe Modulstruktur und SNMP-Basis-OID wie Sensormeter und
+      Sensormeter WLAN übernommen (Manager-Pattern mit
+      <b>begin()</b>/<b>loop()</b>). Die Klasse für die Netzwerk-Anbindung
+      heißt hier bewusst <b>NetManager</b> statt <b>NetworkManager</b> -
+      Arduino-ESP32 3.x (für W5500-Support nötig) bringt selbst eine Klasse
+      namens <b>NetworkManager</b> mit, die sonst kollidiert hätte. Details:
+      entscheidungen.md.</p>
+    </section>
+  </div>
+
+  <div>
+    <section>
+      <h2>Software-Architektur</h2>
+
+      <div class="modgroup">
+        <div class="modgroup-label">Datenhaltung &amp; Persistenz</div>
+        <div class="pill-row">
+          <span class="pill">DataManager</span><span class="pill">ConfigManager</span>
+          <span class="pill">StorageManager</span>
+        </div>
+      </div>
+
+      <div class="modgroup">
+        <div class="modgroup-label">Netzwerk &amp; Zeit</div>
+        <div class="pill-row">
+          <span class="pill">NetManager</span><span class="pill">TimeManager</span>
+        </div>
+      </div>
+
+      <div class="modgroup">
+        <div class="modgroup-label">Sensorik, Anzeige &amp; Bedienung</div>
+        <div class="pill-row">
+          <span class="pill">SensorManager</span><span class="pill">DisplayManager</span>
+          <span class="pill pill-new">SensorDetector</span><span class="pill pill-new">ButtonManager</span>
+        </div>
+      </div>
+
+      <div class="modgroup">
+        <div class="modgroup-label">Aktor &amp; Fernzugriff</div>
+        <div class="pill-row">
+          <span class="pill pill-new">RelayManager</span>
+          <span class="pill">WebServerManager</span><span class="pill">OtaManager</span>
+          <span class="pill">SNMPManager</span><span class="pill">SyslogManager</span>
+          <span class="pill pill-new">MqttManager</span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Datenfluss</h2>
+      <div class="flow-box">
+        <div class="flow-title">Datenquelle</div>
+        <div class="flow-sub">2× DHT-22 (60s-Takt) · RJ45-Modul-Scan (Boot) · NTP</div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-box">
+        <div class="flow-title">DataManager</div>
+        <div class="flow-sub">mutex-geschützt (Hauptloop + Web-Task)</div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-box">
+        <div class="flow-title">OLED / Webserver / SNMP / Syslog / MQTT</div>
+        <div class="flow-sub">I2C · HTTP · UDP 161 · UDP 514 · TCP 1883</div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-box">
+        <div class="flow-title">RelayManager</div>
+        <div class="flow-sub">RJ45 Pin 6/7 - Web/REST/MQTT teilen sich denselben Schreibpfad</div>
+      </div>
+    </section>
+  </div>
+
+  <div>
+    <section>
+      <h2>Status &amp; Kennzahlen</h2>
+      <table class="kpi">
+        <tr><td>Version</td><td>0.1.0-p0</td></tr>
+        <tr><td>Umsetzung</td><td>Erste Fassung, code-vollständig</td></tr>
+        <tr><td>Flash-Nutzung</td><td>21,4 %</td></tr>
+        <tr><td>RAM (statisch)</td><td>17,3 %</td></tr>
+        <tr><td>Hardware-Praxistest</td><td>ausstehend (kein Board)</td></tr>
+      </table>
+    </section>
+
+    <section>
+      <h2>Funktionen</h2>
+      <ul>
+        <li>OLED-Boot-Countdown + 6 rotierende Infoseiten</li>
+        <li>BOOT-Taster: Seitenwechsel (kurz) / Werksreset (3s+20s halten)</li>
+        <li>Hauptseite: Chart.js-7-Tage-Graph, Syslog-Tabelle, values.csv</li>
+        <li>Einstellungsseite: System, LAN+WLAN (je mit Ping-/DHCP-Check), Sensoren
+        (inkl. Auto-Erkennung), Aktor, Syslog, SNMP, MQTT</li>
+        <li>Automatische Sensor-2-Modul-Erkennung (I2C-Scan + DHT-Probe) beim Boot</li>
+        <li>Relais/Aktor: Web-Schalter, REST (<code>/api/relay</code>) und MQTT-Switch</li>
+        <li>SNMP v1/v2c read-only, gleiche Basis-OID wie Sensormeter/WLAN</li>
+        <li>MQTT: Home-Assistant-Discovery für Sensoren UND Relais</li>
+        <li>Lokales OTA-Update per .bin-Upload</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Entwicklungsansatz</h2>
+      <ul>
+        <li>Architektur/Code direkt von Sensormeter (WT32-ETH01) und
+        Sensormeter WLAN übernommen und adaptiert, nicht neu erfunden</li>
+        <li>W5500-Ethernet-API vor dem Schreiben real recherchiert und mit
+        einem Testprojekt gegen den tatsächlichen pioarduino-Build
+        verifiziert (nicht nur angenommen)</li>
+        <li>Mit <b>pio run</b> gebaut &amp; verifiziert (isolierter
+        Paket-Ordner, siehe „Bekannte Stolperfalle" unten)</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Bekannte Stolperfalle</h2>
+      <ul>
+        <li>W5500 braucht Arduino-ESP32 3.x - das offizielle
+        PlatformIO-"espressif32" bündelt weiterhin 2.0.17. Lösung:
+        Community-Fork „pioarduino" (analog zur ESP32-P4-Erfahrung)</li>
+        <li>pioarduino nutzt dieselben Paketnamen wie das offizielle
+        Platform - ohne eigenen <code>core_dir</code> überschreibt ein
+        globaler Build die von Sensormeter/Sensormeter WLAN geteilten
+        Pakete (real passiert, wieder repariert). Jetzt isoliert
+        (<code>firmware/.pio-core/</code>)</li>
+        <li>pio-Aufrufe müssen über PowerShell laufen, nicht Git-Bash/MSYS
+        (Toolchain-Installer bricht dort ab)</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Einstieg</h2>
+      <ul>
+        <li><b>docs/verdrahtungsplan.html</b> – Pinbelegung &amp; Schema</li>
+        <li><b>docs/entscheidungen.md</b> – alle Design- und Toolchain-Entscheidungen</li>
+      </ul>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div>
+    <div class="repo">github.com/peterhagelhof7-cmd/sensormeter-poe</div>
+    <div>Entwickelt mit Unterstützung von Claude (Anthropic) als Coding-Assistent</div>
+  </div>
+  <div style="text-align:right;max-width:90mm;">
+    <b>Kerndokumente im Repo:</b> Lastenheft · Pflichtenheft · Entscheidungsprotokoll ·
+    Verdrahtungsplan · Board-Recherche
+  </div>
+</footer>
+
+</div>
+</body>
+</html>

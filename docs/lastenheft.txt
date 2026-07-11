@@ -1,0 +1,571 @@
+LASTENHEFT – SENSORMETER POE (ESP32-S3-ETH)
+
+1. PROJEKT
+Projektname: Sensormeter PoE
+Bezug: dritter Familienzweig neben Sensormeter (WT32-ETH01) und
+Sensormeter WLAN (ESP32-WROOM-32) - funktional an Sensormeter angelehnt,
+siehe Abschnitt 3.
+
+2. SYSTEMBASIS
+Hardware:
+- Waveshare ESP32-S3-ETH (ESP32-S3R8), 16 MB Flash + 8 MB PSRAM
+- Ethernet: W5500 über SPI, 10/100 Mbit RJ45
+- PoE: optionales, aufsteckbares Huckepack-Modul (802.3af)
+- WLAN/Bluetooth: nativ im ESP32-S3 (2,4 GHz WiFi, BLE 5)
+- OLED 1,5" 128x128, Controller SH1107, I2C
+- Temperatur-/Luftfeuchtesensor (intern) DHT-22
+- optional zweiter Sensor (extern, über RJ45-Modularanschluss) DHT-22
+- BOOT-Taster (onboard, GPIO0) - zusätzlich als Bedienelement nutzbar,
+  siehe Abschnitt 11
+- RESET-Taster (onboard, EN) - reiner Hardware-Reset
+- Details/Bezugsquelle/Preis: siehe board-recherche.md,
+  Datenblatt docs/ESP32-S3-ETH-Datenblatt.pdf
+
+Abweichungen gegenüber Sensormeter (WT32-ETH01):
+- Interner Sensor DHT-22 statt DHT-11 (beide Sensorpositionen nutzen hier
+  durchgängig DHT-22, bei Sensormeter nur die externe Position)
+- Ethernet über SPI (W5500) statt natives EMAC (LAN8720) - siehe
+  board-recherche.md für die GPIO-Budget-Begründung
+- OLED 1,5" 128x128 (SH1107) statt 0,96" 128x64 (SSD1306) - mehr
+  Anzeigefläche, gleiches Bedienkonzept (reine Anzeige, kein Touch)
+- PoE nativ nutzbar (Huckepack-Modul) - bei Sensormeter nicht vorgesehen
+  (WT32-ETH01 hat keine PoE-Option)
+- BOOT-Taster als Bedienelement nutzbar (analog Sensormeter WLAN) - bei
+  Sensormeter selbst nicht möglich, da GPIO0 dort fest mit dem
+  Ethernet-Takt verdrahtet ist (siehe Abschnitt 11)
+
+------------------------------------------------------------
+
+3. ZIELSETZUNG
+Das System dient zur lokalen und netzwerkbasierten Erfassung, Speicherung
+und Darstellung von Umweltmesswerten (Temperatur, Luftfeuchte). Die Daten
+werden lokal angezeigt, über Webserver bereitgestellt, via SNMP abrufbar
+gemacht und per Syslog versendet.
+
+Sensormeter PoE übernimmt den vollständigen, aktuellen Funktionsumfang
+von Sensormeter (WT32-ETH01) 1:1, soweit nicht durch abweichende Hardware
+bedingt anders (siehe Abschnitt 2) - kein Feature-Downgrade gegenüber dem
+Referenzprojekt. Zusätzlich übernommen (bei Sensormeter selbst aus
+Hardware-Gründen nicht möglich, da GPIO0 dort fest mit dem Ethernet-Takt
+verdrahtet ist): die BOOT-Taster-Bedienung von Sensormeter WLAN
+(Seitenwechsel/Werksreset per Tastendruck, siehe Abschnitt 11) - das
+ESP32-S3-ETH hat GPIO0 frei verfügbar (onboard BOOT-Taster, siehe
+Abschnitt 2).
+
+------------------------------------------------------------
+
+4. SYSTEMVARIANTEN
+
+4.1 Sensormeter PoE
+- 1 interner Sensor (DHT-22)
+
+4.2 Sensormeter PoE PRO
+- 1 interner + 1 externer Sensor (beide DHT-22)
+
+Wie bei Sensormeter (WT32-ETH01) ist der Systemtyp KEIN eigenständiges
+Einstellungsfeld, sondern wird immer aus "Sensor 2 aktiv" abgeleitet
+("Sensormeter PoE" ohne, "Sensormeter PoE PRO" mit aktiviertem Sensor 2)
+- automatisch bei jedem Boot und sofort bei jeder Änderung der
+Sensor-2-Aktivierung über die Einstellungsseite, nicht erst nach einem
+Neustart. Gilt für Anzeige auf OLED, Weboberfläche und SNMP
+(.1.3.6.1.4.1.99999.1.3.0) gleichermaßen.
+
+------------------------------------------------------------
+
+5. WEBSERVER
+
+5.1 Hauptseite (öffentlich, ohne Login)
+Anzeige folgender Daten:
+
+System:
+- Systemzeit (NTP synchronisiert)
+- Systemname
+- Firmwareversion
+- Systemtyp
+- Uptime
+- freier Heap
+- Chip-Temperatur
+
+Netzwerk:
+- Ethernet-IP (W5500)
+- WLAN-IP
+- Gateway Ethernet/WLAN
+- DNS Ethernet/WLAN
+- MAC Ethernet/WLAN
+- WLAN SSID
+- WLAN RSSI
+- Ethernet-Linkstatus
+- Fallback-Status (eigener Access Point aktiv?)
+
+Sensoren:
+- Temperatur
+- Luftfeuchte
+- Sensornamen
+
+5.2 Graph (Chart.js)
+- 7 Tage Verlauf
+- Speicherung nur stündlicher Werte
+- Temperatur: rot
+- Luftfeuchte: blau
+- Y-Achse links: °C
+- Y-Achse rechts: %
+
+5.3 Syslog-Ansicht
+- letzte 5 Meldungen
+
+5.4 Download
+- values.csv Download (Zeitspalte im ISO-8601-Format, siehe Abschnitt 10.2)
+
+------------------------------------------------------------
+
+6. EINSTELLUNGSSEITE (PASSWORTGESCHÜTZT)
+
+Standard-Benutzername: admin (fest, nicht änderbar)
+Standardpasswort: installer
+
+Funktionen:
+
+System:
+- Systemname
+- Passwort ändern
+- Reboot
+
+Netzwerk:
+- Ethernet DHCP / statische IP
+- WLAN DHCP / statische IP
+- SSID-Scan (nicht-blockierend) + Auswahl per Klick
+- PSK-Eingabe
+- Gateway / Netzmaske / DNS
+- "Verbinden & testen (Neustart)" - speichert nur SSID/PSK, startet
+  sofort neu, testet die Verbindung 30s, fällt bei Fehlschlag automatisch
+  in den Fallback-Access-Point zurück
+- "IP-Einstellungen übernehmen & neu starten" (je Interface: Ethernet
+  und WLAN getrennt) - prüft VOR dem Speichern per Ping (statische IP)
+  bzw. per echtem DHCP-Lease-Test auf der laufenden Verbindung (DHCP),
+  übernimmt und startet nur bei erfolgreichem Test neu; bei Fehlschlag
+  bleibt die bisherige Konfiguration unverändert aktiv, kein Neustart
+
+Sensoren:
+- Sensor 2 aktivieren (wird beim Boot automatisch vorbelegt, sobald ein
+  Modul am RJ45-Anschluss erkannt wird - bleibt als manueller Override
+  weiterhin änderbar, siehe Abschnitt 15)
+- Erkannter Modultyp/Chip (nur Anzeige, siehe Abschnitt 15.1/15.2)
+- "Erkennung neu starten" (Button, löst die Modul-Erkennung aus
+  Abschnitt 15.1 erneut aus, z. B. nach Modulwechsel im laufenden
+  Betrieb)
+- Sensor-2-Name
+- Kalibrierkorrektur Sensor 1 (Temperatur/Feuchte, °C/%, positiv oder
+  negativ)
+- Kalibrierkorrektur Sensor 2 (Temperatur/Feuchte, °C/%)
+
+Aktor:
+- Relais (Aktor) aktiv - rein manuell, keine Auto-Erkennung möglich
+  (siehe Abschnitt 15.3/16.2), unabhängig von "Sensor 2 aktivieren"
+- Relais-Schalter (Web-Steuerung, zusätzlich zu MQTT/REST, siehe
+  Abschnitt 16.2)
+
+Syslog:
+- Syslog-Server-IP
+
+SNMP:
+- Community-String
+
+MQTT (Home Assistant):
+- MQTT aktiv (Ja/Nein)
+- Broker-Adresse, Port
+- Benutzername, Passwort (optional)
+- Topic-Präfix
+
+Konfiguration:
+- XML Export (config.xml, Aufbau siehe Abschnitt 10.1)
+- XML Import
+- Speichern in LittleFS
+- Werksreset (nur Einstellungen) - setzt config.xml auf Werkswerte
+  zurück, 7-Tage-Verlauf bleibt erhalten
+- Werksreset (Einstellungen + Daten) - zusätzlich wird der gespeicherte
+  Verlauf gelöscht
+
+Firmware:
+- Lokaler OTA-Upload (.bin) übers Webinterface
+
+------------------------------------------------------------
+
+7. SNMP (v1 READ ONLY)
+
+Bewusst dieselbe Basis-OID wie Sensormeter und Sensormeter WLAN, damit
+ein Sensormeter-Display alle drei Produktvarianten ohne Codeänderung
+abfragen kann.
+
+OID Struktur:
+
+.1.3.6.1.4.1.99999.1 System
+- 1.0 Systemname
+- 2.0 Firmwareversion
+- 3.0 Systemtyp
+
+.1.3.6.1.4.1.99999.2 Netzwerk
+- 1.0 Ethernet-IP
+- 2.0 WLAN-IP
+- 3.0 WLAN-RSSI
+
+.1.3.6.1.4.1.99999.3 Sensor 1
+- 1.0 Name
+- 2.0 Temperatur
+- 3.0 Luftfeuchte
+
+.1.3.6.1.4.1.99999.4 Sensor 2 (optional, nur PRO)
+- 1.0 Name
+- 2.0 Temperatur
+- 3.0 Luftfeuchte
+
+.1.3.6.1.4.1.99999.5 Systemstatus
+- 1.0 Uptime
+- 2.0 Freier Heap
+
+Hinweis: Temperatur/Luftfeuchte unter .3/.4 enthalten bereits die auf der
+Einstellungsseite konfigurierte Kalibrierkorrektur (siehe Abschnitt 6,
+"Sensoren") - SNMP meldet denselben, bereits korrigierten Wert wie
+Webseite und OLED, keinen separaten Rohwert. Der Zweig .4 bleibt bei
+deaktiviertem Sensor 2 unbeantwortet (kein falscher Wert statt fehlender
+Antwort).
+
+------------------------------------------------------------
+
+8. NETZWERKLOGIK
+
+Boot:
+- Ethernet (W5500) DHCP (Standard)
+- WLAN connect parallel, falls konfiguriert
+
+Fallback:
+- Haben nach 5 Minuten weder Ethernet noch WLAN eine IP: eigener Access
+  Point (echtes SoftAP-Hosting, kein Beitritt zu einem bestehenden Netz)
+- SSID "installer", PSK "installer", feste IP 192.168.4.1/24, DHCP-Server
+  aktiv, kein Internetzugang über diesen Access Point
+
+NTP:
+- de.pool.ntp.org
+- 60s nach Boot
+- alle 5h
+- nach Link-Up-Events (außer beim allerersten Verbindungsaufbau)
+
+Fehler:
+- nach 5 min ohne NTP → DHCP-Test auf statisch konfigurierten Interfaces
+- nach 3 min weiter ohne Erfolg → gesetzte statische Konfiguration
+  wiederherstellen
+
+------------------------------------------------------------
+
+9. SYSLOG
+
+UDP Port 514
+
+Format:
+Systemname | Ethernet-IP | WLAN-IP | RSSI | Sensor1 | Sensor2 | ISO-Zeit | Uptime
+
+Fehler-Events (sofort, Severity "Error"):
+- NTP-Fehler
+- Link down Ethernet/WLAN
+- Sensorfehler
+
+------------------------------------------------------------
+
+10. DATEISYSTEM (LittleFS)
+
+10.1 config.xml
+
+<type> wird beim Speichern immer aus sensor2Enabled neu abgeleitet (siehe
+Abschnitt 4) - ein manuell im XML eingetragener abweichender Wert wird
+beim nächsten Speichern überschrieben, kein persistentes Freitextfeld.
+
+<config>
+  <network>
+    <lan dhcp="true" ip="" mask="" gateway="" dns=""/>
+    <wlan dhcp="true" ssid="" psk="" ip="" mask="" gateway="" dns="" pendingTest="false"/>
+  </network>
+
+  <system>
+    <name>Sensormeter PoE</name>
+    <type>Sensormeter PoE</type>  <!-- oder "Sensormeter PoE PRO", automatisch -->
+    <password>installer</password>
+  </system>
+
+  <syslog>
+    <server>0.0.0.0</server>
+  </syslog>
+
+  <sensors>
+    <sensor1 tempOffset="0" humOffset="0" calibratedTs="0"/>
+    <sensor2 enabled="false" name="Extern" tempOffset="0" humOffset="0" calibratedTs="0"/>
+  </sensors>
+
+  <snmp community="public"/>
+</config>
+
+10.2 values.csv
+- Spalten: timestamp (ISO 8601, YYYY-MM-DD HH:MM:SS), temperature, humidity
+- stündliche Speicherung für 7 Tage
+
+------------------------------------------------------------
+
+11. DISPLAY (OLED 1,5" 128x128, SH1107)
+
+- Wechsel alle 10 Sekunden
+- horizontal und vertikal zentriert, feste größtmögliche Schrift; zu
+  lange Zeilen laufen waagerecht durch statt die Schrift zu verkleinern
+
+Screens:
+- Systemname + Systemtyp
+- IPs (Ethernet + WLAN)
+- Uhrzeit
+- Sensorwerte (Sensor 1, ggf. Sensor 2)
+- Status (Ethernet/WLAN, Firmwareversion)
+- WLAN-Signal (RSSI)
+
+Boot:
+- Countdown 100 → 0 bis Netzwerk bereit, Systemname + Systemtyp
+
+Fallback:
+- eigene, dedizierte Seite ("Fallback aktiv" + eigene IP), keine
+  Seitenrotation, solange der Access Point läuft
+
+11.1 Taster-Bedienung (BOOT-Taster)
+
+Analog Sensormeter WLAN - beim ESP32-S3-ETH ist GPIO0 frei nutzbar
+(anders als beim WT32-ETH01, siehe Abschnitt 2), daher hier Teil des
+Basisumfangs statt späterer Erweiterung. Dient im laufenden Betrieb
+zusätzlich als Bedienelement, in jedem Systemzustand (auch während des
+Bootens oder im Fallback-Modus):
+
+- Kurzer Tipp (unter 3 Sekunden): schaltet manuell zur nächsten Seite
+  der Rotation, unabhängig vom 10-Sekunden-Takt
+- 3 Sekunden oder länger gehalten: OLED zeigt eine Reset-Bestätigung mit
+  einem 20-Sekunden-Countdown
+- Fail-Safe: Auslösung erst beim Loslassen - nach Ablauf der 20 Sekunden
+  wird der Reset NICHT automatisch ausgeführt, solange der Taster weiter
+  gedrückt bleibt; erst das tatsächliche Loslassen danach löst ihn aus.
+  Ein verklemmter oder defekter Taster kann dadurch nie von selbst einen
+  Reset auslösen.
+- Entspricht dem Werksreset "nur Einstellungen" (siehe Abschnitt 6) - der
+  7-Tage-Verlauf bleibt erhalten. Funktioniert komplett ohne
+  Netzwerkzugriff/PC.
+
+11.2 RESET-Taster
+
+Onboard-Taster, reiner Hardware-Reset (EN-Leitung) - startet das Gerät
+sofort neu, lässt sich softwareseitig nicht abfangen, keine
+Zusatzfunktion im laufenden Betrieb.
+
+11.3 Beide Taster gleichzeitig
+
+Wird RESET losgelassen, während BOOT weiterhin gehalten wird, wechselt
+der Chip nicht in den Normalbetrieb, sondern in den seriellen
+Flash-Modus (Bootloader) - das OLED bleibt dunkel, das Gerät reagiert
+nicht und verbindet sich nicht ins Netzwerk. Genau diese
+Tastenkombination nutzt auch der automatische Reset-Schaltkreis beim
+Firmware-Flashen.
+
+------------------------------------------------------------
+
+12. ZUSTANDSMODELL
+
+BOOT → INIT → NETWORK CHECK
+  ↓
+IF OK (Ethernet ODER WLAN hat IP) → RUN NORMAL MODE
+IF FAIL (nach 5 min) → FALLBACK MODE (eigener Access Point "installer")
+  ↓
+NTP OK → NORMAL OPERATION
+NTP FAIL → DHCP TEST → RESTORE → ERROR MODE
+
+------------------------------------------------------------
+
+13. NICHTFUNKTIONALE ANFORDERUNGEN
+- lokal betrieben
+- keine Cloud
+- robuste Netzwerkumschaltung (Ethernet priorisiert, WLAN parallel möglich)
+- geringe Speicherlast
+- wartbar über Webinterface
+- erweiterbar (Sensor 2, RJ45-Modularanschluss auch für Relais nutzbar,
+  siehe Abschnitt 14)
+- IP-Adressen dürfen nie ungeprüft übernommen werden (Ping-Check/
+  DHCP-Lease-Test vor jeder Netzwerkänderung über den dedizierten
+  "IP-Einstellungen übernehmen"-Weg, siehe Abschnitt 6)
+- Einstellungen (config.xml, values.csv) müssen einen Firmware-Reflash
+  unbeschadet überstehen (separate LittleFS-Partition)
+- Werksreset per Taster darf nur bei tatsächlichem Loslassen nach voller
+  Haltezeit auslösen (Fail-Safe gegen verklemmte Taster, siehe
+  Abschnitt 11.1)
+
+Geprüft, bewusst NICHT umgesetzt: Matter-Integration. Trotz ESP32-S3 als
+grundsätzlich Matter-fähigem Chip (anders als der klassische ESP32 in
+Sensormeter/Sensormeter WLAN) drei konkrete Ausschlussgründe: (1) der
+verbaute W5500 (SPI-Ethernet) wird vom CHIP-SDK-Ethernet-Treiber nicht
+nativ unterstützt (erwartet einen Chip mit nativem EMAC, z. B. IP101) -
+ein lauffähiges Beispiel auf demselben Board brauchte einen
+selbstgeschriebenen Treiber; (2) das ging nur mit reinem ESP-IDF, nicht
+mit dem hier durchgängig genutzten Arduino-Framework - kein Zusatz,
+sondern ein separates Firmware-Projekt; (3) Matter braucht laut
+offizieller Arduino-Doku eine 3-MB-App-Partition ohne OTA, was der
+bereits festgelegten Zwei-Partitionen-OTA-Anforderung (Abschnitt 9 im
+Pflichtenheft) widerspricht. Stattdessen: Home-Assistant-Anbindung über
+MQTT (Abschnitt 16) - funktional vergleichbarer Nutzen, ohne diese drei
+Konflikte.
+
+------------------------------------------------------------
+
+14. RJ45-MODULARANSCHLUSS
+
+Identisches Pin-Rollen-Schema wie bei Sensormeter (WT32-ETH01), damit
+extern angeschlossene Module (DHT-Sensor, I2C-Sensor, Relais) zwischen
+beiden Projekten austauschbar sind - siehe
+docs/verdrahtungsschema-v1.2.pdf im sensormeter-Repo als Vorlage. Die
+konkrete GPIO-Zuordnung am ESP32-S3-ETH weicht zwangsläufig vom
+WT32-ETH01 ab (anderer Chip, andere freie Pins, siehe
+docs/ESP32-S3-ETH-Datenblatt.pdf) und wird in einem eigenen
+Verdrahtungsschema für sensormeter-poe festgelegt - die PIN-ROLLEN
+(Spalte "Belegung") bleiben aber identisch:
+
+Pin  Belegung
+1    3.3V (Strom)
+2    GND (Masse)
+3    I2C SCL (gemeinsamer Bus mit dem OLED-Display)
+4    I2C SDA (gemeinsamer Bus mit dem OLED-Display)
+5    GPIO (Reserve / externer DHT-22-Sensor, DATA-Leitung)
+6    GPIO (Relais-Steuerung, active LOW)
+7    GPIO (Relais-Feedback / Interrupt)
+8    GPIO (Reserve)
+
+Modul-Typen (identisch zu Sensormeter, siehe dortiges
+verdrahtungsschema-v1.2.pdf Seite 4):
+- Modul 1: DHT-Sensor (Pin 1=VCC, Pin 2=GND, Pin 5=DATA, 4.7k Pull-up
+  zwischen Pin 1 und Pin 5)
+- Modul 2: I2C-Sensor, z.B. BME280/BH1750/SHT30 (Pin 1=VCC, Pin 2=GND,
+  Pin 3=SCL, Pin 4=SDA, 4.7k Pull-ups auf Pin 1-3 und Pin 1-4; I2C-Adresse
+  darf sich nicht mit dem Display überschneiden)
+- Modul 3: Relais (Pin 1=VCC, Pin 2=GND, Pin 6=Steuersignal/IN active
+  LOW, Pin 7=optionales Status-Feedback)
+
+Da Sensor-Pins (3/4 oder 5) und Relais-Pins (6/7) sich nicht
+überschneiden, ist ein Kombi-Modul mit Sensor UND Relais auf derselben
+RJ45-Buchse elektrisch möglich - Sensor und Aktor können damit
+gleichzeitig aktiv sein, siehe Abschnitt 16.2.
+
+------------------------------------------------------------
+
+15. AUTOMATISCHE ERKENNUNG DES RJ45-STECKMODULS
+
+Neu gegenüber Sensormeter: statt "Sensor 2 aktiv" ausschließlich manuell
+über die Einstellungsseite zu setzen (Abschnitt 6), erkennt das System
+beim Boot automatisch, welche Modulart (Abschnitt 14) tatsächlich
+gesteckt ist - inklusive des konkreten Sensor-Chips bei I2C-Modulen.
+Ausdrücklich NICHT Teil dieser Erkennung: Unterscheidung DHT-11 vs.
+DHT-22 (unzuverlässig, da beide dasselbe Protokoll auf demselben Pin
+nutzen - siehe Abschnitt 15.4).
+
+15.1 Ablauf
+
+Zeitpunkt: während des Boot-Countdowns (BOOT/INIT/NETWORK_CHECK, siehe
+Abschnitt 12 und OLED-Countdown 100→0 in Abschnitt 11) - läuft parallel
+zur ohnehin laufenden Netzwerk-Wartezeit, verzögert den Boot-Vorgang
+dadurch nicht zusätzlich. Zusätzlich manuell erneut auslösbar über die
+Einstellungsseite ("Erkennung neu starten" - z. B. nach Modulwechsel im
+laufenden Betrieb).
+
+1. I2C-Scan auf dem gemeinsamen Bus (RJ45 Pin 3/4), Display-Adresse 0x3C
+   ausgenommen
+   - Bekannte Sensor-Adresse antwortet → Modul-Kategorie "I2C-Sensor",
+     konkreter Chip anhand Adresstabelle (Abschnitt 15.2)
+   - Unbekannte Adresse antwortet → Modul-Kategorie "I2C-Sensor
+     (unbekannter Chip)", Adresse wird im Log vermerkt
+2. Kein I2C-Gerät gefunden → DHT-Leseversuch auf RJ45 Pin 5. Gültige
+   Antwort (Prüfsumme korrekt) → Modul-Kategorie "DHT-Sensor"
+3. Weder I2C noch DHT antworten → Modul-Kategorie "Kein Sensor / Relais"
+   (nicht weiter unterscheidbar, siehe Einschränkung 15.3)
+
+15.2 Bekannte I2C-Sensor-Adressen (erweiterbare Tabelle)
+
+Chip           Adresse(n)
+BME280         0x76 / 0x77
+BH1750         0x23 / 0x5C
+SHT30/31/35    0x44 / 0x45
+AHT20/AHT21    0x38
+
+15.3 Einschränkung: Relais nicht zuverlässig erkennbar
+
+Ein Relais-Modul (Abschnitt 14, Modul 3) ist ein reiner GPIO-Ausgang vom
+ESP32 zum Modul und sendet von sich aus kein auswertbares Signal zurück -
+es ist mit der aktuellen Verdrahtung nicht zuverlässig von "kein Modul
+gesteckt" zu unterscheiden. Für eine echte Relais-Erkennung wäre eine
+zusätzliche Kennungsleitung bzw. ein definierter Pull-Widerstand im
+Relais-Modul selbst nötig - nicht Teil dieses Lastenhefts, ggf. spätere
+Erweiterung.
+
+15.4 Zusammenspiel mit der manuellen Einstellung
+
+Die Auto-Erkennung setzt "Sensor 2 aktiv" (Abschnitt 6) automatisch,
+sobald ein DHT- oder I2C-Sensor-Modul erkannt wird - der bisherige
+manuelle Schalter bleibt zusätzlich als Override erhalten (z. B. um ein
+erkanntes Modul bewusst zu deaktivieren, oder falls die Erkennung
+fehlschlägt/ein unbekannter I2C-Chip nicht sinnvoll ausgelesen werden
+kann). Der erkannte Modultyp/Chip wird auf der Einstellungsseite und im
+Log angezeigt (informativ, kein separates Einstellungsfeld) - wirkt sich
+NICHT auf den SNMP-Sensornamen aus, der bleibt weiterhin frei über
+"Sensor-2-Name" editierbar (Abschnitt 6).
+
+------------------------------------------------------------
+
+16. HOME-ASSISTANT-INTEGRATION (MQTT)
+
+Zusätzlich zu SNMP/Syslog/Webserver: Anbindung an Home Assistant über
+MQTT mit Discovery, sodass sich das Gerät selbst anmeldet (keine
+manuelle YAML-Konfiguration auf HA-Seite nötig). Bewusst MQTT statt
+Matter gewählt (siehe docs/entscheidungen.md für die Matter-Abwägung) -
+deutlich geringerer Aufwand, keine Konflikte mit dem bestehenden
+OTA-Partitionsschema, läuft mit einer schlanken Arduino-Bibliothek
+(PubSubClient) ohne Architekturbruch.
+
+16.1 Sensor-Rolle (immer aktiv)
+
+Meldet Sensor 1 (immer) und Sensor 2 (sobald aktiv, ob manuell oder per
+Auto-Erkennung, Abschnitt 15) als MQTT-Sensor-Entities bei Home
+Assistant an. Discovery-Topic:
+homeassistant/sensor/<systemname>/<entity>/config
+State-Updates im selben Rhythmus wie der bestehende Sensorzyklus (60s,
+Abschnitt Pflichtenheft 2.1).
+
+16.2 Aktor-Rolle (Relais, wenn aktiviert)
+
+Das RJ45-Pin-Schema (Abschnitt 14) sieht Relais-Steuerung (Pin 6) und
+-Feedback (Pin 7) auf ANDEREN Pins als die Sensor-Anbindung (Pin 3/4 I2C
+bzw. Pin 5 DHT) vor - ein Kombi-Modul mit Sensor UND Relais auf derselben
+Buchse ist damit elektrisch möglich, "Sensor 2 aktiv" und "Relais
+(Aktor) aktiv" sind daher unabhängige, nicht gegenseitig ausschließende
+Einstellungen.
+
+Da ein Relais-Modul sich nicht zuverlässig automatisch erkennen lässt
+(Abschnitt 15.3), erfolgt die Aktivierung ausschließlich manuell über
+einen neuen Schalter "Relais (Aktor) aktiv" auf der Einstellungsseite
+(Abschnitt 6) - unabhängig von der Sensor-2-Erkennung.
+
+Bei aktiviertem Relais:
+- MQTT-Switch-Entity bei Home Assistant (Discovery-Topic:
+  homeassistant/switch/<systemname>/relay/config), mit command_topic
+  (HA → Gerät: ON/OFF) und state_topic (Gerät → HA: aktueller Zustand,
+  inkl. Feedback-Leitung Pin 7 sofern das Modul eine liefert)
+- Zusätzlich Steuerung über die bestehende Weboberfläche (eigener Schalter
+  auf der Hauptseite oder Einstellungsseite) und über die REST-API
+  (POST /api/relay), damit der Zustand konsistent über alle Wege
+  (Web/MQTT) steuerbar ist, nicht nur über Home Assistant
+- Relais-Zustand NICHT über SNMP gesteuert (SNMP bleibt read-only wie
+  bisher, Abschnitt 7) - Steuerung ausschließlich über Web/REST/MQTT
+
+16.3 Konfiguration
+
+Neue Felder auf der Einstellungsseite (Abschnitt 6, Block "MQTT"):
+- MQTT aktiv (Ja/Nein)
+- Broker-Adresse, Port
+- Benutzername, Passwort (optional, je nach Broker-Konfiguration)
+- Topic-Präfix (Default: aus Systemname abgeleitet, wie beim
+  mDNS-Hostnamen, Abschnitt Pflichtenheft 3.3)
+
+------------------------------------------------------------
