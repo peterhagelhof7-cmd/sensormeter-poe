@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include <ESPAsyncWebServer.h>
+#include "BrandingManager.h"
 #include "ConfigManager.h"
 #include "DataManager.h"
 #include "NetManager.h"
@@ -25,7 +26,8 @@
 class WebServerManager {
  public:
   WebServerManager(DataManager& dataManager, ConfigManager& configManager, NetManager& networkManager,
-                    OtaManager& otaManager, RelayManager& relayManager, SensorDetector& sensorDetector);
+                    OtaManager& otaManager, RelayManager& relayManager, SensorDetector& sensorDetector,
+                    BrandingManager& brandingManager);
 
   void begin();
 
@@ -36,6 +38,7 @@ class WebServerManager {
   OtaManager& _ota;
   RelayManager& _relay;
   SensorDetector& _detector;
+  BrandingManager& _branding;
 
   AsyncWebServer _server;
 
@@ -80,6 +83,16 @@ class WebServerManager {
   // Modul-Erkennung (Lastenheft Abschnitt 15): loest SensorDetector erneut
   // aus, z.B. nach einem Modulwechsel im laufenden Betrieb.
   void handleApiDetectRerun(AsyncWebServerRequest* request);
+
+  // Anbieter-Branding: Logo-Upload (Streaming, analog handleApiConfigImportUpload/
+  // OTA-Upload), Logo-Auslieferung als on-the-fly synthetisiertes 1-Bit-BMP
+  // (kein PNG/JPEG-Decoder noetig, siehe BrandingManager.h) und Loeschen.
+  void handleApiBrandingLogoUpload(AsyncWebServerRequest* request, const String& filename, size_t index,
+                                    uint8_t* data, size_t len, bool final);
+  void handleBrandingLogoBmp(AsyncWebServerRequest* request);
+  void handleApiBrandingLogoDelete(AsyncWebServerRequest* request);
+
+  bool _brandingUploadOk = false;
 
   String buildPageShell(const String& title, const String& bodyContent) const;
   String buildMainPageBody() const;

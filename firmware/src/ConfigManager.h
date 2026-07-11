@@ -31,6 +31,7 @@
 //   <snmp community="public"/>
 //   <aktor relayEnabled="false"/>
 //   <mqtt enabled="false" server="" port="1883" user="" password="" topicPrefix=""/>
+//   <branding vendorName=""/>
 // </config>
 
 struct DeviceConfig {
@@ -101,6 +102,14 @@ struct DeviceConfig {
   String mqttUser;
   String mqttPassword;
   String mqttTopicPrefix;
+
+  // Anbieter-Branding (Weisslabel): frei einstellbarer Vendor-Name, erscheint
+  // zusaetzlich zum weiterhin bestehenden, frei editierbaren Systemnamen auf
+  // OLED-Slide und Webseiten-Header, sobald gesetzt. Das Logo-Bild selbst
+  // wird NICHT hier gespeichert (Binaerdaten gehoeren nicht in die
+  // config.xml), sondern separat als Datei auf LittleFS - siehe
+  // BrandingManager. Leer = Feature inaktiv (Default).
+  String brandingVendorName;
 };
 
 class ConfigManager {

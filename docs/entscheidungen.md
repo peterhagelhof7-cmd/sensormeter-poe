@@ -227,3 +227,39 @@ Dokumentation (Lastenheft/Pflichtenheft) bereits vollstaendig vor diesem
 Firmware-Stand vorhanden; neu erstellt in dieser Runde:
 `docs/verdrahtungsplan.html` und `docs/sensormeter-poe-onepager.html`
 (auf Wunsch nur als HTML, keine PDF-Exporte in dieser Runde).
+
+## Anbieter-Branding (Weisslabel) von Sensormeter WLAN portiert
+
+Auf Anfrage von Sensormeter WLAN (dort erste Umsetzung, siehe dessen
+`docs/entscheidungen.md`) unverändert im Konzept hierher portiert: neuer
+`BrandingManager` (freier Anbietername + optionales Logo auf LittleFS,
+kein PNG/JPEG-Decoder), eigene OLED-Rotationsseite (nur Teil der
+Rotation, wenn tatsächlich konfiguriert), Web-Header-Banner, Logo-Upload
+per Multipart (gleiches Tmp-Datei-Muster wie `ConfigManager::save()`),
+Web-Auslieferung als on-the-fly synthetisierter 1-Bit-BMP unter
+`/branding/logo.bmp`.
+
+**Einzige echte Abweichung gegenüber den Geschwisterprojekten**: dieses
+Board nutzt ein SH1107-OLED mit 128x128 statt 128x64 Pixeln (siehe
+`DisplayManager`) - `LOGO_WIDTH`/`LOGO_HEIGHT`/`LOGO_BYTES` in
+`BrandingManager.h` daher auf 128x128/2048 Byte angepasst (statt
+1024 Byte bei Sensormeter/Sensormeter WLAN). `scripts/convert-logo.ps1
+-Display poe` erzeugt bereits das passende Format. Der bei Sensormeter
+WLAN gefundene LittleFS-`exists()`-Logquirk (RAM-Cache-Fix) wurde von
+Anfang an übernommen, tritt hier also gar nicht erst auf.
+
+**Nicht auf echter Hardware getestet**: kein Waveshare-ESP32-S3-ETH-Board
+in dieser Session angeschlossen (wie bei allen bisherigen
+PoE-Firmware-Runden). Verifiziert wurde ausschließlich per `pio run`
+(erfolgreicher Build, ueber PowerShell wegen des isolierten
+`core_dir`/pioarduino-Setups) - die BMP-Konstruktionslogik selbst wurde
+bereits unabhängig bei Sensormeter WLAN verifiziert (Python+Pillow-
+Nachbau, siehe dortiges Protokoll), identischer Code hier übernommen.
+
+Mit `pio run` (über PowerShell, isolierter `core_dir`) erfolgreich
+gebaut: Flash 21,5 % (1.407.439 B von 6.553.600 B App-Partition,
+gegenüber 21,4 % / 1.401.071 B vor dieser Änderung, +6.368 B), RAM
+19,2 % (63.052 B von 327.680 B, gegenüber 17,3 % / 56.780 B, +6.272 B) -
+bei 16-MB-Flash weiterhin vollkommen unkritisch. Lastenheft (Abschnitt
+17) und Pflichtenheft (3.11, 4.3/4.4) sowie der One-Pager entsprechend
+ergänzt.

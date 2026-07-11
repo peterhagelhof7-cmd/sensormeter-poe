@@ -28,9 +28,9 @@ static Adafruit_SH1107 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1, 1000000, 
 
 DisplayManager::DisplayManager(DataManager& dataManager, ConfigManager& configManager,
                                NetManager& networkManager, TimeManager& timeManager,
-                               ButtonManager& buttonManager)
+                               ButtonManager& buttonManager, BrandingManager& brandingManager)
     : _data(dataManager), _config(configManager), _network(networkManager), _time(timeManager),
-      _button(buttonManager) {}
+      _button(buttonManager), _branding(brandingManager) {}
 
 void DisplayManager::begin() {
   Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
@@ -205,6 +205,26 @@ void DisplayManager::drawSignalPage() {
   drawLines(lines, 2);
 }
 
+void DisplayManager::drawBrandingPage() {
+  // Nur erreichbar, wenn isActive() true ist (siehe pageCount()) - trotzdem
+  // defensiv beide Faelle behandeln, statt sich blind auf den Aufrufer zu
+  // verlassen. Bevorzugt das Logo (fuellt den ganzen Screen, kein Platz mehr
+  // fuer Text daneben); ohne Logo den Vendor-Namen als grosse Textzeile wie
+  // die uebrigen Seiten (drawLines()).
+  if (_branding.hasLogo()) {
+    static uint8_t logoBuf[BrandingManager::LOGO_BYTES];
+    if (_branding.loadLogo(logoBuf, sizeof(logoBuf))) {
+      display.clearDisplay();
+      display.drawBitmap(0, 0, logoBuf, BrandingManager::LOGO_WIDTH, BrandingManager::LOGO_HEIGHT, SH110X_WHITE);
+      display.display();
+      return;
+    }
+  }
+  String lines[1];
+  lines[0] = _branding.vendorName();
+  drawLines(lines, 1);
+}
+
 void DisplayManager::drawFallbackIpPage() {
   String ip = _network.isWlanUp() ? _network.getWlanIp().toString() : String("---");
 
@@ -249,6 +269,7 @@ void DisplayManager::drawPage(int page) {
     case 3: drawSensorsPage(); break;
     case 4: drawStatusPage(); break;
     case 5: drawSignalPage(); break;
+    case 6: drawBrandingPage(); break;
     default: break;
   }
 }
@@ -261,7 +282,7 @@ void DisplayManager::loop() {
   if (drawButtonOverlayIfActive()) return;
 
   if (_button.consumePageAdvance()) {
-    _currentPage = (_currentPage + 1) % PAGE_COUNT;
+    _currentPage = (_currentPage + 1) % pageCount();
     _lastPageSwitchMillis = millis();
   }
 
@@ -294,7 +315,7 @@ void DisplayManager::loop() {
     _lastPageSwitchMillis = millis();
   } else if (millis() - _lastPageSwitchMillis >= PAGE_INTERVAL_MS) {
     _lastPageSwitchMillis = millis();
-    _currentPage = (_currentPage + 1) % PAGE_COUNT;
+    _currentPage = (_currentPage + 1) % pageCount();
   }
   drawPage(_currentPage);
 }

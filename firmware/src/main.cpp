@@ -15,7 +15,9 @@
 // bereit; SNMPManager beantwortet SNMP-v1/v2c-GET-Anfragen read-only;
 // SyslogManager sendet Statusreports/Fehler-Events per UDP; MqttManager
 // meldet Sensoren UND (falls aktiviert) den Aktor per Home-Assistant-
-// MQTT-Discovery an.
+// MQTT-Discovery an; BrandingManager haelt den optionalen Anbieter-Namen/
+// das Logo (Weisslabel), das DisplayManager als eigene OLED-Seite und
+// WebServerManager im Seiten-Header zeigt, sobald konfiguriert.
 //
 // Erste, vollstaendige Umsetzung von docs/lastenheft.txt/pflichtenheft.txt -
 // noch NICHT auf echter Hardware geflasht/getestet (kein Board zum
@@ -25,6 +27,7 @@
 #include <Arduino.h>
 #include <ESPmDNS.h>
 
+#include "BrandingManager.h"
 #include "ButtonManager.h"
 #include "ConfigManager.h"
 #include "DataManager.h"
@@ -57,10 +60,12 @@ SensorManager sensorManager(dataManager, configManager);
 SensorDetector sensorDetector(dataManager, configManager);
 ButtonManager buttonManager(dataManager, configManager);
 RelayManager relayManager(dataManager, configManager);
-DisplayManager displayManager(dataManager, configManager, networkManager, timeManager, buttonManager);
+BrandingManager brandingManager(configManager);
+DisplayManager displayManager(dataManager, configManager, networkManager, timeManager, buttonManager,
+                               brandingManager);
 OtaManager otaManager;
 WebServerManager webServerManager(dataManager, configManager, networkManager, otaManager, relayManager,
-                                   sensorDetector);
+                                   sensorDetector, brandingManager);
 SNMPManager snmpManager(dataManager, configManager, networkManager);
 SyslogManager syslogManager(dataManager, configManager, networkManager);
 MqttManager mqttManager(dataManager, configManager, networkManager, relayManager);
@@ -83,6 +88,7 @@ void setup() {
   sensorManager.begin();
   buttonManager.begin();
   relayManager.begin();
+  brandingManager.begin();
   syslogManager.begin();
   mqttManager.begin();
 

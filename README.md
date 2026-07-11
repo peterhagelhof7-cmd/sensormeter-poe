@@ -6,11 +6,13 @@ PoE-Huckepack-Modul). Dritter Familienzweig neben
 [Sensormeter](https://github.com/peterhagelhof7-cmd/sensormeter)
 (WT32-ETH01) und
 [Sensormeter WLAN](https://github.com/peterhagelhof7-cmd/sensormeter-wlan)
-(ESP32-WROOM-32) - übernimmt deren vollen Funktionsumfang 1:1, plus vier
-neue Features, die auf den beiden anderen Boards aus Hardware-Gründen
-nicht möglich waren: BOOT-Taster-Bedienung, automatische
-RJ45-Modul-Erkennung, Relais/Aktor-Steuerung und
-MQTT/Home-Assistant-Anbindung.
+(ESP32-WROOM-32) - übernimmt deren vollen Funktionsumfang 1:1, plus
+BOOT-Taster-Bedienung (bei Sensormeter aus Hardware-Gründen nicht
+möglich, GPIO0 dort fest am Ethernet-Takt), automatische
+RJ45-Modul-Erkennung und Relais/Aktor-Steuerung. MQTT/Home-Assistant-
+Anbindung und Anbieter-Branding gibt es inzwischen auch bei Sensormeter
+und Sensormeter WLAN (Sensor-Rolle) - hier zusätzlich um die Aktor-Rolle
+(Relais) beim MQTT erweitert.
 
 **Status:** erste Firmware-Fassung (`0.1.0-p0`), code-vollständig gemäß
 Lastenheft/Pflichtenheft, mit `pio run` gebaut und verifiziert - **noch

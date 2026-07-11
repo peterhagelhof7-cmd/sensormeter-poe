@@ -569,3 +569,43 @@ Neue Felder auf der Einstellungsseite (Abschnitt 6, Block "MQTT"):
   mDNS-Hostnamen, Abschnitt Pflichtenheft 3.3)
 
 ------------------------------------------------------------
+
+17. ANBIETER-BRANDING (WEISSLABEL)
+
+17.1 Umfang
+Optionale Weisslabel-Kennzeichnung: frei einstellbarer Anbietername plus
+optionales Logo-Bild, zusätzlich zum weiterhin bestehenden, frei
+editierbaren Systemnamen. Beide unabhängig voneinander optional - leer
+bzw. kein Logo hochgeladen = Feature inaktiv. Zuerst bei Sensormeter WLAN
+umgesetzt (siehe dessen docs/entscheidungen.md), unverändert im Konzept
+hierher portiert.
+
+17.2 Anzeige
+- OLED: eigene rotierende Seite (siehe Abschnitt 11), nur Teil der
+  Rotation, wenn Anbietername ODER Logo gesetzt ist. Zeigt bevorzugt das
+  Logo vollflächig (128x128 füllt den ganzen Screen - ANDERS als die
+  128x64-Geschwisterprojekte, siehe Abschnitt 17.3), ohne Logo den
+  Anbietername als Textzeile.
+- Weboberfläche: Logo (falls vorhanden) und Anbietername erscheinen im
+  Kopfbereich jeder Seite.
+
+17.3 Logo-Format
+Bewusst kein PNG/JPEG (hätte eine Decoder-Bibliothek und damit
+30-80 KB zusätzliches Flash gekostet, bei diesem Board mit 16 MB Flash
+zwar unkritisch, aber bewusst identisch zu den Geschwisterprojekten
+gehalten): festes Rohformat, 128x128 Pixel (SH1107), 1 Bit pro Pixel,
+MSB-zuerst je Zeile, exakt 2048 Byte - identisch zu dem, was
+Adafruit_GFX::drawBitmap() für die OLED-Seiten ohnehin erwartet.
+Erzeugbar mit scripts/convert-logo.ps1 -Display poe.
+
+17.4 Konfiguration (Einstellungsseite, siehe Abschnitt 6)
+- Anbietername (Textfeld)
+- Logo hochladen (Datei-Upload, .bin, exakt 2048 Byte erwartet)
+- Logo entfernen (Button, nur sichtbar wenn ein Logo hinterlegt ist)
+
+17.5 Web-Auslieferung des Logos
+Eigener Endpunkt GET /branding/logo.bmp liefert das gespeicherte Rohformat
+on-the-fly als minimalen 1-Bit-Windows-BMP aus (kein PNG-Encoder nötig) -
+direkt per <img>-Tag im Browser darstellbar.
+
+------------------------------------------------------------

@@ -122,12 +122,12 @@
 <header>
   <div class="eyebrow">Firmware-Projekt · Hobby / Privat</div>
   <h1>SENSORMETER POE</h1>
-  <div class="subtitle">Waveshare ESP32-S3-ETH (W5500) — DHT-22 ×2, OLED SH1107, RJ45-Modularanschluss, Relais, MQTT/Home Assistant</div>
+  <div class="subtitle">Waveshare ESP32-S3-ETH (W5500) — DHT-22 ×2, OLED SH1107, RJ45-Modularanschluss, Relais, MQTT/Home Assistant, Anbieter-Branding</div>
   <div class="badges">
     <span class="badge-orange badge">v0.1.0-p0 · erste Fassung</span>
     <span class="badge-warn badge">ungeprüft auf Hardware</span>
     <span class="badge badge-navy">ESP32-S3-ETH · W5500 + WLAN</span>
-    <span class="badge badge-navy">SNMP · Syslog · MQTT · OTA</span>
+    <span class="badge badge-navy">SNMP · Syslog · MQTT · Branding · OTA</span>
     <span class="badge badge-navy">Schwesterprojekte: Sensormeter, Sensormeter WLAN</span>
   </div>
 </header>
@@ -206,7 +206,7 @@
           <span class="pill pill-new">RelayManager</span>
           <span class="pill">WebServerManager</span><span class="pill">OtaManager</span>
           <span class="pill">SNMPManager</span><span class="pill">SyslogManager</span>
-          <span class="pill pill-new">MqttManager</span>
+          <span class="pill">MqttManager</span><span class="pill pill-new">BrandingManager</span>
         </div>
       </div>
     </section>
@@ -241,8 +241,8 @@
       <table class="kpi">
         <tr><td>Version</td><td>0.1.0-p0</td></tr>
         <tr><td>Umsetzung</td><td>Erste Fassung, code-vollständig</td></tr>
-        <tr><td>Flash-Nutzung</td><td>21,4 %</td></tr>
-        <tr><td>RAM (statisch)</td><td>17,3 %</td></tr>
+        <tr><td>Flash-Nutzung</td><td>21,5 %</td></tr>
+        <tr><td>RAM (statisch)</td><td>19,2 %</td></tr>
         <tr><td>Hardware-Praxistest</td><td>ausstehend (kein Board)</td></tr>
       </table>
     </section>
@@ -259,6 +259,7 @@
         <li>Relais/Aktor: Web-Schalter, REST (<code>/api/relay</code>) und MQTT-Switch</li>
         <li>SNMP v1/v2c read-only, gleiche Basis-OID wie Sensormeter/WLAN</li>
         <li>MQTT: Home-Assistant-Discovery für Sensoren UND Relais</li>
+        <li><b>Anbieter-Branding</b> (neu): Name + Logo (128×128, 1bpp), eigene OLED-Seite und Web-Header, kein PNG-Decoder nötig (BMP-Synthese on-the-fly)</li>
         <li>Lokales OTA-Update per .bin-Upload</li>
       </ul>
     </section>

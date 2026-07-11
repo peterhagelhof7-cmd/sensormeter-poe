@@ -191,6 +191,19 @@ Zentrale Datenhaltung:
   Zustandsänderung (Relais)
 - Abonniert command_topic der Relais-Entity, delegiert an RelayManager
 
+3.11 BrandingManager
+- Anbieter-Branding (Weisslabel), siehe docs/lastenheft.txt Abschnitt 17 -
+  zuerst bei Sensormeter WLAN umgesetzt, unveraendert im Konzept portiert
+- Vendor-Name in config.xml, Logo-Binaerdaten bewusst NICHT dort, sondern
+  als eigene Rohdatei auf LittleFS (/branding-logo.bin, 2048 Byte fest:
+  128x128 1bpp - ANDERS als die 128x64/1024-Byte-Geschwisterprojekte,
+  siehe DisplayManager/SH1107)
+- hasLogo() haelt den Vorhanden-Zustand in einem RAM-Cache statt bei jeder
+  Abfrage LittleFS.exists() aufzurufen (Bibliotheks-Quirk, siehe
+  sensormeter-wlan/repo/docs/entscheidungen.md)
+- Web-Auslieferung ueber WebServerManager: GET /branding/logo.bmp
+  synthetisiert on-the-fly einen minimalen 1-Bit-BMP aus dem Rohformat
+
 ------------------------------------------------------------
 
 4. DATENSPEICHERUNG
@@ -214,6 +227,13 @@ struct HourValue {
 - Netzwerkparameter (Ethernet + WLAN getrennt)
 - Sensorparameter (Kalibrierung, Sensor-2-Aktivierung/-Name)
 - SNMP-Community, Syslog-Server-IP
+- MQTT-Parameter (enabled/server/port/user/password/topicPrefix)
+- Branding-Parameter (vendorName) - Logo-Binaerdaten NICHT hier, siehe 4.4
+
+4.4 branding-logo.bin
+- Optionale Datei, nur vorhanden wenn ein Logo hochgeladen wurde
+- Rohformat: 128x128 Pixel, 1 Bit pro Pixel, MSB-zuerst je Zeile, exakt
+  2048 Byte - siehe docs/lastenheft.txt Abschnitt 17.3
 
 ------------------------------------------------------------
 
