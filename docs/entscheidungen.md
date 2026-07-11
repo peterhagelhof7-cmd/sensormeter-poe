@@ -263,3 +263,33 @@ gegenüber 21,4 % / 1.401.071 B vor dieser Änderung, +6.368 B), RAM
 bei 16-MB-Flash weiterhin vollkommen unkritisch. Lastenheft (Abschnitt
 17) und Pflichtenheft (3.11, 4.3/4.4) sowie der One-Pager entsprechend
 ergänzt.
+
+## Verdrahtungsplan interaktiv: Klick auf Draht hebt hervor + zeigt Von/Nach
+
+Auf Anfrage, familienweit für alle vier Projekte. `docs/verdrahtungsplan.html`
+war hier bereits als HTML mit Inline-SVG vorhanden (einziges Projekt der
+Familie ohne reines PDF) - daher als Erstes umgesetzt und als Vorlage für
+die übrigen drei Projekte verwendet.
+
+Jeder der 15 `<path>`-Drähte im SVG hat jetzt `data-wire`/`data-from`/
+`data-to`-Attribute sowie einen unsichtbaren, breiteren "Hit"-Pfad
+dahinter (11px statt der sichtbaren 1,6px Strichbreite - bei der dünnen
+Originallinie kaum treffbar gewesen). Klick auf einen Draht (oder seinen
+Hit-Bereich): der Draht wird hervorgehoben (dickerer Strich, Schlagschatten),
+alle anderen gedimmt, und eine Info-Zeile unter dem Schema zeigt
+"`<Von>` → `<Nach>`" (z.B. "GPIO15 → DHT-22 DATA"). Erneuter Klick auf
+denselben Draht oder Klick auf die freie Fläche hebt die Auswahl wieder auf.
+Reines Vanilla-JS (keine Bibliothek), ca. 25 Zeilen IIFE am Ende des
+`<svg>`-Blocks - passend zum Rest der Doku-Seiten dieser Familie, die
+ebenfalls ohne Build-Tooling auskommen.
+
+Für den Druckfall (`@media print`) sind Cursor-Hinweise und die Info-Zeile
+ausgeblendet, da eine PDF-Ausgabe ohnehin keine Klicks kennt.
+
+Getestet mit Headless Chrome (`--headless=new --dump-dom`) und einer
+temporären Testkopie, die per `MouseEvent`/`dispatchEvent` einen
+synthetischen Klick auf Draht `w7` (GPIO15 → DHT-22 DATA) auslöst: bestätigt
+korrektes Hervorheben (1 aktiv, 14 gedimmt), korrekten Info-Text, korrektes
+Zurücksetzen bei erneutem Klick auf denselben Draht sowie bei Klick auf die
+freie Fläche. Kein echtes Board nötig, da rein clientseitiges HTML/JS ohne
+Firmware-Bezug.
