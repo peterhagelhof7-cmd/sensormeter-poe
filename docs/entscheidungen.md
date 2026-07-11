@@ -310,3 +310,63 @@ ist - vermutlich vor dessen Fertigstellung geschrieben und nie
 nachgezogen).
 
 Rein statisches HTML/CSS/SVG ohne Firmware-Bezug, kein Board nötig.
+
+## Versionierung
+
+Bisher war `DEVICE_FIRMWARE_VERSION` mit `0.1.0-p0` an ein phasenbasiertes
+Schema angelehnt (wie ursprünglich bei Sensormeter), ohne dass hier je
+weitere Phasenstände (`-p1`, `-p2`, ...) gepflegt wurden - die Firmware war
+von Anfang an in einem Rutsch code-vollständig gemäß Lastenheft/
+Pflichtenheft, nur nie auf echter Hardware verifiziert.
+
+**Umstellung auf Semantic Versioning**, analog zu Sensormeter WLAN,
+Sensormeter Display und Sensormeter (alle drei zuvor bereits umgestellt,
+siehe deren jeweilige `entscheidungen.md`): aktueller Stand auf
+**`0.9.0-rc4`** (Beta) gesetzt - gleiches Kriterium wie bei den drei
+Geschwisterprojekten: alle Kernfunktionen aus dem Lastenheft sind
+umgesetzt, aber nicht auf echter Hardware verifiziert, daher
+Release-Candidate-Status statt `1.0.0`.
+
+Die Versionsnummer lebt weiterhin als einzige Quelle der Wahrheit in
+`firmware/include/config.h(.example)`, zusätzlich in README und
+One-Pager (Badge + Kennzahlen-Tabelle) vermerkt.
+
+## Serial-Kommandozeile + Werksreset-Umfangsauswahl (Port aus Sensormeter WLAN)
+
+Beide Features wurden zuerst in Sensormeter WLAN gebaut und auf echter
+Hardware verifiziert, dann hierher portiert (identisches Muster wie beim
+Port nach Sensormeter, siehe dortige `entscheidungen.md`) - im selben
+Arbeitsgang wie die Versionierungs-Umstellung oben.
+
+**Serial-Kommandozeile** (`handleSerialCommands()` in `main.cpp`):
+`status`, `dhcp <lan|wlan>`, `ip <lan|wlan> <ip> <maske> <gateway> [dns]`,
+`wifi <ssid> <passwort>`, `dump`/`upload`, `reset`/`reset all`. Zwei
+Interfaces (LAN + optionales WLAN) wie bei Sensormeter, daher brauchen
+`dhcp`/`ip` ein Interface-Argument; `wifi` bleibt WLAN-only. `status` gibt
+zusätzlich LAN-Status/-IP, Sensor 2 (falls `sensor2Enabled`) sowie den
+Relais-Zustand aus - Letzteres gibt es bei keinem der Geschwisterprojekte,
+da nur Sensormeter PoE einen Aktor hat. Anders als bei Sensormeter (WT32-
+ETH01, kein Taster möglich) ist dies hier NICHT der einzige
+Netzwerk-unabhängige Reset-Weg - der bestehende BOOT-Taster
+(`ButtonManager`, 3s+20s halten) bleibt als zusätzlicher, unveränderter
+Codepfad bestehen.
+
+**Werksreset-Umfangsauswahl** (`handleApiFactoryReset()` in
+`WebServerManager.cpp`): identische Umstellung wie bei Sensormeter WLAN und
+Sensormeter - vier Umfänge (Alles / Nur Konfiguration / Nur Messwerte / Nur
+Anbieter-Branding) statt der bisherigen zwei Buttons, inkl.
+JS-Bestätigungsdialog. Behebt denselben vorbestehenden Bug wie bei den
+Geschwisterprojekten: der alte "Einstellungen + Daten"-Reset löschte nie
+die Logo-Datei - jetzt rufen "Alles" und "Nur Anbieter-Branding"
+`_branding.deleteLogo()` auf. "Nur Konfiguration" bewahrt
+`brandingVendorName` gezielt (inkl. `relayEnabled` und aller MQTT-Felder,
+die es nur hier gibt).
+
+Die BOOT-Taster-Logik (`ButtonManager`) bleibt bewusst unverändert - sie
+ist eigenständig, nicht Teil dieser Werksreset-Umfangsauswahl, die sich
+explizit nur auf den Werksreset-Button im Webserver bezieht.
+
+Nur per `pio run` gebaut (kein Board für Sensormeter PoE vorhanden), Build
+erfolgreich (Flash 21,6 %, RAM 19,3 %, minimal gestiegen gegenüber der
+vorherigen Fassung). Noch nicht auf echter Hardware verifiziert - bereits
+bekannter offener Punkt (s.o.).

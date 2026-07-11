@@ -384,16 +384,15 @@ String WebServerManager::buildSettingsPageBody() const {
   html += "<form method=\"POST\" action=\"/api/config/import\" enctype=\"multipart/form-data\">";
   html += "<input type=\"file\" name=\"file\" accept=\".xml\"><input type=\"submit\" value=\"XML Import\">";
   html += "</form>";
-  html += "<form method=\"POST\" action=\"/api/factory-reset\" "
-          "onsubmit=\"return confirm('Wirklich alle Einstellungen auf Werkszustand zuruecksetzen? "
-          "LAN/WLAN-Zugangsdaten, Kalibrierung etc. gehen verloren.')\">";
-  html += "<input type=\"hidden\" name=\"scope\" value=\"settings\">";
-  html += "<input type=\"submit\" value=\"Werksreset (nur Einstellungen)\"></form>";
-  html += "<form method=\"POST\" action=\"/api/factory-reset\" "
-          "onsubmit=\"return confirm('Wirklich Einstellungen UND den gespeicherten Verlauf loeschen? "
-          "Das laesst sich nicht rueckgaengig machen.')\">";
-  html += "<input type=\"hidden\" name=\"scope\" value=\"all\">";
-  html += "<input type=\"submit\" value=\"Werksreset (Einstellungen + Daten)\"></form>";
+  html += "<form method=\"POST\" action=\"/api/factory-reset\" id=\"resetForm\" onsubmit=\"return confirmReset()\">";
+  html += "<label>Werksreset - was zuruecksetzen?"
+          "<select name=\"scope\" id=\"resetScope\">"
+          "<option value=\"all\">Alles (Einstellungen + Messwerte + Branding)</option>"
+          "<option value=\"config\">Nur Konfiguration (LAN, WLAN, Passwort, Kalibrierung, Syslog, SNMP, MQTT, Relais - Branding bleibt erhalten)</option>"
+          "<option value=\"values\">Nur Messwerte (7-Tage-Verlauf)</option>"
+          "<option value=\"branding\">Nur Anbieter-Branding (Name + Logo)</option>"
+          "</select></label>";
+  html += "<input type=\"submit\" value=\"Werksreset durchfuehren\"></form>";
   html += "</div>";
 
   html += "<div class=\"block\"><h2>Firmware</h2>";
@@ -446,6 +445,15 @@ String WebServerManager::buildSettingsPageBody() const {
           "const body=new URLSearchParams({on:d.on?'0':'1'});"
           "fetch('/api/relay',{method:'POST',body}).then(refreshRelayState);});}";
   html += "refreshRelayState();";
+  html += "function confirmReset(){"
+          "var s=document.getElementById('resetScope').value;"
+          "var m={"
+          "all:'Wirklich ALLES zuruecksetzen (Einstellungen, Messwerte UND Branding)? Das laesst sich nicht rueckgaengig machen.',"
+          "config:'Wirklich die Konfiguration zuruecksetzen (LAN/WLAN-Zugangsdaten, Passwort, Kalibrierung, Relais etc. gehen verloren, Branding bleibt erhalten)?',"
+          "values:'Wirklich den gespeicherten 7-Tage-Verlauf loeschen? Das laesst sich nicht rueckgaengig machen.',"
+          "branding:'Wirklich das Anbieter-Branding (Name + Logo) entfernen?'"
+          "};"
+          "return confirm(m[s]||'Wirklich zuruecksetzen?');}";
   html += "</script>";
 
   return html;
@@ -829,14 +837,39 @@ void WebServerManager::handleApiWifiConnect(AsyncWebServerRequest* request) {
 void WebServerManager::handleApiFactoryReset(AsyncWebServerRequest* request) {
   if (!checkAuth(request)) return;
 
-  String scope = request->hasParam("scope", true) ? request->getParam("scope", true)->value() : "settings";
-  _config.setConfig(DeviceConfig());  // Defaults - setConfig() speichert sofort nach config.xml
+  String scope = request->hasParam("scope", true) ? request->getParam("scope", true)->value() : "all";
 
-  if (scope == "all") {
+  if (scope == "values") {
+    // Nur der 7-Tage-Verlauf - config.xml bleibt komplett unangetastet.
     LittleFS.remove("/history.csv");
-    _data.pushLogEntry("Werksreset: Einstellungen und Verlaufsdaten geloescht", 3);
+    _data.pushLogEntry("Werksreset: Messwerte (7-Tage-Verlauf) geloescht", 3);
+
+  } else if (scope == "config") {
+    // Alle DeviceConfig-Felder (LAN, WLAN, Passwort, beide Sensoren, Relais,
+    // Syslog, SNMP, MQTT) auf Standard, AUSSER brandingVendorName - Branding
+    // hat mit "branding" einen eigenen Reset-Umfang.
+    String keepBrandingName = _config.getConfig().brandingVendorName;
+    DeviceConfig fresh;
+    fresh.brandingVendorName = keepBrandingName;
+    _config.setConfig(fresh);
+    _data.pushLogEntry("Werksreset: Konfiguration auf Standardwerte zurueckgesetzt (Branding erhalten)", 3);
+
+  } else if (scope == "branding") {
+    // Nur Anbietername + Logo-Datei - alle uebrigen Einstellungen bleiben
+    // unangetastet.
+    DeviceConfig cfg = _config.getConfig();
+    cfg.brandingVendorName = "";
+    _config.setConfig(cfg);
+    _branding.deleteLogo();
+    _data.pushLogEntry("Werksreset: Anbieter-Branding entfernt", 3);
+
   } else {
-    _data.pushLogEntry("Werksreset: Einstellungen auf Standardwerte zurueckgesetzt", 3);
+    // scope=="all" oder fehlender/unbekannter Wert - vollstaendiger Reset
+    // als sicherste Default-Annahme.
+    _config.setConfig(DeviceConfig());
+    LittleFS.remove("/history.csv");
+    _branding.deleteLogo();
+    _data.pushLogEntry("Werksreset: Alles zurueckgesetzt (Einstellungen, Messwerte, Branding)", 3);
   }
 
   request->send(200, "text/plain", "Zurueckgesetzt, Geraet startet neu ...");

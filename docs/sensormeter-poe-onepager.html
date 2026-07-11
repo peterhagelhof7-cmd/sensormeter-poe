@@ -134,7 +134,7 @@
   </div>
   <div class="subtitle">Waveshare ESP32-S3-ETH (W5500) — DHT-22 ×2, OLED SH1107, RJ45-Modularanschluss, Relais, MQTT/Home Assistant, Anbieter-Branding</div>
   <div class="badges">
-    <span class="badge-orange badge">v0.1.0-p0 · erste Fassung</span>
+    <span class="badge-orange badge">v0.9.0-rc4 · Beta</span>
     <span class="badge-warn badge">ungeprüft auf Hardware</span>
     <span class="badge badge-navy">ESP32-S3-ETH · W5500 + WLAN</span>
     <span class="badge badge-navy">SNMP · Syslog · MQTT · Branding · OTA</span>
@@ -249,10 +249,10 @@
     <section>
       <h2>Status &amp; Kennzahlen</h2>
       <table class="kpi">
-        <tr><td>Version</td><td>0.1.0-p0</td></tr>
-        <tr><td>Umsetzung</td><td>Erste Fassung, code-vollständig</td></tr>
-        <tr><td>Flash-Nutzung</td><td>21,5 %</td></tr>
-        <tr><td>RAM (statisch)</td><td>19,2 %</td></tr>
+        <tr><td>Version</td><td>0.9.0-rc4 (Beta)</td></tr>
+        <tr><td>Umsetzung</td><td>Code-vollständig gemäß Lastenheft/Pflichtenheft</td></tr>
+        <tr><td>Flash-Nutzung</td><td>21,6 %</td></tr>
+        <tr><td>RAM (statisch)</td><td>19,3 %</td></tr>
         <tr><td>Hardware-Praxistest</td><td>ausstehend (kein Board)</td></tr>
       </table>
     </section>
@@ -271,6 +271,8 @@
         <li>MQTT: Home-Assistant-Discovery für Sensoren UND Relais</li>
         <li><b>Anbieter-Branding</b> (neu): Name + Logo (128×128, 1bpp), eigene OLED-Seite und Web-Header, kein PNG-Decoder nötig (BMP-Synthese on-the-fly)</li>
         <li>Lokales OTA-Update per .bin-Upload</li>
+        <li>Werksreset mit wählbarem Umfang (Alles / nur Konfiguration / nur Messwerte / nur Branding)</li>
+        <li>Serial-Kommandozeile per USB (dhcp/ip/wifi/status/dump/upload/reset) als Fallback ohne Netzwerkzugriff</li>
       </ul>
     </section>
 

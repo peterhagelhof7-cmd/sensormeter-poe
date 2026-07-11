@@ -22,11 +22,12 @@ Anbindung und Anbieter-Branding gibt es inzwischen auch bei Sensormeter
 und Sensormeter WLAN (Sensor-Rolle) - hier zusätzlich um die Aktor-Rolle
 (Relais) beim MQTT erweitert.
 
-**Status:** erste Firmware-Fassung (`0.1.0-p0`), code-vollständig gemäß
+**Status:** `0.9.0-rc4` (Beta) — code-vollständig gemäß
 Lastenheft/Pflichtenheft, mit `pio run` gebaut und verifiziert - **noch
 nicht auf echter Hardware getestet/geflasht** (kein Board zum
-Erstellungszeitpunkt vorhanden). Siehe
-[docs/entscheidungen.md](docs/entscheidungen.md).
+Erstellungszeitpunkt vorhanden). Versionsschema (Umstellung von
+phasenbasiert auf SemVer) siehe
+[docs/entscheidungen.md](docs/entscheidungen.md#versionierung).
 
 [**One-Pager (HTML)**](docs/sensormeter-poe-onepager.html) — kompakte Projektübersicht auf einer Seite.
 
