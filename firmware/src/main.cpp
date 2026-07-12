@@ -9,7 +9,10 @@
 // SensorDetector scannt beim Boot (parallel zum Netzwerk-Warten) das
 // RJ45-Modul und setzt Sensor 2 automatisch; ButtonManager wertet den
 // BOOT-Taster aus (Seitenwechsel/Werksreset); RelayManager treibt den
-// Aktor (RJ45 Pin 6/7); DisplayManager zeigt Boot-Countdown und rotierende
+// Aktor (RJ45 Pin 6/7); ContactManager liest RJ45 Pin 5 wahlweise als
+// Tuerkontakt statt als DHT22-Dateneingang (rein manuell gewaehlt ueber
+// cfg.pin5Mode, portiert aus sensormeter/repo, siehe docs/entscheidungen.md);
+// DisplayManager zeigt Boot-Countdown und rotierende
 // Infoseiten auf dem SH1107; WebServerManager stellt Hauptseite,
 // Einstellungsseite, REST-API (inkl. /api/relay) und lokalen OTA-Upload
 // bereit; SNMPManager beantwortet SNMP-v1/v2c-GET-Anfragen read-only;
@@ -31,6 +34,7 @@
 #include "BrandingManager.h"
 #include "ButtonManager.h"
 #include "ConfigManager.h"
+#include "ContactManager.h"
 #include "DataManager.h"
 #include "DisplayManager.h"
 #include "MqttManager.h"
@@ -61,12 +65,13 @@ SensorManager sensorManager(dataManager, configManager);
 SensorDetector sensorDetector(dataManager, configManager);
 ButtonManager buttonManager(dataManager, configManager);
 RelayManager relayManager(dataManager, configManager);
+ContactManager contactManager(dataManager, configManager);
 BrandingManager brandingManager(configManager);
 DisplayManager displayManager(dataManager, configManager, networkManager, timeManager, buttonManager,
                                brandingManager);
 OtaManager otaManager;
 WebServerManager webServerManager(dataManager, configManager, networkManager, otaManager, relayManager,
-                                   sensorDetector, brandingManager);
+                                   sensorDetector, contactManager, brandingManager);
 SNMPManager snmpManager(dataManager, configManager, networkManager);
 SyslogManager syslogManager(dataManager, configManager, networkManager);
 MqttManager mqttManager(dataManager, configManager, networkManager, relayManager);
@@ -93,9 +98,9 @@ MqttManager mqttManager(dataManager, configManager, networkManager, relayManager
 //                                  Verbindungsversuch nur kurz statt 5 Min.
 //                                  abgewartet wird)
 //   status                        aktuellen Zustand ausgeben (LAN, WLAN,
-//                                  IP, Signal, beide Sensoren, Relais, Heap,
-//                                  Laufzeit) - liest nur, aendert nichts,
-//                                  kein Neustart
+//                                  IP, Signal, beide Sensoren, Relais,
+//                                  Kontakt, Heap, Laufzeit) - liest nur,
+//                                  aendert nichts, kein Neustart
 //   dump                          aktuelle config.xml als XML ausgeben,
 //                                  eingerahmt von BEGIN/END-Markern
 //   upload                        wartet auf eingefuegte XML-Zeilen (z.B.
@@ -291,6 +296,11 @@ void handleSerialCommands() {
       }
       Serial.print("Relais: ");
       Serial.println(cfg.relayEnabled ? (relayManager.isOn() ? "EIN" : "AUS") : "deaktiviert");
+      if (cfg.pin5Mode == "contact") {
+        Serial.print("Kontakt (" + cfg.contactName + "): ");
+        Serial.print(contactManager.stateLabel());
+        Serial.println(contactManager.alarmActive() ? " (Alarm)" : "");
+      }
       Serial.print("Freier Heap: ");
       Serial.print(ESP.getFreeHeap() / 1024);
       Serial.println(" kB");
@@ -346,6 +356,7 @@ void setup() {
   sensorManager.begin();
   buttonManager.begin();
   relayManager.begin();
+  contactManager.begin();
   brandingManager.begin();
   syslogManager.begin();
   mqttManager.begin();
@@ -371,6 +382,7 @@ void loop() {
   networkManager.loop();
   timeManager.loop();
   sensorManager.loop();
+  contactManager.loop();
   buttonManager.loop();
   displayManager.loop();
   snmpManager.loop();

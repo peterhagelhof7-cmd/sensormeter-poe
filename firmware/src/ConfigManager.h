@@ -28,6 +28,7 @@
 //     <sensor1 tempOffset="0.0" humOffset="0.0" calibratedTs="0"/>
 //     <sensor2 enabled="false" name="Extern" tempOffset="0.0" humOffset="0.0" calibratedTs="0"/>
 //   </sensors>
+//   <kontakt pin5Mode="sensor" name="Kontakt" alarmAt="open"/>
 //   <snmp community="public"/>
 //   <aktor relayEnabled="false"/>
 //   <mqtt enabled="false" server="" port="1883" user="" password="" topicPrefix=""/>
@@ -81,6 +82,28 @@ struct DeviceConfig {
   // SensorDetector).
   bool sensor2Enabled = false;
   String sensor2Name = "Extern";
+
+  // RJ45 Pin 5 wird wahlweise als Sensor-2-DHT-Dateneingang ODER als
+  // Tuerkontakt-Eingang genutzt (Kategorie-2-Direktmodul, siehe
+  // sensormeter-family/repo/module-design/README.md "Durchschleif-Regel")
+  // - beide Belegungen liegen elektrisch auf demselben Pin und schliessen
+  // sich daher gegenseitig aus. "sensor" (Default) entspricht dem
+  // bisherigen Verhalten unveraendert; sensor2Enabled bleibt der Ein/Aus-
+  // Schalter INNERHALB des Sensor-Modus (siehe SensorManager/SensorDetector).
+  // Portiert aus sensormeter/repo (WT32-ETH01), siehe dortige
+  // docs/entscheidungen.md.
+  String pin5Mode = "sensor";  // "sensor" | "contact"
+
+  // Kontakt-Eingang (nur wirksam, wenn pin5Mode == "contact") - eigener,
+  // binaerer Datenpfad statt Wiederverwendung von Sensor 2, da ein Kontakt
+  // offen/geschlossen liefert und NICHT in dessen Temperatur/Feuchte-Schema
+  // passt. contactName wird in der Weboberflaeche auf 20 Zeichen begrenzt.
+  // contactAlarmAt legt fest, welcher Zustand als Alarm gilt: "open" = Alarm
+  // bei offenem Kontakt (Default), "closed" = Alarm bei geschlossenem
+  // Kontakt, "change" = Alarm bei JEDEM Zustandswechsel (kantengetriggert,
+  // siehe ContactManager).
+  String contactName = "Kontakt";
+  String contactAlarmAt = "open";  // "open" | "closed" | "change"
 
   String snmpCommunity = "public";
 

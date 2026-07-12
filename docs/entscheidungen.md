@@ -414,3 +414,36 @@ volle Begründung und Verifizierungsstand dort in `docs/entscheidungen.md`
 hier die bereits bekannte PlatformIO-Paket-Pool-Isolation ("pioarduino"
 vs. "espressif32") - `flash.sh` muss dafür nichts Zusätzliches tun, ebenso
 wie `flash.ps1` schon nicht.
+
+## Tuerkontakt auf RJ45 Pin 5 aus `sensormeter` nachgerüstet ("Modultyp" Sensor/Kontakt, Kategorie-1/2-Gliederung der Einstellungsseite)
+
+Portiert das im Sensormeter-Projekt (WT32-ETH01) neu eingeführte
+Kontakt-Feature 1:1 nach - siehe dortige `docs/entscheidungen.md`
+("Türkontakt auf RJ45 Pin 5 (Modultyp-Auswahl Sensor/Kontakt)" und
+"Einstellungsseite neu gegliedert...") für die volle Design-Begründung.
+Hier nur die projektspezifischen Abweichungen:
+
+- Gleiche Pin-Rolle (`PIN_RJ45_PIN5_RESERVE`), andere GPIO-Nummer (16 statt
+  15 beim WT32-ETH01, siehe `pins.h`) - `ContactManager` selbst ist
+  unverändert übernommen (verwendet nur das Makro, keine Literalzahl).
+- `ConfigManager`: `<kontakt pin5Mode="sensor" name="Kontakt"
+  alarmAt="open"/>` identisch zu Sensormeter, eingefügt zwischen
+  `<sensors>` und `<snmp>` im Schema.
+- `WebServerManager`: identische Gliederung ("Externe Schnittstelle" →
+  Kategorie 1 (I2C, immer sichtbare Erkennungsanzeige) / Kategorie 2
+  (Relais + Pin-5-Modultyp-Pulldown mit Sensor-/Kontakt-Feldern) inkl.
+  `.subsection`-CSS. Anders als Sensormeter hat dieses Projekt zusätzlich
+  einen BOOT-Taster (`ButtonManager`) - davon unberührt, da Pin 5 damit
+  nichts zu tun hat.
+- `SensorManager::readExternalSensorIfEnabled()` und
+  `SensorDetector::runDetection()` erhalten dieselbe `pin5Mode`-Absicherung
+  wie bei Sensormeter (DHT-Lesepfad/-Sondierung nur im Modus "sensor").
+- Serial-CLI `status`-Kommando um Kontakt-Zeile ergänzt, analog Relais.
+
+Flash-Kosten: 21,7 % (1.425.315 von 6.553.600 Byte, ESP32-S3 mit 8 MB statt
+4 MB Flash - deutlich mehr Reserve als beim WT32-ETH01, daher hier keine
+Notwendigkeit, den Flash-Zuwachs separat zu beziffern). RAM 19,3 %.
+
+Nur per `pio run` gebaut (kein Board für Sensormeter PoE vorhanden) - wie
+bei allen bisherigen Portierungen in dieses Projekt nur per Code-Review
+verifiziert, nicht auf echter Hardware getestet.

@@ -72,8 +72,12 @@ void SensorDetector::runDetection() {
     break;  // erster Treffer genuegt (Lastenheft beschreibt genau ein Modul)
   }
 
-  // Schritt 2: kein I2C-Geraet -> DHT-Leseversuch auf RJ45 Pin 5.
-  if (_detectedType == ModuleType::NONE) {
+  // Schritt 2: kein I2C-Geraet -> DHT-Leseversuch auf RJ45 Pin 5 - nur, wenn
+  // der Pin ueberhaupt als Sensor-Eingang konfiguriert ist (nicht als
+  // Kontakt-Eingang, siehe ConfigManager::pin5Mode). Ein DHT-Leseversuch auf
+  // einem gesteckten Kontaktmodul wuerde ohnehin nur fehlschlagen, aber
+  // unnoetig Zeit kosten.
+  if (_detectedType == ModuleType::NONE && _config.getConfig().pin5Mode == "sensor") {
     float humidity = dhtProbe.readHumidity();
     float temperature = dhtProbe.readTemperature();
     if (!isnan(humidity) && !isnan(temperature)) {

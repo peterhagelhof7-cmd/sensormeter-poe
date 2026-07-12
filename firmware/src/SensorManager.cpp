@@ -77,6 +77,7 @@ void SensorManager::readInternalSensor() {
 void SensorManager::readExternalSensorIfEnabled() {
   const DeviceConfig& cfg = _config.getConfig();
   if (!cfg.sensor2Enabled) return;
+  if (cfg.pin5Mode != "sensor") return;  // Pin 5 als Kontakt-Eingang belegt
 
   float humidity = dhtExternal.readHumidity();
   float temperature = dhtExternal.readTemperature();
