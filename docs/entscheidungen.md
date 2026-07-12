@@ -403,3 +403,14 @@ Array-Inhalt ersetzen, nicht von Hand editieren.
 Nur per `pio run` gebaut (kein Board für Sensormeter PoE vorhanden) - beide
 Zweige (Logo fehlt → automatisch schreiben; Logo vorhanden → nichts tun)
 nur per Code-Review verifiziert, nicht auf echter Hardware getestet.
+
+## `scripts/flash.sh`: Mac-/Linux-Unterstützung umgesetzt
+
+Neues `scripts/flash.sh` (Bash-Pendant zu `flash.ps1` für macOS - nur
+Apple Silicon/arm64 - und Linux, nur Flashen, kein `convert-logo`/
+`snmp-load`-Äquivalent) identisch aus dem Sensormeter-Repo übernommen -
+volle Begründung und Verifizierungsstand dort in `docs/entscheidungen.md`
+("`scripts/flash.sh`: Mac-/Linux-Unterstützung umgesetzt"). Betrifft auch
+hier die bereits bekannte PlatformIO-Paket-Pool-Isolation ("pioarduino"
+vs. "espressif32") - `flash.sh` muss dafür nichts Zusätzliches tun, ebenso
+wie `flash.ps1` schon nicht.

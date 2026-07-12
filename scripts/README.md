@@ -68,10 +68,46 @@ Falls PowerShell die Ausführung wegen der Execution Policy verweigert:
 powershell -ExecutionPolicy Bypass -File .\flash.ps1
 ```
 
-**Geplant, noch nicht umgesetzt:** Mac-Unterstützung, ausdrücklich nur für
-Apple-Silicon-Macs (ARM, kein Intel-Mac) - siehe
-[`../docs/entscheidungen.md`](../docs/entscheidungen.md) für offene Fragen
-zur Umsetzung.
+## flash.sh (macOS/Linux)
+
+Bash-Pendant zu `flash.ps1` für macOS (**nur Apple Silicon/arm64, kein
+Intel-Mac**) und Linux – liegt identisch in allen vier Repos, analog zu
+`flash.ps1`. Deckt bewusst **nur** den Flash-Vorgang ab: `convert-logo.ps1`
+und `snmp-load.ps1` bleiben Windows-only, es gibt (noch) keine
+Bash-Fassung davon.
+
+Gleicher Ablauf wie `flash.ps1` (Projekt wählen → Python/Git/PlatformIO
+prüfen/installieren → Repo klonen/aktualisieren → `config.h` anlegen →
+`pio run` → `pio run --target upload`), nur mit plattformgerechten
+Anpassungen:
+
+- **Werkzeug-Installation**: über Homebrew (`brew`) auf macOS, über den
+  erkannten Paketmanager (`apt`/`dnf`/`pacman`/`zypper`) auf Linux –
+  Homebrew selbst wird nicht automatisch installiert, das Skript bricht
+  mit einem Hinweis auf <https://brew.sh> ab, falls es fehlt.
+- **Serielle Geräte** statt COM-Ports: `/dev/cu.*` auf macOS,
+  `/dev/ttyUSB*`/`/dev/ttyACM*` auf Linux.
+- **PEP-668-Fallback**: schlägt die PlatformIO-Installation wegen
+  „externally-managed-environment" fehl (neuere Debian-/Ubuntu-Versionen),
+  wird automatisch mit `--break-system-packages` erneut versucht (betrifft
+  nur das `platformio`-Paket selbst).
+
+```bash
+./flash.sh                                          # fragt interaktiv nach dem Projekt
+./flash.sh --project wlan                           # Projekt direkt angeben
+./flash.sh --project wlan --port /dev/cu.usbserial-1410
+./flash.sh --project display --skip-upload          # nur bauen, nicht flashen
+./flash.sh --project poe --repo-path ~/Projekte/sensormeter-poe
+```
+
+Ausführbar machen, falls das Ausführungsbit beim Kopieren verloren ging:
+`chmod +x flash.sh`.
+
+**Linux-Hinweis:** Der eigene Benutzer braucht Zugriff auf das serielle
+Gerät (meist Gruppe `dialout` bei Debian/Ubuntu, `uucp` bei Arch) –
+`sudo usermod -aG dialout $USER` und danach ab-/anmelden, falls
+`pio run --target upload` mit „Permission denied" auf `/dev/ttyUSB0` o. Ä.
+fehlschlägt.
 
 ## convert-logo.ps1
 

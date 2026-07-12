@@ -53,7 +53,8 @@ phasenbasiert auf SemVer) siehe
 | [board-recherche.md](board-recherche.md) | Board-Auswahl, Preisvergleich, GPIO-Budget-Begründung |
 | [docs/ESP32-S3-ETH-Datenblatt.pdf](docs/ESP32-S3-ETH-Datenblatt.pdf) | Zusammengestelltes Hersteller-Datenblatt (Pinout, Maße, Bestückung) |
 | [scripts/flash.ps1](scripts/flash.ps1) | PowerShell-Skript (fragt zuerst nach Projekt: Sensormeter/WLAN/Display/PoE): Abhängigkeiten installieren, Repo holen, bauen, flashen |
-| [scripts/README.md](scripts/README.md) | Ausführliche Doku zu `flash.ps1` und `convert-logo.ps1` (Nutzung, Parameter, Beispiele) |
+| [scripts/flash.sh](scripts/flash.sh) | Bash-Pendant zu `flash.ps1` für macOS (nur Apple Silicon) und Linux, nur Flashen |
+| [scripts/README.md](scripts/README.md) | Ausführliche Doku zu `flash.ps1`/`flash.sh` und `convert-logo.ps1` (Nutzung, Parameter, Beispiele) |
 
 ## Hardware
 
