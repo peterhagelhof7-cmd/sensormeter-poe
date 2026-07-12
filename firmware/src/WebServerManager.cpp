@@ -337,9 +337,58 @@ String WebServerManager::buildSettingsPageBody() const {
           "> Relais aktiv (Pin 6/7)</label>";
   html += "<div class=\"row\"><span>Aktueller Zustand</span><span id=\"relayState\">-</span></div>";
   html += "<button type=\"button\" onclick=\"toggleRelay()\">Relais schalten</button>";
-  html += "<p class=\"hint\">Rein manuell - ein Relais-Modul kann nicht automatisch erkannt werden. "
-          "Unabhaengig vom Pin-5-Modultyp unten, da sich die RJ45-Pins nicht ueberschneiden - ein Kombi-Modul "
-          "mit Sensor/Kontakt UND Relais ist moeglich.</p>";
+  html += "<p class=\"hint\">Manuelles Schalten - ein Relais-Modul kann nicht automatisch <b>erkannt</b> "
+          "werden. Unabhaengig vom Pin-5-Modultyp unten, da sich die RJ45-Pins nicht ueberschneiden - ein "
+          "Kombi-Modul mit Sensor/Kontakt UND Relais ist moeglich.</p>";
+
+  html += "<label>Automatisch schalten<select name=\"relayAutoMode\" id=\"relayAutoMode\" "
+          "onchange=\"toggleRelayAuto()\">"
+          "<option value=\"off\"" + String(cfg.relayAutoMode == "off" ? " selected" : "") + ">Nein</option>"
+          "<option value=\"sensor\"" + String(cfg.relayAutoMode == "sensor" ? " selected" : "") + ">Sensor</option>"
+          "</select></label>";
+
+  html += "<div id=\"relayAutoFields\">";
+  html += "<label>Quelle<select name=\"relayAutoSource\" id=\"relayAutoSource\" "
+          "onchange=\"toggleRelayAutoSource()\">"
+          "<option value=\"sensor1\"" + String(cfg.relayAutoSource == "sensor1" ? " selected" : "") +
+          ">Sensor 1 (intern)</option>"
+          "<option value=\"sensor2\"" + String(cfg.relayAutoSource == "sensor2" ? " selected" : "") +
+          ">Sensor 2 (extern)</option>"
+          "<option value=\"contact\"" + String(cfg.relayAutoSource == "contact" ? " selected" : "") +
+          ">Kontakt</option>"
+          "</select></label>";
+
+  html += "<div id=\"relayAutoSensorFields\">";
+  html += "<label>Wert<select name=\"relayAutoValue\">"
+          "<option value=\"temp\"" + String(cfg.relayAutoValue == "temp" ? " selected" : "") + ">Temperatur</option>"
+          "<option value=\"humidity\"" + String(cfg.relayAutoValue == "humidity" ? " selected" : "") +
+          ">Luftfeuchte</option>"
+          "</select></label>";
+  html += "<label>Bedingung<select name=\"relayAutoCompare\">"
+          "<option value=\"above\"" + String(cfg.relayAutoCompare == "above" ? " selected" : "") +
+          ">gr&ouml;&szlig;er als</option>"
+          "<option value=\"below\"" + String(cfg.relayAutoCompare == "below" ? " selected" : "") +
+          ">kleiner als</option>"
+          "</select></label>";
+  html += "<label>Schwellenwert<input type=\"text\" name=\"relayAutoThreshold\" value=\"" +
+          String(cfg.relayAutoThreshold, 1) + "\"></label>";
+  html += "</div>";
+
+  html += "<div id=\"relayAutoContactFields\">";
+  html += "<label>Zustand<select name=\"relayAutoContactState\">"
+          "<option value=\"open\"" + String(cfg.relayAutoContactState == "open" ? " selected" : "") +
+          ">Offen</option>"
+          "<option value=\"closed\"" + String(cfg.relayAutoContactState == "closed" ? " selected" : "") +
+          ">Geschlossen</option>"
+          "</select></label>";
+  html += "</div>";
+
+  html += "<p class=\"hint\">Relais schaltet automatisch EIN, sobald die Bedingung erfuellt ist, sonst AUS - "
+          "wird bei jedem Durchlauf neu ausgewertet und ueberschreibt dabei ein manuelles \"Relais schalten\". "
+          "Fuer dauerhaft manuelle Steuerung \"Automatisch schalten\" auf \"Nein\" stellen. Liefert die "
+          "gewaehlte Quelle keinen gueltigen Wert (Sensor nicht aktiv o.ae.), bleibt der zuletzt gesetzte "
+          "Zustand unveraendert.</p>";
+  html += "</div>";  // #relayAutoFields
 
   html += "<label>Modultyp Pin 5<select name=\"pin5Mode\" id=\"pin5Mode\" onchange=\"togglePin5Mode()\">"
           "<option value=\"sensor\"" + String(cfg.pin5Mode == "sensor" ? " selected" : "") +
@@ -485,12 +534,21 @@ String WebServerManager::buildSettingsPageBody() const {
           "document.getElementById('detectStatus').innerText=t;location.reload();});}";
   html += "function refreshRelayState(){"
           "fetch('/api/relay').then(r=>r.json()).then(d=>{"
-          "document.getElementById('relayState').innerText=d.enabled?(d.on?'EIN':'AUS'):'deaktiviert';});}";
+          "document.getElementById('relayState').innerText="
+          "(d.enabled?(d.on?'EIN':'AUS'):'deaktiviert')+(d.auto?' (automatisch)':'');});}";
   html += "function toggleRelay(){"
           "fetch('/api/relay').then(r=>r.json()).then(d=>{"
           "const body=new URLSearchParams({on:d.on?'0':'1'});"
           "fetch('/api/relay',{method:'POST',body}).then(refreshRelayState);});}";
   html += "refreshRelayState();";
+  html += "function toggleRelayAuto(){"
+          "var isAuto=document.getElementById('relayAutoMode').value==='sensor';"
+          "document.getElementById('relayAutoFields').style.display=isAuto?'':'none';}";
+  html += "function toggleRelayAutoSource(){"
+          "var isContact=document.getElementById('relayAutoSource').value==='contact';"
+          "document.getElementById('relayAutoSensorFields').style.display=isContact?'none':'';"
+          "document.getElementById('relayAutoContactFields').style.display=isContact?'':'none';}";
+  html += "toggleRelayAuto();toggleRelayAutoSource();";
   html += "function togglePin5Mode(){"
           "var isContact=document.getElementById('pin5Mode').value==='contact';"
           "document.getElementById('pin5SensorFields').style.display=isContact?'none':'';"
@@ -686,6 +744,12 @@ void WebServerManager::handleApiConfigGet(AsyncWebServerRequest* request) {
   doc["syslogServer"] = cfg.syslogServer;
   doc["snmpCommunity"] = cfg.snmpCommunity;
   doc["relayEnabled"] = cfg.relayEnabled;
+  doc["relayAutoMode"] = cfg.relayAutoMode;
+  doc["relayAutoSource"] = cfg.relayAutoSource;
+  doc["relayAutoValue"] = cfg.relayAutoValue;
+  doc["relayAutoCompare"] = cfg.relayAutoCompare;
+  doc["relayAutoThreshold"] = cfg.relayAutoThreshold;
+  doc["relayAutoContactState"] = cfg.relayAutoContactState;
   doc["mqttEnabled"] = cfg.mqttEnabled;
   doc["mqttServer"] = cfg.mqttServer;
   doc["mqttPort"] = cfg.mqttPort;
@@ -774,6 +838,29 @@ void WebServerManager::handleApiConfigPost(AsyncWebServerRequest* request) {
   }
 
   cfg.relayEnabled = request->hasParam("relayEnabled", true);
+  if (request->hasParam("relayAutoMode", true)) {
+    String mode = request->getParam("relayAutoMode", true)->value();
+    if (mode == "off" || mode == "sensor") cfg.relayAutoMode = mode;
+  }
+  if (request->hasParam("relayAutoSource", true)) {
+    String source = request->getParam("relayAutoSource", true)->value();
+    if (source == "sensor1" || source == "sensor2" || source == "contact") cfg.relayAutoSource = source;
+  }
+  if (request->hasParam("relayAutoValue", true)) {
+    String value = request->getParam("relayAutoValue", true)->value();
+    if (value == "temp" || value == "humidity") cfg.relayAutoValue = value;
+  }
+  if (request->hasParam("relayAutoCompare", true)) {
+    String compare = request->getParam("relayAutoCompare", true)->value();
+    if (compare == "above" || compare == "below") cfg.relayAutoCompare = compare;
+  }
+  if (request->hasParam("relayAutoThreshold", true)) {
+    cfg.relayAutoThreshold = request->getParam("relayAutoThreshold", true)->value().toFloat();
+  }
+  if (request->hasParam("relayAutoContactState", true)) {
+    String cs = request->getParam("relayAutoContactState", true)->value();
+    if (cs == "open" || cs == "closed") cfg.relayAutoContactState = cs;
+  }
 
   cfg.mqttEnabled = request->hasParam("mqttEnabled", true);
   if (request->hasParam("mqttServer", true)) cfg.mqttServer = request->getParam("mqttServer", true)->value();
@@ -1037,10 +1124,12 @@ void WebServerManager::handleApiNetworkApply(AsyncWebServerRequest* request) {
 
 void WebServerManager::handleApiRelayGet(AsyncWebServerRequest* request) {
   if (!checkAuth(request)) return;
+  const DeviceConfig& cfg = _config.getConfig();
   JsonDocument doc;
-  doc["enabled"] = _config.getConfig().relayEnabled;
+  doc["enabled"] = cfg.relayEnabled;
   doc["on"] = _relay.isOn();
   doc["feedback"] = _relay.feedbackOn();
+  doc["auto"] = cfg.relayEnabled && cfg.relayAutoMode == "sensor";
   String out;
   serializeJson(doc, out);
   request->send(200, "application/json", out);

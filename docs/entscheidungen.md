@@ -447,3 +447,25 @@ Notwendigkeit, den Flash-Zuwachs separat zu beziffern). RAM 19,3 %.
 Nur per `pio run` gebaut (kein Board für Sensormeter PoE vorhanden) - wie
 bei allen bisherigen Portierungen in dieses Projekt nur per Code-Review
 verifiziert, nicht auf echter Hardware getestet.
+
+## Relais: optionales automatisches Schalten nach Sensor-/Kontakt-Bedingung, aus `sensormeter` nachgerüstet
+
+Portiert 1:1 das neue automatische Relais-Schalten - siehe dortige
+`docs/entscheidungen.md` ("Relais: optionales automatisches Schalten nach
+Sensor-/Kontakt-Bedingung") für die volle Design-Begründung. Hier nur die
+projektspezifischen Punkte:
+
+- `RelayManager` bekommt denselben neuen `ContactManager&`-Parameter,
+  `main.cpp` entsprechend umgestellt (`contactManager` vor `relayManager`
+  deklariert - hier zusätzlich zwischen `buttonManager` und
+  `relayManager`, da dieses Projekt den BOOT-Taster hat).
+- Neue `DeviceConfig`-Felder identisch (`relayAutoMode` Default `"off"`),
+  gebündelt im bestehenden `<aktor>`-Element.
+- `WebServerManager`: identisches "Automatisch schalten"-Auswahlfeld samt
+  Folgefeldern in Kategorie 2, `/api/relay` liefert zusätzlich `auto`.
+
+Flash-Kosten: 21,8 % (1.431.563 von 6.553.600 Byte, +6.248 Byte gegenüber
+dem vorherigen Kontakt-Stand). RAM 19,3 %.
+
+Nur per `pio run` gebaut (kein Board für Sensormeter PoE vorhanden) - nur
+per Code-Review verifiziert, nicht auf echter Hardware getestet.

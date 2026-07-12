@@ -12,7 +12,10 @@
 // Aktor (RJ45 Pin 6/7); ContactManager liest RJ45 Pin 5 wahlweise als
 // Tuerkontakt statt als DHT22-Dateneingang (rein manuell gewaehlt ueber
 // cfg.pin5Mode, portiert aus sensormeter/repo, siehe docs/entscheidungen.md);
-// DisplayManager zeigt Boot-Countdown und rotierende
+// RelayManager kann das Relais zusaetzlich automatisch anhand eines
+// Sensor-Schwellenwerts oder des Kontaktzustands schalten (cfg.relayAutoMode,
+// ebenfalls portiert, siehe docs/entscheidungen.md); DisplayManager zeigt
+// Boot-Countdown und rotierende
 // Infoseiten auf dem SH1107; WebServerManager stellt Hauptseite,
 // Einstellungsseite, REST-API (inkl. /api/relay) und lokalen OTA-Upload
 // bereit; SNMPManager beantwortet SNMP-v1/v2c-GET-Anfragen read-only;
@@ -64,8 +67,8 @@ TimeManager timeManager(dataManager, networkManager);
 SensorManager sensorManager(dataManager, configManager);
 SensorDetector sensorDetector(dataManager, configManager);
 ButtonManager buttonManager(dataManager, configManager);
-RelayManager relayManager(dataManager, configManager);
 ContactManager contactManager(dataManager, configManager);
+RelayManager relayManager(dataManager, configManager, contactManager);
 BrandingManager brandingManager(configManager);
 DisplayManager displayManager(dataManager, configManager, networkManager, timeManager, buttonManager,
                                brandingManager);
@@ -383,6 +386,7 @@ void loop() {
   timeManager.loop();
   sensorManager.loop();
   contactManager.loop();
+  relayManager.loop();
   buttonManager.loop();
   displayManager.loop();
   snmpManager.loop();

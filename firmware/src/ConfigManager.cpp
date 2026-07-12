@@ -142,6 +142,21 @@ bool ConfigManager::importXml(const String& xml) {
   const XMLElement* aktor = root->FirstChildElement("aktor");
   if (aktor) {
     cfg.relayEnabled = parseBool(aktor->Attribute("relayEnabled"), cfg.relayEnabled);
+    String autoMode = attrOrEmpty(aktor, "autoMode");
+    if (autoMode == "off" || autoMode == "sensor") cfg.relayAutoMode = autoMode;
+    String autoSource = attrOrEmpty(aktor, "autoSource");
+    if (autoSource == "sensor1" || autoSource == "sensor2" || autoSource == "contact") {
+      cfg.relayAutoSource = autoSource;
+    }
+    String autoValue = attrOrEmpty(aktor, "autoValue");
+    if (autoValue == "temp" || autoValue == "humidity") cfg.relayAutoValue = autoValue;
+    String autoCompare = attrOrEmpty(aktor, "autoCompare");
+    if (autoCompare == "above" || autoCompare == "below") cfg.relayAutoCompare = autoCompare;
+    cfg.relayAutoThreshold = aktor->FloatAttribute("autoThreshold", cfg.relayAutoThreshold);
+    String autoContactState = attrOrEmpty(aktor, "autoContactState");
+    if (autoContactState == "open" || autoContactState == "closed") {
+      cfg.relayAutoContactState = autoContactState;
+    }
   }
 
   const XMLElement* mqtt = root->FirstChildElement("mqtt");
@@ -236,6 +251,12 @@ String ConfigManager::exportXml() const {
 
   XMLElement* aktor = doc.NewElement("aktor");
   aktor->SetAttribute("relayEnabled", _config.relayEnabled ? "true" : "false");
+  aktor->SetAttribute("autoMode", _config.relayAutoMode.c_str());
+  aktor->SetAttribute("autoSource", _config.relayAutoSource.c_str());
+  aktor->SetAttribute("autoValue", _config.relayAutoValue.c_str());
+  aktor->SetAttribute("autoCompare", _config.relayAutoCompare.c_str());
+  aktor->SetAttribute("autoThreshold", _config.relayAutoThreshold);
+  aktor->SetAttribute("autoContactState", _config.relayAutoContactState.c_str());
   root->InsertEndChild(aktor);
 
   XMLElement* mqtt = doc.NewElement("mqtt");

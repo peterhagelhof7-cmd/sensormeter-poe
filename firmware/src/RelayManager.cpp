@@ -2,14 +2,35 @@
 
 #include "pins.h"
 
-RelayManager::RelayManager(DataManager& dataManager, ConfigManager& configManager)
-    : _data(dataManager), _config(configManager) {}
+RelayManager::RelayManager(DataManager& dataManager, ConfigManager& configManager, ContactManager& contactManager)
+    : _data(dataManager), _config(configManager), _contact(contactManager) {}
 
 void RelayManager::begin() {
   pinMode(PIN_RJ45_PIN6_RELAY_OUT, OUTPUT);
   digitalWrite(PIN_RJ45_PIN6_RELAY_OUT, HIGH);  // active LOW -> HIGH = aus (sicherer Boot-Default)
   pinMode(PIN_RJ45_PIN7_RELAY_FB, INPUT_PULLUP);
   Serial.println("[RELAY] Grundgeruest bereit (Default: aus)");
+}
+
+void RelayManager::loop() {
+  const DeviceConfig& cfg = _config.getConfig();
+  if (cfg.relayAutoMode != "sensor") return;
+
+  if (cfg.relayAutoSource == "contact") {
+    if (cfg.pin5Mode != "contact") return;  // Quelle aktuell nicht verfuegbar
+    String current = _contact.isClosed() ? "closed" : "open";
+    setOn(current == cfg.relayAutoContactState);
+    return;
+  }
+
+  if (cfg.relayAutoSource == "sensor2" && (cfg.pin5Mode != "sensor" || !cfg.sensor2Enabled)) return;
+  SensorReading reading = (cfg.relayAutoSource == "sensor1") ? _data.getSensor1() : _data.getSensor2();
+  if (!reading.valid) return;  // kein gueltiger Messwert -> Zustand unveraendert lassen
+
+  float value = (cfg.relayAutoValue == "temp") ? reading.temperature : reading.humidity;
+  bool desired = (cfg.relayAutoCompare == "above") ? (value > cfg.relayAutoThreshold)
+                                                    : (value < cfg.relayAutoThreshold);
+  setOn(desired);
 }
 
 void RelayManager::setOn(bool on) {

@@ -30,7 +30,8 @@
 //   </sensors>
 //   <kontakt pin5Mode="sensor" name="Kontakt" alarmAt="open"/>
 //   <snmp community="public"/>
-//   <aktor relayEnabled="false"/>
+//   <aktor relayEnabled="false" autoMode="off" autoSource="sensor1" autoValue="temp"
+//          autoCompare="above" autoThreshold="25.0" autoContactState="closed"/>
 //   <mqtt enabled="false" server="" port="1883" user="" password="" topicPrefix=""/>
 //   <branding vendorName=""/>
 // </config>
@@ -107,12 +108,32 @@ struct DeviceConfig {
 
   String snmpCommunity = "public";
 
-  // Relais (Aktor) - rein manuell, keine Auto-Erkennung moeglich (Lastenheft
-  // Abschnitt 15.3), unabhaengig von sensor2Enabled (RJ45-Pins ueberschneiden
-  // sich nicht, siehe Abschnitt 14). Der aktuelle Schaltzustand selbst wird
-  // NICHT persistiert - RelayManager startet nach jedem Boot sicherheitshalber
-  // immer mit AUS, siehe dortige Begruendung.
+  // Relais (Aktor) - rein manuell erkennbar (keine Auto-Erkennung moeglich,
+  // Lastenheft Abschnitt 15.3), unabhaengig von sensor2Enabled (RJ45-Pins
+  // ueberschneiden sich nicht, siehe Abschnitt 14). Der aktuelle
+  // Schaltzustand selbst wird NICHT persistiert - RelayManager startet nach
+  // jedem Boot sicherheitshalber immer mit AUS, siehe dortige Begruendung.
   bool relayEnabled = false;
+
+  // Automatisches Schalten (optional, zusaetzlich zum weiterhin moeglichen
+  // manuellen Schalten) - "off" (Default, unveraendertes Verhalten) oder
+  // "sensor" (RelayManager::loop() wertet die Bedingung unten bei jedem
+  // Durchlauf neu aus und ueberschreibt dabei einen manuellen Schaltbefehl).
+  // relayAutoSource waehlt die Quelle ("sensor1" | "sensor2" | "contact");
+  // bei "sensor1"/"sensor2" vergleicht relayAutoCompare ("above" | "below")
+  // relayAutoValue ("temp" | "humidity") gegen relayAutoThreshold; bei
+  // "contact" schaltet EIN, sobald der Kontakt relayAutoContactState
+  // ("open" | "closed") erreicht. Liefert die gewaehlte Quelle keinen
+  // gueltigen Wert, bleibt der zuletzt kommandierte Zustand unveraendert
+  // (kein Aus-Fallback, um kein unbeabsichtigtes Abschalten auszuloesen).
+  // Portiert aus sensormeter/repo (WT32-ETH01), siehe dortige
+  // docs/entscheidungen.md.
+  String relayAutoMode = "off";  // "off" | "sensor"
+  String relayAutoSource = "sensor1";  // "sensor1" | "sensor2" | "contact"
+  String relayAutoValue = "temp";  // "temp" | "humidity"
+  String relayAutoCompare = "above";  // "above" | "below"
+  float relayAutoThreshold = 25.0f;
+  String relayAutoContactState = "closed";  // "open" | "closed"
 
   // Home-Assistant-Anbindung ueber MQTT-Discovery (Lastenheft Abschnitt 16).
   // Anders als bei Sensormeter WLAN ist topicPrefix hier ein echtes,
