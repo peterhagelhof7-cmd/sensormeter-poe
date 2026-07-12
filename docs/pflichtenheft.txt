@@ -180,8 +180,7 @@ Zentrale Datenhaltung:
   MQTT command_topic), damit der Zustand nie auseinanderlaufen kann
 
 3.10 MqttManager
-- PubSubClient (Arduino-Bibliothek, kein ESP-IDF nötig - siehe
-  docs/entscheidungen.md zur Matter-vs-MQTT-Abwägung)
+- PubSubClient (Arduino-Bibliothek, kein ESP-IDF nötig)
 - Verbindungsaufbau zum konfigurierten Broker (Lastenheft Abschnitt
   16.3), automatischer Reconnect bei Verbindungsverlust
 - Home-Assistant-Discovery beim (Re-)Connect: publiziert Config-Payloads

@@ -396,21 +396,6 @@ NTP FAIL → DHCP TEST → RESTORE → ERROR MODE
   Haltezeit auslösen (Fail-Safe gegen verklemmte Taster, siehe
   Abschnitt 11.1)
 
-Geprüft, bewusst NICHT umgesetzt: Matter-Integration. Trotz ESP32-S3 als
-grundsätzlich Matter-fähigem Chip (anders als der klassische ESP32 in
-Sensormeter/Sensormeter WLAN) drei konkrete Ausschlussgründe: (1) der
-verbaute W5500 (SPI-Ethernet) wird vom CHIP-SDK-Ethernet-Treiber nicht
-nativ unterstützt (erwartet einen Chip mit nativem EMAC, z. B. IP101) -
-ein lauffähiges Beispiel auf demselben Board brauchte einen
-selbstgeschriebenen Treiber; (2) das ging nur mit reinem ESP-IDF, nicht
-mit dem hier durchgängig genutzten Arduino-Framework - kein Zusatz,
-sondern ein separates Firmware-Projekt; (3) Matter braucht laut
-offizieller Arduino-Doku eine 3-MB-App-Partition ohne OTA, was der
-bereits festgelegten Zwei-Partitionen-OTA-Anforderung (Abschnitt 9 im
-Pflichtenheft) widerspricht. Stattdessen: Home-Assistant-Anbindung über
-MQTT (Abschnitt 16) - funktional vergleichbarer Nutzen, ohne diese drei
-Konflikte.
-
 ------------------------------------------------------------
 
 14. RJ45-MODULARANSCHLUSS
@@ -518,11 +503,9 @@ NICHT auf den SNMP-Sensornamen aus, der bleibt weiterhin frei über
 
 Zusätzlich zu SNMP/Syslog/Webserver: Anbindung an Home Assistant über
 MQTT mit Discovery, sodass sich das Gerät selbst anmeldet (keine
-manuelle YAML-Konfiguration auf HA-Seite nötig). Bewusst MQTT statt
-Matter gewählt (siehe docs/entscheidungen.md für die Matter-Abwägung) -
-deutlich geringerer Aufwand, keine Konflikte mit dem bestehenden
-OTA-Partitionsschema, läuft mit einer schlanken Arduino-Bibliothek
-(PubSubClient) ohne Architekturbruch.
+manuelle YAML-Konfiguration auf HA-Seite nötig). Geringer Aufwand, keine
+Konflikte mit dem bestehenden OTA-Partitionsschema, läuft mit einer
+schlanken Arduino-Bibliothek (PubSubClient) ohne Architekturbruch.
 
 16.1 Sensor-Rolle (immer aktiv)
 
