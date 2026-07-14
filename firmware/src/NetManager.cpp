@@ -212,6 +212,10 @@ void NetManager::begin() {
     // Core-seitigen Auto-Reconnect aktivieren (zusaetzlich zum aktiven
     // Reconnect in loop()), damit WLAN nach kurzem Aussetzer selbst zurueckkommt.
     WiFi.setAutoReconnect(true);
+    // WLAN-Powersave abschalten - stabilisiert die Verbindung deutlich (der
+    // ESP32-Default-Modem-Sleep verursacht mit manchen APs haeufige kurze
+    // Abbrueche). Betrifft nur WiFi, ETH ist davon unberuehrt.
+    WiFi.setSleep(false);
     WiFi.begin(cfg.wlanSsid.c_str(), cfg.wlanPsk.c_str());
     applyWlanConfig();
     Serial.println("[NET] WLAN-Verbindungsversuch gestartet (konfiguriertes Netz)");
