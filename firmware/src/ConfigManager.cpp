@@ -174,6 +174,14 @@ bool ConfigManager::importXml(const String& xml) {
     cfg.brandingVendorName = attrOrEmpty(branding, "vendorName");
   }
 
+  const XMLElement* display = root->FirstChildElement("display");
+  if (display) {
+    cfg.extDisplayPages = static_cast<uint8_t>(display->UnsignedAttribute("pages", cfg.extDisplayPages));
+    cfg.extDisplaySlideSec = static_cast<uint16_t>(display->UnsignedAttribute("slideSec", cfg.extDisplaySlideSec));
+    if (cfg.extDisplaySlideSec < 2) cfg.extDisplaySlideSec = 2;
+    if (cfg.extDisplaySlideSec > 60) cfg.extDisplaySlideSec = 60;
+  }
+
   cfg.systemType = deriveSystemType(cfg.sensor2Enabled);
   _config = cfg;
   return true;
@@ -271,6 +279,11 @@ String ConfigManager::exportXml() const {
   XMLElement* branding = doc.NewElement("branding");
   branding->SetAttribute("vendorName", _config.brandingVendorName.c_str());
   root->InsertEndChild(branding);
+
+  XMLElement* display = doc.NewElement("display");
+  display->SetAttribute("pages", _config.extDisplayPages);
+  display->SetAttribute("slideSec", _config.extDisplaySlideSec);
+  root->InsertEndChild(display);
 
   XMLPrinter printer;
   doc.Print(&printer);

@@ -10,7 +10,8 @@ static const int SCREEN_WIDTH = 128;
 static const int SCREEN_HEIGHT = 128;
 static const uint8_t EXTERNAL_DISPLAY_I2C_ADDRESS = 0x3D;
 
-static const unsigned long PAGE_INTERVAL_MS = 10UL * 1000UL;  // 10s, wie DisplayManager
+// Slide-Intervall kommt jetzt aus der Konfiguration (extDisplaySlideSec),
+// siehe slideIntervalMs() - Default 10s entspricht dem bisherigen Verhalten.
 
 // Kein dediziertes Reset-Pin (typisches 4-Pin-I2C-Modul), analog zum
 // bisherigen internen SH1107 vor dem Umbau auf SSD1306.
@@ -61,8 +62,9 @@ void ExternalDisplayManager::drawLines(const String lines[], int count) {
   int y0 = max(0, (SCREEN_HEIGHT - count * lineHeight) / 2);
 
   static const unsigned long kScrollHoldMs = 1500UL;
+  unsigned long interval = slideIntervalMs();
   unsigned long scrollWindowMs =
-      PAGE_INTERVAL_MS > kScrollHoldMs ? PAGE_INTERVAL_MS - kScrollHoldMs : PAGE_INTERVAL_MS;
+      interval > kScrollHoldMs ? interval - kScrollHoldMs : interval;
   unsigned long elapsed = millis() - _lastPageSwitchMillis;
   float progress = static_cast<float>(elapsed) / static_cast<float>(scrollWindowMs);
 
@@ -166,14 +168,50 @@ void ExternalDisplayManager::drawPage(int page) {
   }
 }
 
+unsigned long ExternalDisplayManager::slideIntervalMs() const {
+  uint16_t sec = _config.getConfig().extDisplaySlideSec;
+  if (sec < 2) sec = 2;  // Untergrenze gegen Flackern (Web-UI begrenzt ebenfalls)
+  return static_cast<unsigned long>(sec) * 1000UL;
+}
+
+bool ExternalDisplayManager::pageEnabled(int page) const {
+  if (page < 0 || page >= TOTAL_PAGES) return false;
+  // Branding-Seite nur, wenn zusaetzlich ein Anbieter-Branding aktiv ist -
+  // sonst waere die Seite leer (bisheriges Verhalten beibehalten).
+  if (page == 6 && !_branding.isActive()) return false;
+  return (_config.getConfig().extDisplayPages >> page) & 0x01;
+}
+
+int ExternalDisplayManager::nextEnabledPage(int from) const {
+  for (int i = 1; i <= TOTAL_PAGES; i++) {
+    int p = (from + i) % TOTAL_PAGES;
+    if (pageEnabled(p)) return p;
+  }
+  return -1;  // keine Seite ausgewaehlt
+}
+
+void ExternalDisplayManager::drawNoPagesPage() {
+  String lines[2];
+  lines[0] = "Slide leer";
+  lines[1] = "keine Seite";
+  drawLines(lines, 2);
+}
+
 void ExternalDisplayManager::loop() {
   if (!_initialized) return;
 
+  // Alle Seiten abgewaehlt -> Hinweis statt schwarzem Bild.
+  if (nextEnabledPage(_currentPage) < 0) {
+    drawNoPagesPage();
+    return;
+  }
+
   if (_lastPageSwitchMillis == 0) {
     _lastPageSwitchMillis = millis();
-  } else if (millis() - _lastPageSwitchMillis >= PAGE_INTERVAL_MS) {
+    if (!pageEnabled(_currentPage)) _currentPage = nextEnabledPage(_currentPage);
+  } else if (millis() - _lastPageSwitchMillis >= slideIntervalMs()) {
     _lastPageSwitchMillis = millis();
-    _currentPage = (_currentPage + 1) % pageCount();
+    _currentPage = nextEnabledPage(_currentPage);
   }
   drawPage(_currentPage);
 }

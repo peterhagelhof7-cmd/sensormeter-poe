@@ -455,6 +455,22 @@ String WebServerManager::buildSettingsPageBody() const {
           "Kopfbereich der Weboberfläche, sobald Name und/oder Logo gesetzt sind.</p>";
   html += "</div>";
 
+  html += "<div class=\"block\"><h2>Externes Display (SH1107)</h2>";
+  html += "<p class=\"hint\">Optionales externes Anzeige-Modul (I2C 0x3D): welche Infoseiten in der "
+          "Slide-Rotation erscheinen und wie lange jede Seite steht. Betrifft nur das externe Modul, "
+          "nicht das interne Display.</p>";
+  html += "<label><input type=\"checkbox\" name=\"extDispSystemName\" " + String((cfg.extDisplayPages & (1 << 0)) ? "checked" : "") + "> Systemname</label>";
+  html += "<label><input type=\"checkbox\" name=\"extDispIps\" " + String((cfg.extDisplayPages & (1 << 1)) ? "checked" : "") + "> IP-Adressen (LAN/WLAN)</label>";
+  html += "<label><input type=\"checkbox\" name=\"extDispTime\" " + String((cfg.extDisplayPages & (1 << 2)) ? "checked" : "") + "> Uhrzeit</label>";
+  html += "<label><input type=\"checkbox\" name=\"extDispSensors\" " + String((cfg.extDisplayPages & (1 << 3)) ? "checked" : "") + "> Sensorwerte</label>";
+  html += "<label><input type=\"checkbox\" name=\"extDispStatus\" " + String((cfg.extDisplayPages & (1 << 4)) ? "checked" : "") + "> Netzwerkstatus</label>";
+  html += "<label><input type=\"checkbox\" name=\"extDispSignal\" " + String((cfg.extDisplayPages & (1 << 5)) ? "checked" : "") + "> WLAN-Signal</label>";
+  html += "<label><input type=\"checkbox\" name=\"extDispBranding\" " + String((cfg.extDisplayPages & (1 << 6)) ? "checked" : "") + "> Anbieter-Branding (nur wenn gesetzt)</label>";
+  html += "<label>Slide-Dauer je Seite (Sekunden)<input type=\"number\" name=\"extDispSlideSec\" min=\"2\" max=\"60\" value=\"" + String(cfg.extDisplaySlideSec) + "\"></label>";
+  html += "<p class=\"hint\">Sind alle Seiten abgewaehlt, zeigt das externe Display einen Hinweis. "
+          "Die Branding-Seite erscheint nur, wenn zusaetzlich ein Anbieter-Branding gesetzt ist.</p>";
+  html += "</div>";
+
   html += "<div class=\"block\"><input type=\"submit\" value=\"Speichern (LittleFS)\"></div>";
   html += "</form>";
 
@@ -757,6 +773,8 @@ void WebServerManager::handleApiConfigGet(AsyncWebServerRequest* request) {
   doc["mqttTopicPrefix"] = cfg.mqttTopicPrefix;
   doc["brandingVendorName"] = cfg.brandingVendorName;
   doc["brandingHasLogo"] = _branding.hasLogo();
+  doc["extDisplayPages"] = cfg.extDisplayPages;
+  doc["extDisplaySlideSec"] = cfg.extDisplaySlideSec;
 
   String out;
   serializeJson(doc, out);
@@ -874,6 +892,26 @@ void WebServerManager::handleApiConfigPost(AsyncWebServerRequest* request) {
 
   if (request->hasParam("brandingVendorName", true)) {
     cfg.brandingVendorName = request->getParam("brandingVendorName", true)->value();
+  }
+
+  // Externes Display: Seitenauswahl als Bitmaske aus den Checkboxen (fehlende
+  // Checkbox = abgewaehlt), plus Slide-Dauer. Wie bei sensor2Enabled/mqtt gilt:
+  // dieses Formular deckt alle Bloecke gemeinsam ab, ein Teil-POST ist nicht
+  // vorgesehen.
+  uint8_t extPages = 0;
+  if (request->hasParam("extDispSystemName", true)) extPages |= (1 << 0);
+  if (request->hasParam("extDispIps", true)) extPages |= (1 << 1);
+  if (request->hasParam("extDispTime", true)) extPages |= (1 << 2);
+  if (request->hasParam("extDispSensors", true)) extPages |= (1 << 3);
+  if (request->hasParam("extDispStatus", true)) extPages |= (1 << 4);
+  if (request->hasParam("extDispSignal", true)) extPages |= (1 << 5);
+  if (request->hasParam("extDispBranding", true)) extPages |= (1 << 6);
+  cfg.extDisplayPages = extPages;
+  if (request->hasParam("extDispSlideSec", true)) {
+    long s = request->getParam("extDispSlideSec", true)->value().toInt();
+    if (s < 2) s = 2;
+    if (s > 60) s = 60;
+    cfg.extDisplaySlideSec = static_cast<uint16_t>(s);
   }
 
   // Kollisions-Check: nur wenn DHCP aus ist UND sich die statische IP

@@ -43,8 +43,15 @@ class ExternalDisplayManager {
 
   unsigned long _lastPageSwitchMillis = 0;
   int _currentPage = 0;
-  static const int BASE_PAGE_COUNT = 6;
-  int pageCount() const { return _branding.isActive() ? BASE_PAGE_COUNT + 1 : BASE_PAGE_COUNT; }
+  // Seiten 0..5 = Standardseiten, 6 = Branding. Welche davon in der Rotation
+  // erscheinen und wie schnell sie wechseln, kommt aus der Konfiguration
+  // (DeviceConfig::extDisplayPages / extDisplaySlideSec, per Weboberflaeche
+  // einstellbar).
+  static const int TOTAL_PAGES = 7;
+  unsigned long slideIntervalMs() const;
+  bool pageEnabled(int page) const;
+  int nextEnabledPage(int from) const;
+  void drawNoPagesPage();
 
   void drawLines(const String lines[], int count);
   void drawScrollingLine(const String& text, int y, int size, float progress);
