@@ -5,9 +5,16 @@
 #include "pins.h"
 
 namespace {
-// Display-Adresse (SH1107, siehe DisplayManager.cpp) - beim I2C-Scan
-// ausgenommen (Lastenheft Abschnitt 15.1).
+// Display-Adressen - beim I2C-Scan ausgenommen (Lastenheft Abschnitt 15.1).
+// 0x3C: internes SSD1306 (siehe DisplayManager.cpp). 0x3D: optionales
+// externes SH1107-Display-Steckmodul (siehe ExternalDisplayManager.cpp
+// und sensormeter-family/repo/module-design/sh1107-display-modul.md) -
+// ohne diese zweite Ausnahme wuerde ein gestecktes externes Display als
+// unbekannter I2C-Sensor erkannt UND (da 0x3D vor den meisten bekannten
+// Sensor-Adressen liegt) den Scan abbrechen, bevor ein dahinter
+// angeschlossener echter Sensor gefunden wird.
 const uint8_t DISPLAY_I2C_ADDRESS = 0x3C;
+const uint8_t EXTERNAL_DISPLAY_I2C_ADDRESS = 0x3D;
 
 // Bekannte I2C-Sensor-Adressen (Lastenheft Abschnitt 15.2, erweiterbare
 // Tabelle).
@@ -53,7 +60,7 @@ void SensorDetector::runDetection() {
 
   // Schritt 1: I2C-Scan (7-Bit-Adressraum 0x08-0x77, Display ausgenommen).
   for (uint8_t address = 0x08; address <= 0x77; address++) {
-    if (address == DISPLAY_I2C_ADDRESS) continue;
+    if (address == DISPLAY_I2C_ADDRESS || address == EXTERNAL_DISPLAY_I2C_ADDRESS) continue;
 
     Wire.beginTransmission(address);
     uint8_t error = Wire.endTransmission();

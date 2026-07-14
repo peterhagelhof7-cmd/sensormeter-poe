@@ -8,14 +8,18 @@
 #include "NetManager.h"
 #include "TimeManager.h"
 
-// OLED-Anzeige (Pflichtenheft-Task "DisplayTask"): SH1107 1,5" 128x128 I2C
-// auf PIN_I2C_SDA/PIN_I2C_SCL (siehe pins.h), Adresse 0x3C. Anders als bei
-// den beiden Schwesterprojekten (SSD1306 128x64) API-inkompatibel -
-// Adafruit_SH110X statt Adafruit_SSD1306 (siehe platformio.ini). Rotierende
-// Infoseiten alle 10s (Lastenheft Abschnitt 11: Systemname+Systemtyp / IPs
-// (Ethernet+WLAN) / Uhrzeit / Sensorwerte / Status / WLAN-Signal). Waehrend
-// des Bootens (BOOT/INIT/NETWORK_CHECK) Systemname + Systemtyp + Countdown
-// 100->0 bis das Netzwerk bereit ist. Im Fallback-Access-Point ("installer")
+// OLED-Anzeige (Pflichtenheft-Task "DisplayTask"): SSD1306 0,96" 128x64 I2C
+// auf PIN_I2C_SDA/PIN_I2C_SCL (siehe pins.h), Adresse 0x3C - seit der
+// familienweiten Display-Standardisierung identisch zu den beiden
+// Schwesterprojekten (siehe sensormeter-family/repo/docs/entscheidungen.md
+// bzw. dieses Repos docs/entscheidungen.md). Vorher SH1107 1,5" 128x128;
+// dieser groessere Chip steht seither nur noch als optionales externes
+// RJ45-Steckmodul an Adresse 0x3D zur Verfuegung (siehe sensormeter-family/
+// repo/module-design/sh1107-display-modul.md). Rotierende Infoseiten alle
+// 10s (Lastenheft Abschnitt 11: Systemname+Systemtyp / IPs (Ethernet+WLAN)
+// / Uhrzeit / Sensorwerte / Status / WLAN-Signal). Waehrend des Bootens
+// (BOOT/INIT/NETWORK_CHECK) Systemname + Systemtyp + Countdown 100->0 bis
+// das Netzwerk bereit ist. Im Fallback-Access-Point ("installer")
 // stattdessen ausschliesslich die eigene IP.
 //
 // Die eigentliche BOOT-Taster-Zustandsmaschine lebt in ButtonManager (eigenes

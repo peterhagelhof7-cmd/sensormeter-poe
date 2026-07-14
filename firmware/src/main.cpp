@@ -16,7 +16,10 @@
 // Sensor-Schwellenwerts oder des Kontaktzustands schalten (cfg.relayAutoMode,
 // ebenfalls portiert, siehe docs/entscheidungen.md); DisplayManager zeigt
 // Boot-Countdown und rotierende
-// Infoseiten auf dem SH1107; WebServerManager stellt Hauptseite,
+// Infoseiten auf dem SSD1306; ExternalDisplayManager spiegelt dieselben
+// Infoseiten optional auf ein externes SH1107-Steckmodul (I2C 0x3D, siehe
+// sensormeter-family/repo/module-design/sh1107-display-modul.md), falls
+// gesteckt; WebServerManager stellt Hauptseite,
 // Einstellungsseite, REST-API (inkl. /api/relay) und lokalen OTA-Upload
 // bereit; SNMPManager beantwortet SNMP-v1/v2c-GET-Anfragen read-only;
 // SyslogManager sendet Statusreports/Fehler-Events per UDP; MqttManager
@@ -40,6 +43,7 @@
 #include "ContactManager.h"
 #include "DataManager.h"
 #include "DisplayManager.h"
+#include "ExternalDisplayManager.h"
 #include "MqttManager.h"
 #include "NetManager.h"
 #include "OtaManager.h"
@@ -64,14 +68,16 @@ ConfigManager configManager;
 StorageManager storageManager;
 NetManager networkManager(dataManager, configManager);
 TimeManager timeManager(dataManager, networkManager);
-SensorManager sensorManager(dataManager, configManager);
 SensorDetector sensorDetector(dataManager, configManager);
+SensorManager sensorManager(dataManager, configManager, sensorDetector);
 ButtonManager buttonManager(dataManager, configManager);
 ContactManager contactManager(dataManager, configManager);
 RelayManager relayManager(dataManager, configManager, contactManager);
 BrandingManager brandingManager(configManager);
 DisplayManager displayManager(dataManager, configManager, networkManager, timeManager, buttonManager,
                                brandingManager);
+ExternalDisplayManager externalDisplayManager(dataManager, configManager, networkManager, timeManager,
+                                               brandingManager);
 OtaManager otaManager;
 WebServerManager webServerManager(dataManager, configManager, networkManager, otaManager, relayManager,
                                    sensorDetector, contactManager, brandingManager);
@@ -374,6 +380,7 @@ void setup() {
   sensorDetector.runDetection();
 
   displayManager.begin();
+  externalDisplayManager.begin();
 
   networkManager.begin();     // setzt Zustand auf INIT, dann NETWORK_CHECK
   webServerManager.begin();   // async - kein eigener loop()-Aufruf noetig
@@ -389,6 +396,7 @@ void loop() {
   relayManager.loop();
   buttonManager.loop();
   displayManager.loop();
+  externalDisplayManager.loop();
   snmpManager.loop();
   syslogManager.loop();
   mqttManager.loop();

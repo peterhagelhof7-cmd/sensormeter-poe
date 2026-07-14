@@ -85,7 +85,7 @@ bool BrandingManager::endLogoUpload() {
   _uploadOpen = false;
 
   if (_uploadBytesWritten != LOGO_BYTES) {
-    Serial.printf("[BRANDING] Logo-Upload verworfen: %u Byte empfangen, erwartet %u (128x128, 1bpp)\n",
+    Serial.printf("[BRANDING] Logo-Upload verworfen: %u Byte empfangen, erwartet %u (128x64, 1bpp)\n",
                    (unsigned)_uploadBytesWritten, (unsigned)LOGO_BYTES);
     LittleFS.remove(LOGO_TMP_PATH);
     return false;

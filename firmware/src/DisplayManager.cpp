@@ -1,7 +1,7 @@
 #include "DisplayManager.h"
 
 #include <Adafruit_GFX.h>
-#include <Adafruit_SH110X.h>
+#include <Adafruit_SSD1306.h>
 #include <Wire.h>
 #include <time.h>
 #include "SystemState.h"
@@ -15,16 +15,13 @@
 #endif
 
 static const int SCREEN_WIDTH = 128;
-static const int SCREEN_HEIGHT = 128;
-static const uint8_t SH1107_I2C_ADDRESS = 0x3C;
+static const int SCREEN_HEIGHT = 64;
+static const uint8_t SSD1306_I2C_ADDRESS = 0x3C;
 
 static const unsigned long PAGE_INTERVAL_MS = 10UL * 1000UL;  // 10s (Lastenheft)
 static const unsigned long COUNTDOWN_TICK_MS = 1000UL;        // 1x/s
 
-// Kein dediziertes Reset-Pin (typisches 4-Pin-I2C-Modul: VCC/GND/SCL/SDA) -
-// analog zu den SSD1306-Modulen in den Schwesterprojekten (dort ebenfalls
-// -1). Taktraten wie im offiziellen Adafruit-SH110X-Beispiel.
-static Adafruit_SH1107 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1, 1000000, 100000);
+static Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 DisplayManager::DisplayManager(DataManager& dataManager, ConfigManager& configManager,
                                NetManager& networkManager, TimeManager& timeManager,
@@ -34,12 +31,13 @@ DisplayManager::DisplayManager(DataManager& dataManager, ConfigManager& configMa
 
 void DisplayManager::begin() {
   Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
-  _initialized = display.begin(SH1107_I2C_ADDRESS, true);
+  _initialized = display.begin(SSD1306_SWITCHCAPVCC, SSD1306_I2C_ADDRESS);
   if (!_initialized) {
-    Serial.println("[DISPLAY] SH1107 nicht gefunden (I2C 0x3C) - Anzeige deaktiviert");
+    Serial.println("[DISPLAY] SSD1306 nicht gefunden (I2C 0x3C) - Anzeige deaktiviert");
     return;
   }
-  display.setTextColor(SH110X_WHITE);
+  display.cp437(true);
+  display.setTextColor(SSD1306_WHITE);
   // Wir brechen Zeilen selbst um (mehrere setCursor()/println()-Aufrufe)
   // bzw. lassen zu lange Zeilen bewusst laufen (siehe drawScrollingLine())
   // - das automatische Adafruit-GFX-Wrapping wuerde beides durcheinanderbringen.
@@ -49,10 +47,7 @@ void DisplayManager::begin() {
 
 // Feste Zielschriftgroesse fuer alle rotierenden Seiten - Zeilen, die dabei
 // nicht auf einmal passen (z.B. lange SSIDs), laufen waagerecht durch statt
-// die Schrift fuer alle zu schrumpfen, siehe drawScrollingLine(). Bei 128px
-// Hoehe (statt 64px bei den Schwesterprojekten) ist reichlich vertikaler
-// Platz - Groesse 2 bleibt trotzdem die gemeinsame Zielgroesse, damit alle
-// drei Sensormeter-Projekte optisch aehnlich wirken.
+// die Schrift fuer alle zu schrumpfen, siehe drawScrollingLine().
 static const int LINE_TEXT_SIZE = 2;
 
 // Zeichnet eine einzelne Zeile bei fester Groesse, zentriert falls sie
@@ -215,7 +210,7 @@ void DisplayManager::drawBrandingPage() {
     static uint8_t logoBuf[BrandingManager::LOGO_BYTES];
     if (_branding.loadLogo(logoBuf, sizeof(logoBuf))) {
       display.clearDisplay();
-      display.drawBitmap(0, 0, logoBuf, BrandingManager::LOGO_WIDTH, BrandingManager::LOGO_HEIGHT, SH110X_WHITE);
+      display.drawBitmap(0, 0, logoBuf, BrandingManager::LOGO_WIDTH, BrandingManager::LOGO_HEIGHT, SSD1306_WHITE);
       display.display();
       return;
     }

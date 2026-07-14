@@ -132,7 +132,7 @@
     </svg>
     <h1>SENSORMETER POE</h1>
   </div>
-  <div class="subtitle">Waveshare ESP32-S3-ETH (W5500) — DHT-22 ×2, OLED SH1107, RJ45-Modularanschluss, Relais, MQTT/Home Assistant, Anbieter-Branding</div>
+  <div class="subtitle">Waveshare ESP32-S3-ETH (W5500) — DHT-22 ×2, OLED SSD1306, RJ45-Modularanschluss, Relais, MQTT/Home Assistant, Anbieter-Branding</div>
   <div class="badges">
     <span class="badge-orange badge">v0.9.0-rc4 · Beta</span>
     <span class="badge-warn badge">ungeprüft auf Hardware</span>
@@ -164,7 +164,7 @@
       <ul>
         <li>Waveshare ESP32-S3-ETH (ESP32-S3R8, 16MB Flash, 8MB PSRAM)</li>
         <li>DHT-22 intern (GPIO15) + DHT-22/I2C-Sensor extern über RJ45</li>
-        <li>OLED SH1107, 1,5", 128×128, I2C (GPIO1/2)</li>
+        <li>OLED SSD1306, 0,96", 128×64, I2C (GPIO1/2)</li>
         <li>RJ45-Modularanschluss (Sensor 2 / Relais, Pin-Rollen wie Sensormeter)</li>
         <li>Onboard-BOOT-Taster (GPIO0) als Bedienelement nutzbar</li>
         <li>PoE optional (aufsteckbares 802.3af-Modul, nicht im Lieferumfang)</li>
@@ -269,7 +269,7 @@
         <li>Relais/Aktor: Web-Schalter, REST (<code>/api/relay</code>) und MQTT-Switch</li>
         <li>SNMP v1/v2c read-only, gleiche Basis-OID wie Sensormeter/WLAN</li>
         <li>MQTT: Home-Assistant-Discovery für Sensoren UND Relais</li>
-        <li><b>Anbieter-Branding</b> (neu): Name + Logo (128×128, 1bpp), eigene OLED-Seite und Web-Header, kein PNG-Decoder nötig (BMP-Synthese on-the-fly)</li>
+        <li><b>Anbieter-Branding</b> (neu): Name + Logo (128×64, 1bpp), eigene OLED-Seite und Web-Header, kein PNG-Decoder nötig (BMP-Synthese on-the-fly)</li>
         <li>Lokales OTA-Update per .bin-Upload</li>
         <li>Werksreset mit wählbarem Umfang (Alles / nur Konfiguration / nur Messwerte / nur Branding)</li>
         <li>Serial-Kommandozeile per USB (dhcp/ip/wifi/status/dump/upload/reset) als Fallback ohne Netzwerkzugriff</li>

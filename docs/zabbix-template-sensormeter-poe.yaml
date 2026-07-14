@@ -1,5 +1,8 @@
 zabbix_export:
   version: '6.4'
+  template_groups:
+    - uuid: 5974b75883344656b36c0057518af8fd
+      name: 'IoT Sensoren'
   templates:
     - uuid: 66e557e95fae4ceabf7670bd07d9ce13
       template: 'Sensormeter PoE'
@@ -220,30 +223,30 @@ zabbix_export:
           tags:
             - tag: component
               value: status
-      triggers:
-        - uuid: 3176c90a9b46405cba6879fdeedba745
-          name: 'Temperatur (Sensor 1) zu hoch auf {HOST.NAME}'
-          expression: 'last(/Sensormeter PoE/sensor1.temperature)>{$TEMP_MAX_C}'
-          priority: WARNING
-        - uuid: 41c4783b579f4e28a7c04f9e87922a1b
-          name: 'Luftfeuchtigkeit (Sensor 1) zu hoch auf {HOST.NAME}'
-          expression: 'last(/Sensormeter PoE/sensor1.humidity)>{$HUMIDITY_MAX_PERCENT}'
-          priority: WARNING
-        - uuid: d87578481c594fa792c491dc4ca314fb
-          name: 'Temperatur (Sensor 2) zu hoch auf {HOST.NAME}'
-          expression: 'last(/Sensormeter PoE/sensor2.temperature)>{$TEMP_MAX_C}'
-          priority: WARNING
-          description: 'Nur relevant, wenn Sensor 2 (Sensormeter PoE PRO) aktiv ist.'
-        - uuid: 67c20ca9721640ad80558de008b80e47
-          name: 'Luftfeuchtigkeit (Sensor 2) zu hoch auf {HOST.NAME}'
-          expression: 'last(/Sensormeter PoE/sensor2.humidity)>{$HUMIDITY_MAX_PERCENT}'
-          priority: WARNING
-          description: 'Nur relevant, wenn Sensor 2 (Sensormeter PoE PRO) aktiv ist.'
-        - uuid: e9d680ec9ddc4c2f92560699c84d2542
-          name: 'Keine SNMP-Daten von {HOST.NAME} seit 10 Minuten'
-          expression: 'nodata(/Sensormeter PoE/sensor1.temperature,10m)=1'
-          priority: HIGH
-        - uuid: 728e1edf80a847d3a968045b890e0f55
-          name: 'Freier Heap niedrig auf {HOST.NAME}'
-          expression: 'last(/Sensormeter PoE/status.freeheap)<{$HEAP_MIN_BYTES}'
-          priority: WARNING
+  triggers:
+    - uuid: 3176c90a9b46405cba6879fdeedba745
+      name: 'Temperatur (Sensor 1) zu hoch auf {HOST.NAME}'
+      expression: 'last(/Sensormeter PoE/sensor1.temperature)>{$TEMP_MAX_C}'
+      priority: WARNING
+    - uuid: 41c4783b579f4e28a7c04f9e87922a1b
+      name: 'Luftfeuchtigkeit (Sensor 1) zu hoch auf {HOST.NAME}'
+      expression: 'last(/Sensormeter PoE/sensor1.humidity)>{$HUMIDITY_MAX_PERCENT}'
+      priority: WARNING
+    - uuid: d87578481c594fa792c491dc4ca314fb
+      name: 'Temperatur (Sensor 2) zu hoch auf {HOST.NAME}'
+      expression: 'last(/Sensormeter PoE/sensor2.temperature)>{$TEMP_MAX_C}'
+      priority: WARNING
+      description: 'Nur relevant, wenn Sensor 2 (Sensormeter PoE PRO) aktiv ist.'
+    - uuid: 67c20ca9721640ad80558de008b80e47
+      name: 'Luftfeuchtigkeit (Sensor 2) zu hoch auf {HOST.NAME}'
+      expression: 'last(/Sensormeter PoE/sensor2.humidity)>{$HUMIDITY_MAX_PERCENT}'
+      priority: WARNING
+      description: 'Nur relevant, wenn Sensor 2 (Sensormeter PoE PRO) aktiv ist.'
+    - uuid: e9d680ec9ddc4c2f92560699c84d2542
+      name: 'Keine SNMP-Daten von {HOST.NAME} seit 10 Minuten'
+      expression: 'nodata(/Sensormeter PoE/sensor1.temperature,10m)=1'
+      priority: HIGH
+    - uuid: 728e1edf80a847d3a968045b890e0f55
+      name: 'Freier Heap niedrig auf {HOST.NAME}'
+      expression: 'last(/Sensormeter PoE/status.freeheap)<{$HEAP_MIN_BYTES}'
+      priority: WARNING

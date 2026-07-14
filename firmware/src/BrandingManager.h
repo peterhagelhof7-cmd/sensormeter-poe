@@ -10,13 +10,16 @@
 // das komplett im RAM ge-/entladen wird). Format bewusst simpel gehalten,
 // um keine PNG/JPEG-Decoder-Bibliothek einzubinden (haette 30-80 KB Flash
 // gekostet, siehe Machbarkeitseinschaetzung/entscheidungen.md im
-// Sensormeter-Repo): exakt 128x128 Pixel (SH1107, siehe DisplayManager -
-// ANDERS als die 128x64-Geschwisterprojekte), 1 Bit pro Pixel, MSB-zuerst
+// Sensormeter-Repo): exakt 128x64 Pixel (SSD1306, siehe DisplayManager -
+// seit dem familienweiten Display-Umbau identisch zu den
+// Geschwisterprojekten; das groessere SH1107 gibt es seither nur noch als
+// optionales externes Steckmodul, siehe sensormeter-family/repo/
+// module-design/sh1107-display-modul.md), 1 Bit pro Pixel, MSB-zuerst
 // je Zeile, kein Padding - selbes Format wie Adafruit_GFX::drawBitmap()
-// erwartet (identisch zu den rotierenden OLED-Seiten), 2048 Byte fest.
-// Eine extern (z.B. per scripts/convert-logo.ps1 -Display poe)
-// vorkonvertierte Datei muss exakt diese Groesse haben - jede Abweichung
-// wird abgelehnt statt ein verzerrtes Bild stillschweigend anzuzeigen.
+// erwartet (identisch zu den rotierenden OLED-Seiten), 1024 Byte fest.
+// Eine extern (z.B. per scripts/convert-logo.ps1) vorkonvertierte Datei
+// muss exakt diese Groesse haben - jede Abweichung wird abgelehnt statt
+// ein verzerrtes Bild stillschweigend anzuzeigen.
 //
 // Upload-Streaming (beginLogoUpload/writeLogoUploadChunk/endLogoUpload)
 // folgt demselben Muster wie OtaManager fuer den lokalen .bin-Upload:
@@ -49,8 +52,8 @@ class BrandingManager {
   bool isActive() const { return hasVendorName() || hasLogo(); }
 
   static const int LOGO_WIDTH = 128;
-  static const int LOGO_HEIGHT = 128;
-  static const size_t LOGO_BYTES = (LOGO_WIDTH / 8) * LOGO_HEIGHT;  // 2048
+  static const int LOGO_HEIGHT = 64;
+  static const size_t LOGO_BYTES = (LOGO_WIDTH / 8) * LOGO_HEIGHT;  // 1024
 
   // Liest das gespeicherte Logo vollstaendig in buffer (muss mindestens
   // LOGO_BYTES gross sein). false falls keine Logo-Datei vorhanden, die

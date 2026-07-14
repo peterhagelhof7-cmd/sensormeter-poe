@@ -51,7 +51,8 @@ Task: WebServerTask
 - Chart.js-Datenbereitstellung
 
 Task: DisplayTask
-- OLED-Update alle 10 Sekunden (SH1107, 128x128, I2C)
+- OLED-Update alle 10 Sekunden (SSD1306, 128x64, I2C - siehe
+  docs/entscheidungen.md "Internes Display: SH1107 -> SSD1306")
 - Rotation der Informationsseiten, zentriert mit fester Schrift, langer
   Text läuft waagerecht durch statt zu schrumpfen
 
@@ -137,9 +138,11 @@ Zentrale Datenhaltung:
 - JSON-Puffer für den Graph
 
 3.6 DisplayManager
-- SH1107-Ansteuerung über Adafruit_SH110X (NICHT Adafruit_SSD1306 - die
-  bei Sensormeter/Sensormeter WLAN verwendete Bibliothek ist mit diesem
-  Controller nicht kompatibel, siehe board-recherche.md)
+- SSD1306-Ansteuerung über Adafruit_SSD1306, identisch zu Sensormeter/
+  Sensormeter WLAN (seit der familienweiten Display-Standardisierung,
+  siehe docs/entscheidungen.md). Adafruit_SH110X bleibt als Bibliothek
+  eingebunden, treibt aber nur noch das optionale externe
+  Display-Steckmodul (I2C 0x3D).
 
 3.7 ButtonManager
 - Entprellung + Zustandsautomat für den BOOT-Taster (GPIO0)
@@ -194,9 +197,9 @@ Zentrale Datenhaltung:
 - Anbieter-Branding (Weisslabel), siehe docs/lastenheft.txt Abschnitt 17 -
   zuerst bei Sensormeter WLAN umgesetzt, unveraendert im Konzept portiert
 - Vendor-Name in config.xml, Logo-Binaerdaten bewusst NICHT dort, sondern
-  als eigene Rohdatei auf LittleFS (/branding-logo.bin, 2048 Byte fest:
-  128x128 1bpp - ANDERS als die 128x64/1024-Byte-Geschwisterprojekte,
-  siehe DisplayManager/SH1107)
+  als eigene Rohdatei auf LittleFS (/branding-logo.bin, 1024 Byte fest:
+  128x64 1bpp - identisch zu den Geschwisterprojekten seit der
+  Display-Standardisierung, siehe DisplayManager/docs/entscheidungen.md)
 - hasLogo() haelt den Vorhanden-Zustand in einem RAM-Cache statt bei jeder
   Abfrage LittleFS.exists() aufzurufen (Bibliotheks-Quirk, siehe
   sensormeter-wlan/repo/docs/entscheidungen.md)
@@ -231,8 +234,8 @@ struct HourValue {
 
 4.4 branding-logo.bin
 - Optionale Datei, nur vorhanden wenn ein Logo hochgeladen wurde
-- Rohformat: 128x128 Pixel, 1 Bit pro Pixel, MSB-zuerst je Zeile, exakt
-  2048 Byte - siehe docs/lastenheft.txt Abschnitt 17.3
+- Rohformat: 128x64 Pixel, 1 Bit pro Pixel, MSB-zuerst je Zeile, exakt
+  1024 Byte - siehe docs/lastenheft.txt Abschnitt 17.3
 
 ------------------------------------------------------------
 

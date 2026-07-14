@@ -12,7 +12,10 @@ Hardware:
 - Ethernet: W5500 über SPI, 10/100 Mbit RJ45
 - PoE: optionales, aufsteckbares Huckepack-Modul (802.3af)
 - WLAN/Bluetooth: nativ im ESP32-S3 (2,4 GHz WiFi, BLE 5)
-- OLED 1,5" 128x128, Controller SH1107, I2C
+- OLED 0,96" 128x64, Controller SSD1306, I2C (familienweite
+  Standardisierung, vorher SH1107 128x128 - siehe entscheidungen.md
+  "Internes Display: SH1107 -> SSD1306"; SH1107 seither optionales
+  externes Steckmodul)
 - Temperatur-/Luftfeuchtesensor (intern) DHT-22
 - optional zweiter Sensor (extern, über RJ45-Modularanschluss) DHT-22
 - BOOT-Taster (onboard, GPIO0) - zusätzlich als Bedienelement nutzbar,
@@ -26,8 +29,10 @@ Abweichungen gegenüber Sensormeter (WT32-ETH01):
   durchgängig DHT-22, bei Sensormeter nur die externe Position)
 - Ethernet über SPI (W5500) statt natives EMAC (LAN8720) - siehe
   board-recherche.md für die GPIO-Budget-Begründung
-- OLED 1,5" 128x128 (SH1107) statt 0,96" 128x64 (SSD1306) - mehr
-  Anzeigefläche, gleiches Bedienkonzept (reine Anzeige, kein Touch)
+- Intern inzwischen keine Abweichung mehr (siehe oben) - familienweit
+  einheitlich 0,96" 128x64 (SSD1306); ursprünglich war hier 1,5" 128x128
+  (SH1107) verbaut, jetzt optionales externes Steckmodul statt interner
+  Abweichung, siehe entscheidungen.md
 - PoE nativ nutzbar (Huckepack-Modul) - bei Sensormeter nicht vorgesehen
   (WT32-ETH01 hat keine PoE-Option)
 - BOOT-Taster als Bedienelement nutzbar (analog Sensormeter WLAN) - bei
@@ -308,7 +313,7 @@ beim nächsten Speichern überschrieben, kein persistentes Freitextfeld.
 
 ------------------------------------------------------------
 
-11. DISPLAY (OLED 1,5" 128x128, SH1107)
+11. DISPLAY (OLED 0,96" 128x64, SSD1306 - siehe entscheidungen.md)
 
 - Wechsel alle 10 Sekunden
 - horizontal und vertikal zentriert, feste größtmögliche Schrift; zu
@@ -418,7 +423,8 @@ Pin  Belegung
 5    GPIO (Reserve / externer DHT-22-Sensor, DATA-Leitung)
 6    GPIO (Relais-Steuerung, active LOW)
 7    GPIO (Relais-Feedback / Interrupt)
-8    GPIO (Reserve)
+8    5V-Versorgung (Board-Eingang, kein GPIO - siehe docs/entscheidungen.md
+     "RJ45 Pin 8: 5V statt Reserve")
 
 Modul-Typen (identisch zu Sensormeter, siehe dortiges
 verdrahtungsschema-v1.2.pdf Seite 4):
@@ -566,9 +572,8 @@ hierher portiert.
 17.2 Anzeige
 - OLED: eigene rotierende Seite (siehe Abschnitt 11), nur Teil der
   Rotation, wenn Anbietername ODER Logo gesetzt ist. Zeigt bevorzugt das
-  Logo vollflächig (128x128 füllt den ganzen Screen - ANDERS als die
-  128x64-Geschwisterprojekte, siehe Abschnitt 17.3), ohne Logo den
-  Anbietername als Textzeile.
+  Logo vollflächig (128x64, wie bei den Geschwisterprojekten, siehe
+  Abschnitt 17.3), ohne Logo den Anbietername als Textzeile.
 - Weboberfläche: Logo (falls vorhanden) und Anbietername erscheinen im
   Kopfbereich jeder Seite.
 
@@ -576,10 +581,10 @@ hierher portiert.
 Bewusst kein PNG/JPEG (hätte eine Decoder-Bibliothek und damit
 30-80 KB zusätzliches Flash gekostet, bei diesem Board mit 16 MB Flash
 zwar unkritisch, aber bewusst identisch zu den Geschwisterprojekten
-gehalten): festes Rohformat, 128x128 Pixel (SH1107), 1 Bit pro Pixel,
-MSB-zuerst je Zeile, exakt 2048 Byte - identisch zu dem, was
+gehalten): festes Rohformat, 128x64 Pixel (SSD1306), 1 Bit pro Pixel,
+MSB-zuerst je Zeile, exakt 1024 Byte - identisch zu dem, was
 Adafruit_GFX::drawBitmap() für die OLED-Seiten ohnehin erwartet.
-Erzeugbar mit scripts/convert-logo.ps1 -Display poe.
+Erzeugbar mit scripts/convert-logo.ps1.
 
 17.4 Konfiguration (Einstellungsseite, siehe Abschnitt 6)
 - Anbietername (Textfeld)

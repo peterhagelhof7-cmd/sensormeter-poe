@@ -39,6 +39,14 @@ class SensorDetector {
   // "I2C-Sensor (BME280)", "I2C-Sensor (unbekannt, 0x42)", "DHT-Sensor",
   // "Kein Sensor / Relais".
   String detectedDescription() const;
+  // Roher Chipname aus KNOWN_CHIPS (z.B. "BME280", "AHT20/AHT21"), nur bei
+  // I2C_SENSOR_KNOWN gueltig, sonst "" - fuer SensorManager, um den
+  // passenden I2C-Lesepfad zu waehlen (siehe readExternalSensorIfEnabled()).
+  String detectedChipName() const { return _detectedChipName; }
+  // Gefundene I2C-Adresse, nur bei I2C_SENSOR_KNOWN/_UNKNOWN gueltig -
+  // fuer SensorManager, da z.B. BME280 zwei moegliche Adressen hat
+  // (0x76/0x77, siehe SDO-Pin).
+  uint8_t detectedI2cAddress() const { return _detectedI2cAddress; }
 
  private:
   DataManager& _data;

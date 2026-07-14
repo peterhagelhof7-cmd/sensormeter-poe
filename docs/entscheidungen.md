@@ -469,3 +469,167 @@ dem vorherigen Kontakt-Stand). RAM 19,3 %.
 
 Nur per `pio run` gebaut (kein Board für Sensormeter PoE vorhanden) - nur
 per Code-Review verifiziert, nicht auf echter Hardware getestet.
+
+## Internes Display: SH1107 → SSD1306 (familienweite Standardisierung)
+
+Kehrtwende der oben (Abschnitt „Erste Firmware-Fassung") als „einzige
+echte Abweichung gegenüber den Geschwisterprojekten" dokumentierten
+Entscheidung: auf ausdrücklichen Beschluss nutzen künftig **alle**
+Sensormeter-Geräte außer Sensormeter Display intern dasselbe kleine
+SSD1306 (0,96″, 128×64, I2C 0x3C) — genau wie Sensormeter (WT32-ETH01)
+und Sensormeter WLAN. Das bisher hier verbaute größere SH1107 (1,5″,
+128×128) gibt es seither nur noch als optionales **externes**
+RJ45-Steckmodul (I2C 0x3D, siehe `sensormeter-family/repo/module-design/
+sh1107-display-modul.md`) — für Sensormeter und Sensormeter PoE
+gleichermaßen, da beide dieselbe RJ45-Modularbuchse haben.
+
+**Warum die Kehrtwende statt einer Ausnahme beizubehalten**: ein
+größeres/kleineres Display ist kein funktionaler Unterschied, der eine
+eigene Geräteklasse rechtfertigt — es war lediglich die zuerst verbaute
+Variante. Die Aufteilung „klein und einheitlich intern, groß optional
+extern" deckt beide Anwendungsfälle (kompaktes Gerät vs. aus der Distanz
+lesbare Anzeige) ab, ohne dass drei von vier Projekten mit
+API-inkompatiblem Displaycode (`Adafruit_SH110X` statt `Adafruit_SSD1306`)
+auseinanderlaufen.
+
+**Umgesetzte Änderungen** (`DisplayManager.h`/`.cpp`, 1:1 von
+`sensormeter/repo` übernommen bis auf die dort nicht vorhandenen
+`TimeManager&`/`ButtonManager&`-Abhängigkeiten, die dieses Projekt wegen
+des BOOT-Tasters weiterhin braucht):
+
+- `SCREEN_HEIGHT` 128 → 64, `Adafruit_SH110X`/`Adafruit_SH1107` →
+  `Adafruit_SSD1306`, `SH110X_WHITE` → `SSD1306_WHITE`,
+  `display.begin(addr, true)` → `display.begin(SSD1306_SWITCHCAPVCC, addr)`
+  (unterschiedliche Init-Signaturen der beiden Adafruit-Bibliotheken).
+- `platformio.ini`: `Adafruit SSD1306` neu in `lib_deps` aufgenommen.
+  `Adafruit SH110X` bewusst **nicht** entfernt — treibt jetzt das
+  optionale externe Display-Steckmodul (siehe `SensorDetector`/
+  `DisplayManager`-Erweiterung für Adresse 0x3D).
+- `BrandingManager.h`: `LOGO_WIDTH/HEIGHT/BYTES` 128×128/2048 →
+  128×64/1024 Byte, `DefaultLogo.h` aus der `-oled-128x64`-Variante des
+  Familienlogos neu eingebettet (identisch zu `sensormeter/repo` seither,
+  vorher aus der `-oled-128x128`-Variante).
+- `WebServerManager.cpp`/`BrandingManager.cpp`: Logo-Upload-Hinweistexte
+  und Fehlermeldungen von 128×128/2048 Byte auf 128×64/1024 Byte
+  korrigiert.
+
+**Kein Umbau der bestehenden I2C-Verdrahtung nötig**: `PIN_I2C_SDA`/
+`PIN_I2C_SCL` und die Geräteadresse `0x3C` bleiben unverändert — nur der
+Chip/die Auflösung auf der Platine ändert sich für künftige Bestückungen.
+
+Flash-Kosten: 21,8 % (1.431.403 von 6.553.600 Byte). RAM 18,4 % (60.180
+von 327.680 Byte) — beide praktisch unverändert gegenüber dem vorherigen
+Stand (SH1107- gegen SSD1306-Bibliothek getauscht, `Adafruit SH110X`
+bleibt zusätzlich im Baum). Nur per `pio run` gebaut (weiterhin kein
+Board für Sensormeter PoE vorhanden) — nicht auf echter Hardware
+getestet.
+
+## Optionales externes Display-Steckmodul (SH1107, I2C 0x3D)
+
+Direkte Folge des Display-Umbaus oben: das intern entfernte SH1107
+128x128 gibt es jetzt als optionales externes RJ45-Steckmodul (siehe
+sensormeter-family/repo/module-design/sh1107-display-modul.md),
+identisch für Sensormeter und Sensormeter PoE umgesetzt (siehe dortiges
+`docs/entscheidungen.md`).
+
+**`SensorDetector.cpp`**: `EXTERNAL_DISPLAY_I2C_ADDRESS = 0x3D` zusätzlich
+zu `DISPLAY_I2C_ADDRESS = 0x3C` vom I2C-Scan ausgenommen. Ohne diese
+Ausnahme hätte ein gestecktes externes Display zwei Probleme verursacht:
+als „unbekannter I2C-Sensor" fälschlich `sensor2Enabled` gesetzt, UND
+(da `0x3D` vor den meisten bekannten Sensor-Adressen im Scan-Bereich
+0x08-0x77 liegt) den Scan abgebrochen, bevor ein tatsächlich dahinter
+gestecktes Sensor-Modul mit höherer Adresse gefunden würde (betrifft
+insbesondere CCS811 auf 0x5A/0x5B).
+
+**Neue Klasse `ExternalDisplayManager`**: eigenständig neben
+`DisplayManager`, spricht `Adafruit_SH110X` auf `0x3D` an (dieselbe
+Bibliothek, die bisher das jetzt entfernte interne SH1107 trieb - siehe
+oben, deshalb bewusst nicht aus `lib_deps` entfernt). Zeigt dieselben
+Infoseiten wie das interne Display mit eigener 10s-Rotation, bewusst OHNE
+Boot-Countdown-Seite, Fallback-AP-Sonderseite und BOOT-Taster-Overlay -
+diese bleiben Aufgabe des internen Displays, das externe Modul ist reine
+Zusatzanzeige für den Normalbetrieb. Branding-Seite zeigt nur den
+Vendor-Namen als Text, kein Logo-Bitmap (das gespeicherte Logo ist jetzt
+128x64-formatiert, würde auf dem 128x128 großen externen Display verzerrt
+dargestellt - eigenes Logoformat dafür noch nicht umgesetzt). Kein
+gestecktes Modul -> `begin()` schlägt fehl, `loop()` ist ein No-op.
+
+Flash-Kosten: 22,0 % (1.439.571 von 6.553.600 Byte, gegenüber 21,8 % nach
+dem Display-Umbau oben). RAM 18,4 % (60.300 von 327.680 Byte). Nur per
+`pio run` gebaut (weiterhin kein Board vorhanden) — nicht auf echter
+Hardware getestet.
+
+## I2C-Lesepfad für Sensor 2 (BME280, AHT20/AHT21)
+
+Identisch zu sensormeter/repo umgesetzt (siehe dessen
+`docs/entscheidungen.md` „I2C-Lesepfad für Sensor 2" für die volle
+Begründung) - schließt einen Teil der in `sensormeter-family/repo/
+module-design/README.md` als „Firmware-Lücke" dokumentierten Lücke.
+`SensorManager::readExternalSensorIfEnabled()` liest ein erkanntes BME280
+oder AHT20/AHT21 jetzt tatsächlich per I2C aus (`Adafruit_BME280`/
+`Adafruit_AHTX0`), statt wie bisher immer einen DHT-22-Leseversuch auf
+Pin 5 zu unternehmen. BH1750 (Lux) und CCS811 (eCO₂/TVOC) bleiben bewusst
+ohne I2C-Lesepfad - beide Messgrößen passen nicht ins bestehende
+Temperatur/Feuchte-Datenmodell von „Sensor 2".
+
+**Nebenbei behobener Bug**: der bisherige `cfg.pin5Mode != "sensor"`-Gate
+blockierte fälschlich auch I2C-Lesepfade, obwohl I2C (SCL/SDA) und Pin 5
+unabhängige Pins sind - ein Kontakt-Modul auf Pin 5 UND ein I2C-Sensor auf
+dem Bus können gleichzeitig gesteckt sein. Die I2C-Zweige prüfen
+`pin5Mode` jetzt nicht mehr, nur der DHT-Fallback-Zweig weiterhin.
+
+**Wichtiger Sonderfall beim BME280+CCS811-Kombimodul** (siehe
+sensormeter-family/repo/module-design/bme280-ccs811-modul.md): der
+I2C-Scan bricht beim ERSTEN Treffer ab, und CCS811 (`0x5A`/`0x5B`) liegt
+niedriger als BME280 (`0x76`/`0x77`) - auf diesem Kombimodul wird
+deshalb praktisch immer CCS811 zuerst erkannt, BME280 nie erreicht.
+„Sensor 2" bleibt bei diesem Modul trotz des neuen BME280-Lesepfads
+weiterhin ungültig. Betrifft NICHT das reine BME280-Einzelmodul.
+
+`SensorDetector` bekommt zwei neue öffentliche Getter (`detectedChipName()`,
+`detectedI2cAddress()`, vorher privat) - `SensorManager` haelt dafür jetzt
+eine `SensorDetector&`-Referenz (`main.cpp`: `sensorDetector` vor
+`sensorManager` deklariert).
+
+`platformio.ini`: `Adafruit BME280 Library` und `Adafruit AHTX0` neu in
+`lib_deps`.
+
+Flash-Kosten: 22,0 % (1.444.843 von 6.553.600 Byte, gegenüber 22,0 % vor
+dieser Änderung, +5.272 Byte). RAM 18,4 % (60.412 von 327.680 Byte). Nur
+per `pio run` gebaut (weiterhin kein Board vorhanden) - nicht auf echter
+Hardware getestet.
+
+## RJ45 Pin 8: 5V statt Reserve
+
+Identisch zu sensormeter/repo umgesetzt (siehe dessen `docs/
+entscheidungen.md` „RJ45 Pin 8: 5V statt Reserve" für die volle
+Begründung) - auf ausdrücklichen Beschluss trägt RJ45 Pin 8 künftig fest
+die 5V-Versorgungsschiene des Geräts statt wie bisher als „Reserve" auf
+einen GPIO herausgeführt zu sein. Kein einziges entworfenes Modul nutzt
+Pin 8 aktuell - er wurde bislang nur 1:1 durchgeschleift.
+
+**Hier unkritischer als bei Sensormeter (WT32-ETH01)**: Pin 8 war bei
+diesem Projekt mit `GPIO19` verdrahtet - kein Boot-Strapping-Pin (siehe
+`pins.h`-Kommentar: "frei, kein Boot-Strapping-Pin, anders als beim
+WT32-ETH01"), keine Pull-down-Anforderung. Die Umstellung ist deshalb
+nur eine Leiterbahn von `GPIO19` weg, hin zur 5V-Schiene, ohne
+Sicherheits-Implikation für den Bootvorgang.
+
+**Umgesetzte Änderungen**:
+- `firmware/include/pins.h`: `PIN_RJ45_PIN8_RESERVE` (bisher `19`)
+  entfernt - Pin 8 hat keinen GPIO mehr. Per Grep bestätigt, dass dieses
+  Define nirgendwo im Code referenziert wurde.
+- `docs/verdrahtungsplan.html`: Pin-8-Zeile/-Draht von `GPIO19`/„Reserve,
+  unbenutzt" auf `5V`/„5V-Versorgung" umgestellt, neuer Warn-Hinweis zur
+  3,3V-Verwechslungsgefahr.
+- `docs/lastenheft.txt` Abschnitt 14 (RJ45-Pinbelegung): Pin-8-Zeile
+  entsprechend angepasst.
+- **Offen, nicht verifizierbar ohne echte Platine**: wie viel Strom die
+  5V-Schiene an Pin 8 tatsächlich liefern kann, ist mangels vorhandenem
+  Board nicht nachgemessen - vor dem Bestücken eines ersten 5V-Moduls
+  prüfen.
+
+Betrifft nur Dokumentation/`pins.h` - kein Modul nutzt Pin 8 aktuell,
+daher keine funktionale Änderung am Verhalten bestehender Module. Siehe
+`sensormeter-family/repo/module-design/README.md` für die familienweite
+Pinbelegungstabelle.

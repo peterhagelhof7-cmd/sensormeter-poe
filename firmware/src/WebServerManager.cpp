@@ -62,10 +62,9 @@ String formatCsvTimestamp(uint32_t ts) {
 // (oben->unten, MSB zuerst je Zeile) gespeicherten Bytes 1:1 uebernommen
 // werden koennen - BMP verlangt sonst Bottom-Up. 128px Breite / 8 = 16 Byte
 // je Zeile ist bereits ein Vielfaches von 4 (BMP-Zeilen muessen auf 4 Byte
-// ausgerichtet sein), daher kein Padding noetig - gilt auch bei 128 Zeilen
-// Hoehe (SH1107) statt 64 (Geschwisterprojekte). Bit=1 -> Palette-Index 1
+// ausgerichtet sein), daher kein Padding noetig. Bit=1 -> Palette-Index 1
 // (Weiss), Bit=0 -> Index 0 (Schwarz) - passt exakt zur
-// SH110X_WHITE-Konvention von drawBitmap().
+// SSD1306_WHITE-Konvention von drawBitmap().
 constexpr size_t BMP_HEADER_BYTES = 14 + 40 + 8;
 
 void buildLogoBmp(const uint8_t* xbm, size_t xbmLen, int width, int height, uint8_t* out) {
@@ -469,9 +468,9 @@ String WebServerManager::buildSettingsPageBody() const {
   html += "<form method=\"POST\" action=\"/api/branding/logo\" enctype=\"multipart/form-data\">";
   html += "<input type=\"file\" name=\"file\" accept=\".bin\"><input type=\"submit\" value=\"Logo hochladen\">";
   html += "</form>";
-  html += "<p class=\"hint\">Erwartet eine vorkonvertierte Rohdatei: 128x128 Pixel, 1 Bit pro Pixel, "
-          "MSB-zuerst je Zeile, genau 2048 Byte (kein PNG/JPEG) - jede andere Groesse wird abgelehnt. "
-          "Erzeugbar mit scripts/convert-logo.ps1 -Display poe.</p>";
+  html += "<p class=\"hint\">Erwartet eine vorkonvertierte Rohdatei: 128x64 Pixel, 1 Bit pro Pixel, "
+          "MSB-zuerst je Zeile, genau 1024 Byte (kein PNG/JPEG) - jede andere Groesse wird abgelehnt. "
+          "Erzeugbar mit scripts/convert-logo.ps1.</p>";
   html += "</div>";
 
   html += "<div class=\"block\"><h2>Konfiguration</h2>";

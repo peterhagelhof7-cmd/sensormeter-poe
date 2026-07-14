@@ -126,9 +126,15 @@ Graustufen-„so tun als ob").
 
 | Preset | Projekt(e) | Display | Zielgröße | Format |
 |---|---|---|---|---|
-| `sensormeter` / `wlan` | Sensormeter, Sensormeter WLAN | OLED SSD1306 | 128×64 | 1-Bit monochrom |
-| `poe` | Sensormeter PoE | OLED SH1107 | 128×128 | 1-Bit monochrom |
+| `sensormeter` / `wlan` / `poe` | Sensormeter, Sensormeter WLAN, Sensormeter PoE | OLED SSD1306 | 128×64 | 1-Bit monochrom |
 | `display` | Sensormeter Display | TFT ST7789P3 (Farbe) | 128×64 | RGB565, 2 Byte/Pixel |
+
+Das größere SH1107-OLED (128×128), früher intern bei Sensormeter PoE
+verbaut, gibt es seit der familienweiten Display-Standardisierung nur
+noch als optionales externes RJ45-Steckmodul (siehe
+`sensormeter-family/repo/module-design/sh1107-display-modul.md`) –
+eigenes Logo-Format dafür noch nicht über dieses Skript abgedeckt, bei
+Bedarf `-Display custom -Width 128 -Height 128 -ColorMode mono` nutzen.
 
 Die Farbziel-Größe (128×64) ist bewusst **dieselbe** wie bei den
 monochromen Projekten (nicht die native Panel-Auflösung 240×320) – nur die
@@ -156,7 +162,7 @@ unterlegt.
 ```powershell
 .\convert-logo.ps1 -InputPath .\firmenlogo.png                # fragt interaktiv nach dem Display
 .\convert-logo.ps1 -InputPath .\firmenlogo.png -Display wlan   # 128x64, 1bpp, direkt hochladbar
-.\convert-logo.ps1 -InputPath .\firmenlogo.png -Display poe    # 128x128, 1bpp
+.\convert-logo.ps1 -InputPath .\firmenlogo.png -Display poe    # 128x64, 1bpp
 .\convert-logo.ps1 -InputPath .\firmenlogo.png -Display display -SwapRedBlue
 .\convert-logo.ps1 -InputPath .\firmenlogo.png -Display custom -Width 96 -Height 48 -ColorMode mono
 ```

@@ -26,7 +26,7 @@
 #define ETH_SPI_MISO 12
 #define ETH_SPI_MOSI 11
 
-// --- I2C-Bus: Display (SH1107) + externer I2C-Sensor am RJ45 (Pin 3/4) ----
+// --- I2C-Bus: Display (SSD1306) + externer I2C-Sensor/Anzeige am RJ45 (Pin 3/4) ----
 #define PIN_I2C_SDA 1
 #define PIN_I2C_SCL 2
 
@@ -40,8 +40,11 @@
 #define PIN_RJ45_PIN5_RESERVE   16  // externer DHT-22, DATA-Leitung
 #define PIN_RJ45_PIN6_RELAY_OUT 17  // Relais-Steuerung, active LOW
 #define PIN_RJ45_PIN7_RELAY_FB  18  // Relais-Feedback / Interrupt
-#define PIN_RJ45_PIN8_RESERVE   19  // frei, kein Boot-Strapping-Pin (anders
-                                    // als beim WT32-ETH01, siehe dortiges pins.h)
+// Pin 8 liegt seit der Entscheidung "RJ45 Pin 8: 5V statt Reserve" (siehe
+// docs/entscheidungen.md) direkt auf der 5V-Versorgungsschiene des Geraets -
+// KEIN GPIO mehr, deshalb kein #define hier. GPIO19 (bisher ueber diesen Pin
+// herausgefuehrt) ist jetzt vollstaendig frei/unbenutzt - anders als beim
+// WT32-ETH01 gab es hier ohnehin keine Boot-Strapping-Einschraenkung.
 
 // --- Sensor 2 (extern, DHT-22 ueber RJ45 Pin 5) -----------------------------
 #define PIN_DHT_EXTERNAL PIN_RJ45_PIN5_RESERVE

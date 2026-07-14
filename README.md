@@ -6,7 +6,7 @@
   <img alt="Sensormeter Projektfamilie: Sensormeter (LAN), Sensormeter WLAN (WLAN), Sensormeter PoE (LAN+PoE) und Sensormeter Display (Touchscreen), verbunden über gemeinsame Architektur und SNMP" src="docs/projektfamilie-light.png">
 </picture>
 
-ESP32-S3-basierter Umweltsensor (2× DHT-22, OLED SH1107) auf dem
+ESP32-S3-basierter Umweltsensor (2× DHT-22, OLED SSD1306) auf dem
 **Waveshare ESP32-S3-ETH** (W5500-Ethernet + WLAN, optionales
 PoE-Huckepack-Modul). Vierter Familienzweig neben
 [Sensormeter](https://github.com/peterhagelhof7-cmd/sensormeter)
@@ -60,7 +60,10 @@ phasenbasiert auf SemVer) siehe
 
 - Waveshare ESP32-S3-ETH (ESP32-S3R8, 16 MB Flash, 8 MB PSRAM, W5500-Ethernet über SPI)
 - 2× DHT-22 (intern fest verbaut + extern über RJ45-Modularanschluss)
-- OLED SH1107, 1,5", 128×128, I2C
+- OLED SSD1306, 0,96", 128×64, I2C (familienweit einheitlich seit
+  `docs/entscheidungen.md` "Internes Display: SH1107 -> SSD1306"; das
+  größere SH1107 gibt es seither als optionales externes Steckmodul, siehe
+  `sensormeter-family/repo/module-design/sh1107-display-modul.md`)
 - RJ45-Modularanschluss (Sensor 2 / Relais, Pin-Rollen identisch zu Sensormeter)
 - Onboard-BOOT-Taster (GPIO0) als Bedienelement, PoE optional (Huckepack-Modul)
 

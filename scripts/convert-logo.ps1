@@ -15,9 +15,14 @@
   Bekannte Displays der Familie - alle vier Projekte haben inzwischen ein
   implementiertes Branding-Feature (BrandingManager, siehe jeweiliges
   docs/entscheidungen.md):
-    - Sensormeter (WT32-ETH01) / Sensormeter WLAN: OLED SSD1306, 128x64,
-      1 Bit monochrom.
-    - Sensormeter PoE: OLED SH1107, 128x128, 1 Bit monochrom.
+    - Sensormeter (WT32-ETH01) / Sensormeter WLAN / Sensormeter PoE: OLED
+      SSD1306, 128x64, 1 Bit monochrom (seit der familienweiten
+      Display-Standardisierung, siehe sensormeter-poe/repo/docs/
+      entscheidungen.md "Internes Display: SH1107 -> SSD1306").
+    - Optionales externes SH1107-Display-Steckmodul (128x128, an
+      Sensormeter/Sensormeter PoE, siehe sensormeter-family/repo/
+      module-design/sh1107-display-modul.md): eigenes Logo-Format noch
+      nicht ueber dieses Skript abgedeckt, bei Bedarf 'custom' waehlen.
     - Sensormeter Display: TFT ST7789P3 (Farbe) - bewusst DIESELBE
       Zielgroesse 128x64 wie die OLED-Projekte (nur RGB565 statt 1bpp),
       damit dieses Skript fuer alle vier Projekte eine einheitliche
@@ -140,7 +145,7 @@ Write-Host "Sensormeter Logo-Konverter v$ScriptVersion" -ForegroundColor Cyan
 $Presets = [ordered]@{
     'sensormeter' = @{ Name = 'Sensormeter / Sensormeter WLAN'; Note = 'OLED SSD1306'; W = 128; H = 64; Mode = 'mono' }
     'wlan'        = @{ Name = 'Sensormeter / Sensormeter WLAN'; Note = 'OLED SSD1306'; W = 128; H = 64; Mode = 'mono' }
-    'poe'         = @{ Name = 'Sensormeter PoE'; Note = 'OLED SH1107'; W = 128; H = 128; Mode = 'mono' }
+    'poe'         = @{ Name = 'Sensormeter PoE'; Note = 'OLED SSD1306'; W = 128; H = 64; Mode = 'mono' }
     'display'     = @{ Name = 'Sensormeter Display'; Note = 'TFT ST7789P3, Farbe'; W = 128; H = 64; Mode = 'color' }
 }
 
@@ -148,7 +153,7 @@ if (-not $Display) {
     Write-Host ''
     Write-Host 'Fuer welches Display soll konvertiert werden?'
     Write-Host '  1) Sensormeter / Sensormeter WLAN - OLED SSD1306, 128x64, 1-Bit monochrom'
-    Write-Host '  2) Sensormeter PoE                - OLED SH1107, 128x128, 1-Bit monochrom'
+    Write-Host '  2) Sensormeter PoE                - OLED SSD1306, 128x64, 1-Bit monochrom'
     Write-Host '  3) Sensormeter Display             - TFT ST7789P3, 128x64, 16-Bit Farbe (RGB565)'
     Write-Host '  4) Eigene Groesse / Farbtiefe (manuell)'
     $choice = Read-Host 'Auswahl (1-4)'
