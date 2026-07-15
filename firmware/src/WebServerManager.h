@@ -57,6 +57,11 @@ class WebServerManager {
   void handleRoot(AsyncWebServerRequest* request);
   void handleSettingsPage(AsyncWebServerRequest* request);
   void handleValuesCsv(AsyncWebServerRequest* request);
+  // Persistenter Log-Puffer (DataManager::appendLogFile): direkt aus
+  // LittleFS gestreamt statt in RAM aufgebaut (kann bis zu 32 KB gross
+  // sein). path ist "/log.txt" bzw. "/log.old.txt" - 404, falls (noch)
+  // keine Rotation stattfand und die alte Datei fehlt.
+  void handleLogFile(AsyncWebServerRequest* request, const char* path);
 
   void handleApiStatus(AsyncWebServerRequest* request);
   void handleApiSensors(AsyncWebServerRequest* request);

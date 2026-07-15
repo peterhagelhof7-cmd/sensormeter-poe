@@ -227,13 +227,15 @@ void NetManager::begin() {
 }
 
 void NetManager::loop() {
+  logInterfaceTransitions();
+
   SystemState state = _data.getSystemState();
 
   if (state == SystemState::NETWORK_CHECK) {
     if (networkOk()) {
       _data.setSystemState(SystemState::RUN_NORMAL);
     } else if (millis() - _networkCheckStartedMillis > _networkCheckTimeoutMs) {
-      _data.pushLogEntry("Netzwerk: kein Link, starte eigenen Access-Point \"installer\"", 3);
+      _data.pushLogEntry("Netzwerk: kein Link, starte eigenen Access-Point \"installer\"", DataManager::SEVERITY_ERROR);
       startFallbackAp();
       _lastFallbackJoinAttemptMillis = millis();
       _data.setSystemState(SystemState::FALLBACK_MODE);
@@ -257,13 +259,53 @@ void NetManager::loop() {
       _lastFallbackJoinAttemptMillis = millis();
     }
   } else if (state == SystemState::RUN_NORMAL && !networkOk()) {
-    _data.pushLogEntry("Netzwerk: Verbindung verloren (LAN+WLAN down)", 3);
+    _data.pushLogEntry("Netzwerk: Verbindung verloren (LAN+WLAN down)", DataManager::SEVERITY_ERROR);
     _apActive = false;
     _networkCheckTimeoutMs = NETWORK_CHECK_TIMEOUT_MS;
     _data.setSystemState(SystemState::NETWORK_CHECK);
     _networkCheckStartedMillis = millis();
     _lastReconnectAttemptMillis = millis();
   }
+}
+
+// Loggt LAN/WLAN-Verbindungsverlust und -Wiederherstellung PRO Interface als
+// WARNING/INFO, unabhaengig vom kombinierten networkOk()-Zustand oben (der
+// nur beim GLEICHZEITIGEN Ausfall beider Interfaces als ERROR eskaliert und
+// den Zustandsautomaten in NETWORK_CHECK schickt) - vorher blieb der Verlust
+// eines einzelnen Interfaces (waehrend das andere noch traegt) komplett
+// unsichtbar im Log. "EverUp" verhindert einen falschen "verloren"-Eintrag
+// waehrend des allerersten Verbindungsaufbaus nach dem Boot.
+void NetManager::logInterfaceTransitions() {
+  bool lanUp = _ethGotIp;
+  if (_lanEverUp) {
+    if (!lanUp && _lanDownSinceMillis == 0) {
+      _lanDownSinceMillis = millis();
+      _data.pushLogEntry("Netzwerk: LAN-Verbindung verloren", DataManager::SEVERITY_WARNING);
+    } else if (lanUp && _lanDownSinceMillis != 0) {
+      unsigned long downSec = (millis() - _lanDownSinceMillis) / 1000UL;
+      _data.pushLogEntry("Netzwerk: LAN wieder verbunden (Ausfall " + String(downSec) + "s)",
+                          DataManager::SEVERITY_INFO);
+      _lanDownSinceMillis = 0;
+    }
+  }
+  if (lanUp) _lanEverUp = true;
+
+  // _apActive (Fallback-AP) zaehlt bewusst nicht als "WLAN oben" fuer dieses
+  // Tracking - der Fallback-AP ist selbst schon die Reaktion auf einen
+  // WLAN-Ausfall (siehe networkOk()), nicht eine reguläre Verbindung.
+  bool wlanUp = _wlanGotIp;
+  if (_wlanEverUp) {
+    if (!wlanUp && _wlanDownSinceMillis == 0) {
+      _wlanDownSinceMillis = millis();
+      _data.pushLogEntry("Netzwerk: WLAN-Verbindung verloren", DataManager::SEVERITY_WARNING);
+    } else if (wlanUp && _wlanDownSinceMillis != 0) {
+      unsigned long downSec = (millis() - _wlanDownSinceMillis) / 1000UL;
+      _data.pushLogEntry("Netzwerk: WLAN wieder verbunden (Ausfall " + String(downSec) + "s)",
+                          DataManager::SEVERITY_INFO);
+      _wlanDownSinceMillis = 0;
+    }
+  }
+  if (wlanUp) _wlanEverUp = true;
 }
 
 IPAddress NetManager::getLanIp() const {

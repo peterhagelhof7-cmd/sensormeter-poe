@@ -806,3 +806,25 @@ SM-FW-END`). Nicht getestet: echter OTA-Upload auf echter Hardware.
 **Standing-Vorgabe**: dieser Mechanismus ist ab jetzt fester Bestandteil
 dieses Projekts und laeuft bei kuenftigen Firmware-Versionen automatisch
 mit (siehe Sensormeter-Eintrag).
+
+## 2026-07-16 — Persistenter Log-Puffer auf LittleFS (/log.txt) + WARNING-Stufe
+
+Identischer Mechanismus wie im Sensormeter-Projekt (siehe dortiger
+Eintrag vom selben Tag fuer die vollstaendige Begruendung inkl.
+Groessen-/Rotationsrechnung und der Pro-Interface-WARNING-Logik fuer
+LAN/WLAN, urspruenglich aus Sensormeter WLAN portiert):
+
+- Neue benannte Severity-Stufen `DataManager::SEVERITY_ERROR/_WARNING/_INFO`.
+- `pushLogEntry()` haengt jeden Eintrag zusaetzlich an `/log.txt` an
+  (Rotation nach `/log.old.txt` bei 32 KB).
+- `NetManager::logInterfaceTransitions()` trackt LAN und WLAN einzeln
+  (nicht nur den kombinierten `networkOk()`-Zustand) und loggt Verlust als
+  `WARNING`, Wiederverbindung als `INFO` mit Ausfalldauer.
+- Web-UI: `/log.txt`/`/log.old.txt` aus LittleFS gestreamt, neue Buttons
+  "Log"/"Log (alt)" auf der Hauptseite.
+
+Getestet: `pio run` (PowerShell) - baut sauber (Flash 22,5%/RAM 19,8%,
+kaum veraendert). Nicht getestet: echte Hardware.
+
+**Standing-Vorgabe**: analog zur OTA-Pruefung oben ist dieser Mechanismus
+ab jetzt fester Bestandteil dieses Projekts.

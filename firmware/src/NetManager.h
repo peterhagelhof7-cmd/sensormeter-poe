@@ -75,6 +75,18 @@ class NetManager {
   // (siehe begin() / DeviceConfig::wlanPendingTest).
   unsigned long _networkCheckTimeoutMs = 0;
 
+  // Pro-Interface-Verlust-Tracking fuer WARNING-Log-Eintraege (siehe
+  // logInterfaceTransitions() in der .cpp) - unabhaengig vom kombinierten
+  // networkOk()-Zustand unten, der nur bei komplettem Ausfall (LAN+WLAN)
+  // greift. "EverUp" verhindert einen falschen "Verbindung verloren"-Eintrag
+  // waehrend des allerersten Verbindungsaufbaus nach dem Boot; 0 bei
+  // "DownSinceMillis" heisst "kein getrackter Ausfall".
+  bool _lanEverUp = false;
+  bool _wlanEverUp = false;
+  unsigned long _lanDownSinceMillis = 0;
+  unsigned long _wlanDownSinceMillis = 0;
+  void logInterfaceTransitions();
+
   void applyLanConfig();
   void applyWlanConfig();
   // Startet den eigenen Fallback-Access-Point (SSID/PSK "installer").

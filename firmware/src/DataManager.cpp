@@ -4,6 +4,14 @@
 
 namespace {
 constexpr const char* kHistoryFile = "/history.csv";
+constexpr const char* kLogFile = "/log.txt";
+constexpr const char* kLogFileOld = "/log.old.txt";
+
+const char* severityLabel(int severity) {
+  if (severity <= DataManager::SEVERITY_ERROR) return "ERR ";
+  if (severity <= DataManager::SEVERITY_WARNING) return "WARN";
+  return "INFO";
+}
 
 // Leeres Feld -> NAN (String::toFloat() liefert bei leerem/ungueltigem Text
 // 0.0, nicht NAN - das wuerde einen echten 0-Messwert von "Modul liefert
@@ -167,9 +175,10 @@ size_t DataManager::getRingbuffer(HourValue* out, size_t maxCount) {
 }
 
 void DataManager::pushLogEntry(const String& message, int severity) {
+  time_t ts = time(nullptr);
   xSemaphoreTake(_mutex, portMAX_DELAY);
   _logSequenceCounter++;
-  _log[_logNextIndex].timestamp = time(nullptr);
+  _log[_logNextIndex].timestamp = ts;
   _log[_logNextIndex].message = message;
   _log[_logNextIndex].severity = severity;
   _log[_logNextIndex].sequence = _logSequenceCounter;
@@ -177,6 +186,35 @@ void DataManager::pushLogEntry(const String& message, int severity) {
   if (_logCount < LOG_CAPACITY) _logCount++;
   xSemaphoreGive(_mutex);
   Serial.printf("[LOG] %s\n", message.c_str());
+  appendLogFile(ts, severity, message);
+}
+
+void DataManager::appendLogFile(time_t timestamp, int severity, const String& message) {
+  // Rotation: aktuelle Datei zu gross -> zur alten Datei umbenennen
+  // (ueberschreibt eine ggf. vorhandene log.old.txt), frische Datei beginnt
+  // leer - kein Tmp-Datei-Umweg wie bei ConfigManager::save() noetig, da ein
+  // Verlust der letzten paar Zeilen bei einem Stromausfall waehrend der
+  // Rotation unkritisch ist (reine Diagnosedaten, kein Konfigurationszustand).
+  fs::File existing = LittleFS.open(kLogFile, "r");
+  size_t currentSize = existing ? existing.size() : 0;
+  if (existing) existing.close();
+  if (currentSize >= LOG_FILE_MAX_BYTES) {
+    LittleFS.remove(kLogFileOld);
+    LittleFS.rename(kLogFile, kLogFileOld);
+  }
+
+  fs::File f = LittleFS.open(kLogFile, "a");
+  if (!f) {
+    Serial.println("[DATA] log.txt konnte nicht geoeffnet werden (Anhaengen)");
+    return;
+  }
+  struct tm tmv;
+  localtime_r(&timestamp, &tmv);
+  char tsBuf[20];
+  snprintf(tsBuf, sizeof(tsBuf), "%04d-%02d-%02d %02d:%02d:%02d", tmv.tm_year + 1900, tmv.tm_mon + 1, tmv.tm_mday,
+           tmv.tm_hour, tmv.tm_min, tmv.tm_sec);
+  f.printf("%s [%s] %s\n", tsBuf, severityLabel(severity), message.c_str());
+  f.close();
 }
 
 size_t DataManager::getLogEntries(LogEntry* out, size_t maxCount) {

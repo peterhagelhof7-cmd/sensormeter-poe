@@ -253,6 +253,10 @@ String WebServerManager::buildMainPageBody() const {
   html += "<div class=\"block\"><h2>Letzte Meldungen</h2><table id=\"logtable\"><tr><th>Zeit</th><th>Meldung</th></tr></table></div>";
 
   html += "<div class=\"block\"><a href=\"/values.csv\"><button>values.csv</button></a>";
+  html += "<a href=\"/log.txt\"><button>Log</button></a>";
+  if (LittleFS.exists("/log.old.txt")) {
+    html += "<a href=\"/log.old.txt\"><button>Log (alt)</button></a>";
+  }
   html += "<a href=\"/settings\"><button>Einstellungen</button></a></div>";
 
   html += "<script src=\"https://cdn.jsdelivr.net/npm/chart.js\"></script><script>";
@@ -659,6 +663,17 @@ void WebServerManager::handleValuesCsv(AsyncWebServerRequest* request) {
   AsyncWebServerResponse* response = request->beginResponse(200, "text/csv", csv);
   response->addHeader("Content-Disposition", "attachment; filename=values.csv");
   request->send(response);
+}
+
+void WebServerManager::handleLogFile(AsyncWebServerRequest* request, const char* path) {
+  if (!LittleFS.exists(path)) {
+    request->send(404, "text/plain", "Keine Logdatei vorhanden.");
+    return;
+  }
+  // text/plain statt "attachment"-Header, bewusst wie /values.csv: im
+  // Browser direkt anzeigbar UND per Strg+S/Rechtsklick herunterladbar -
+  // kein separater "View"- und "Download"-Weg noetig.
+  request->send(LittleFS, path, "text/plain");
 }
 
 // ----------------------------------------------------------------------------
@@ -1325,6 +1340,8 @@ void WebServerManager::begin() {
   _server.on("/", HTTP_GET, [this](AsyncWebServerRequest* r) { handleRoot(r); });
   _server.on("/settings", HTTP_GET, [this](AsyncWebServerRequest* r) { handleSettingsPage(r); });
   _server.on("/values.csv", HTTP_GET, [this](AsyncWebServerRequest* r) { handleValuesCsv(r); });
+  _server.on("/log.txt", HTTP_GET, [this](AsyncWebServerRequest* r) { handleLogFile(r, "/log.txt"); });
+  _server.on("/log.old.txt", HTTP_GET, [this](AsyncWebServerRequest* r) { handleLogFile(r, "/log.old.txt"); });
 
   _server.on("/api/status", HTTP_GET, [this](AsyncWebServerRequest* r) { handleApiStatus(r); });
   _server.on("/api/sensors", HTTP_GET, [this](AsyncWebServerRequest* r) { handleApiSensors(r); });

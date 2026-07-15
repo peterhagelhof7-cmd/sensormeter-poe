@@ -51,8 +51,23 @@ struct LogEntry {
 
 class DataManager {
  public:
+  // Benannte Severity-Stufen (RFC5424-artige Skala, wie bereits in
+  // SyslogManager verwendet) statt roher Zahlen an den Aufrufstellen.
+  // WARNING (4) ist neu: fuer transiente, selbstheilende Ereignisse (z.B.
+  // ein kurzer LAN- oder WLAN-Aussetzer, der sich von selbst erholt) -
+  // getrennt von ERROR (3), das weiterhin echten, admin-relevanten
+  // Fehlern vorbehalten bleibt (z.B. beide Interfaces gleichzeitig down).
+  static const int SEVERITY_ERROR = 3;
+  static const int SEVERITY_WARNING = 4;
+  static const int SEVERITY_INFO = 6;
+
   static const size_t RINGBUFFER_SIZE = 168;  // 7 Tage * 24 Stunden
   static const size_t LOG_CAPACITY = 5;       // Lastenheft 5.3: "letzte 5 Meldungen"
+  // Persistenter Log-Puffer auf LittleFS (/log.txt, bei Ueberschreiten
+  // umbenannt nach /log.old.txt - siehe appendLogFile()): 32 KB je Datei,
+  // max. 64 KB gesamt (siehe Sensormeter-WLAN-Projekt, docs/entscheidungen.md,
+  // fuer die Groessenrechnung).
+  static const size_t LOG_FILE_MAX_BYTES = 32UL * 1024UL;
 
   void begin();
 
@@ -82,7 +97,7 @@ class DataManager {
   // Meldungen). Wird von SyslogManager zusaetzlich per UDP versendet -
   // dieselbe Quelle fuer beides. severity folgt der Syslog-Konvention
   // (3 = Error, 6 = Informational).
-  void pushLogEntry(const String& message, int severity = 6);
+  void pushLogEntry(const String& message, int severity = SEVERITY_INFO);
   size_t getLogEntries(LogEntry* out, size_t maxCount);  // neueste zuerst
 
   // Fuer SyslogManager: liefert nur Eintraege mit sequence > afterSequence
@@ -91,6 +106,12 @@ class DataManager {
 
  private:
   void saveRingbuffer();
+  // Haengt einen formatierten Eintrag an /log.txt an (Rotation nach
+  // /log.old.txt bei Ueberschreiten von LOG_FILE_MAX_BYTES) - siehe
+  // DataManager.cpp fuer das Zeilenformat. Unabhaengig vom RAM-Ringpuffer
+  // oben (_log/LOG_CAPACITY), der weiterhin nur fuer die "letzte 5
+  // Meldungen"-Webseite und den SyslogManager-Versand dient.
+  void appendLogFile(time_t timestamp, int severity, const String& message);
 
   SemaphoreHandle_t _mutex = nullptr;
 
