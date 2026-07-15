@@ -633,3 +633,42 @@ Betrifft nur Dokumentation/`pins.h` - kein Modul nutzt Pin 8 aktuell,
 daher keine funktionale Änderung am Verhalten bestehender Module. Siehe
 `sensormeter-family/repo/module-design/README.md` für die familienweite
 Pinbelegungstabelle.
+
+## 2026-07-15 — Periodischer I2C-Rescan (1x/Minute), ohne Taktänderung
+
+Analoge Änderung zu `sensormeter/repo/docs/entscheidungen.md` vom
+gleichen Datum - dort steht die vollständige Begründung (50 kHz
+zurückgestellt, "vollständiger Scan beim Start" existierte bereits,
+"asynchron" als eigener `millis()`-Timer statt echter Parallelität, da
+kein RTOS-Task-Scheduler vorhanden ist).
+
+**Umgesetzte Änderungen** (`SensorDetector.h`/`.cpp`, `main.cpp`,
+identisch zu sensormeter):
+- I2C-Sweep aus `runDetection()` in `scanI2cBus()` extrahiert, von
+  `runDetection()` und der neuen `SensorDetector::loop()` gemeinsam
+  genutzt.
+- `SensorDetector::loop()` neu: alle 60s ein reiner I2C-Rescan, bewusst
+  ohne erneuten DHT-Leseversuch (teilt sich den GPIO mit
+  `SensorManager`s `dhtExternal`).
+- Ergebnisloser periodischer Scan setzt den zuletzt bekannten
+  Erkennungsstatus nicht zurück.
+- `main.cpp`: `sensorDetector.loop();` im Hauptloop ergänzt.
+
+Getestet: `pio run` - baut sauber (ESP32-S3-ETH, Espressif32-Framework),
+keine neuen Warnungen. Nicht getestet: echte Hardware.
+
+### Nachtrag (gleicher Tag) — "vollständig" hieß auch: alle Treffer auswerten, nicht nur den ersten
+
+Analoge Korrektur zu `sensormeter/repo/docs/entscheidungen.md` vom
+gleichen Datum - dort steht die vollständige Begründung. Kurzfassung:
+"vollständiger Scan" bezog sich nicht nur auf den Adressbereich (der war
+schon vorher komplett), sondern sollte auch bedeuten, dass jede gefundene
+Adresse ausgewertet wird, nicht nur die erste. `scanI2cBus()` bricht jetzt
+nicht mehr beim ersten Treffer ab, sammelt alle Treffer in einem neuen
+`I2cHit[MAX_LOGGED_I2C_HITS=8]`-Array (`detectedI2cDeviceCount()`/
+`detectedI2cDeviceAt()`), spiegelt aber weiterhin nur das primäre Gerät
+(niedrigste Adresse) in die bestehenden Felder, die `SensorManager`
+liest - Mehrfach-Nutzung bleibt bewusst offen. `detectedDescription()`
+hängt bei mehr als einem Treffer einen Hinweis an.
+
+Getestet: `pio run` - baut sauber. Nicht getestet: echte Hardware.
