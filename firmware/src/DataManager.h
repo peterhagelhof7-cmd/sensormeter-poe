@@ -9,15 +9,33 @@
 // Tasks (Sensor/Network/Web/Display/Syslog/Mqtt), die aus unterschiedlichen
 // Kontexten (Hauptloop, async Webserver) zugreifen.
 
+// Stundenwert fuer den 7-Tage-Ringpuffer/history.csv - Sensor 1 (intern,
+// immer DHT11) hat immer nur Temperatur/Feuchte; Sensor 2 (extern, RJ45-
+// Modul) kann je nach gestecktem Modultyp Temperatur/Feuchte (DHT11/DHT21/
+// AHT20/AHT21), Luftdruck (BMP280), Helligkeit (BH1750) oder Luftguete
+// (ENS160) liefern - nicht angewendete Felder bleiben NAN. Siehe
+// docs/entscheidungen.md "Sensor-2-Datenmodell erweitert" fuer die
+// Groessenrechnung (Ringpuffer/LittleFS-Partition).
 struct HourValue {
   time_t timestamp = 0;
-  float temperature = NAN;
-  float humidity = NAN;
+  float sensor1Temperature = NAN;
+  float sensor1Humidity = NAN;
+  float sensor2Temperature = NAN;
+  float sensor2Humidity = NAN;
+  float sensor2PressureHpa = NAN;
+  float sensor2Lux = NAN;
+  float sensor2Eco2Ppm = NAN;
 };
 
+// Live-Messwert fuer Sensor 1 oder Sensor 2 (siehe HourValue-Kommentar zur
+// Feldbelegung je Modultyp - bei Sensor 1 bleiben pressureHpa/lux/eco2Ppm
+// immer NAN).
 struct SensorReading {
   float temperature = NAN;
   float humidity = NAN;
+  float pressureHpa = NAN;
+  float lux = NAN;
+  float eco2Ppm = NAN;
   bool valid = false;
   unsigned long lastReadMillis = 0;
 };

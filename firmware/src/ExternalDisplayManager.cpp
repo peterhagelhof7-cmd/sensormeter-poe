@@ -117,7 +117,21 @@ void ExternalDisplayManager::drawSensorsPage() {
 
   if (cfg.sensor2Enabled) {
     SensorReading s2 = _data.getSensor2();
-    lines[1] = cfg.sensor2Name + " " + (s2.valid ? String(s2.temperature, 1) + "C " + String(s2.humidity, 0) + "%" : String("---"));
+    // Je nach gestecktem Modultyp liefert Sensor 2 Temperatur/Feuchte,
+    // nur Druck, nur Helligkeit oder nur Luftguete (siehe DataManager.h).
+    String s2Value = "---";
+    if (s2.valid) {
+      if (!isnan(s2.temperature) && !isnan(s2.humidity)) {
+        s2Value = String(s2.temperature, 1) + "C " + String(s2.humidity, 0) + "%";
+      } else if (!isnan(s2.pressureHpa)) {
+        s2Value = String(s2.pressureHpa, 0) + "hPa";
+      } else if (!isnan(s2.lux)) {
+        s2Value = String(s2.lux, 0) + "lx";
+      } else if (!isnan(s2.eco2Ppm)) {
+        s2Value = String(s2.eco2Ppm, 0) + "ppm";
+      }
+    }
+    lines[1] = cfg.sensor2Name + " " + s2Value;
     drawLines(lines, 2);
   } else {
     drawLines(lines, 1);

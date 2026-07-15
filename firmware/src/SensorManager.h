@@ -15,13 +15,16 @@
 // DataManager (Web-Graph).
 //
 // "Sensor 2" (extern) liest je nach von SensorDetector erkanntem Chiptyp
-// einen von drei Wegen: DHT22 auf Pin 5 (Default/Fallback, wie bisher),
-// BME280 oder AHT20/AHT21 per I2C - siehe docs/entscheidungen.md
-// "I2C-Lesepfad fuer Sensor 2". BH1750 (Lux) und CCS811 (eCO2/TVOC) werden
-// von SensorDetector zwar erkannt, aber NICHT gelesen - beide passen nicht
-// in das Temperatur/Feuchte-Datenmodell von "Sensor 2" (siehe
-// sensormeter-family/repo/module-design/README.md, Abschnitt
-// "Firmware-Luecke").
+// einen von fuenf Wegen: DHT11/DHT21 auf Pin 5 (Typ ueber
+// ConfigManager::pin5DhtType, siehe dortigen Kommentar - Auto-Erkennung
+// DHT11 vs. DHT21 ist unzuverlaessig; betrifft NUR den externen RJ45-
+// Anschluss, der interne DHT-22 oben bleibt fest verbaut/unveraendert),
+// BME280/AHT20/AHT21/BMP280/BH1750/ENS160 per I2C - siehe
+// docs/entscheidungen.md "Sensor-2-Datenmodell erweitert". Liefert IMMER
+// hoechstens EIN Sensor-2-Ergebnis pro Zyklus (das von SensorDetector als
+// "primaer" gemeldete Geraet, niedrigste I2C-Adresse bei mehreren
+// Treffern) - echtes gleichzeitiges Lesen mehrerer gesteckter Module ist
+// weiterhin nicht umgesetzt (siehe SensorDetector-Klassenkommentar).
 
 class SensorManager {
  public:
@@ -43,4 +46,15 @@ class SensorManager {
   void readExternalDht();
   void readExternalBme280(uint8_t address);
   void readExternalAht20();
+  void readExternalBmp280(uint8_t address);
+  void readExternalBh1750(uint8_t address);
+  void readExternalEns160(uint8_t address);
+
+  // Baut aus dem aktuellen Stand von DataManager::getSensor1()/getSensor2()
+  // einen HourValue und speichert ihn 1x/Stunde in den Ringpuffer - erst
+  // NACH readInternalSensor() UND readExternalSensorIfEnabled() aus loop()
+  // aufgerufen, damit beide Sensoren denselben Zyklus abbilden (vorher war
+  // das an readInternalSensor() drangehaengt und haette Sensor 2 immer eine
+  // Lesung "hinterher gehinkt").
+  void maybeRecordHourValue();
 };

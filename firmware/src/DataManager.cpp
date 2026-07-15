@@ -4,7 +4,21 @@
 
 namespace {
 constexpr const char* kHistoryFile = "/history.csv";
+
+// Leeres Feld -> NAN (String::toFloat() liefert bei leerem/ungueltigem Text
+// 0.0, nicht NAN - das wuerde einen echten 0-Messwert von "Modul liefert
+// dieses Feld nicht" nicht mehr unterscheidbar machen).
+float parseFloatOrNan(const String& s) {
+  if (s.length() == 0) return NAN;
+  return s.toFloat();
 }
+
+// NAN -> leeres Feld, sonst 1 Nachkommastelle (wie bisher).
+String formatFloatOrEmpty(float v) {
+  if (isnan(v)) return String();
+  return String(v, 1);
+}
+}  // namespace
 
 void DataManager::begin() {
   _mutex = xSemaphoreCreateMutex();
@@ -65,6 +79,10 @@ void DataManager::pushHourValue(const HourValue& value) {
   saveRingbuffer();
 }
 
+// Spaltenreihenfolge, siehe HourValue: timestamp,s1temp,s1hum,s2temp,s2hum,
+// s2pressure,s2lux,s2eco2 - 8 Spalten, nicht anwendbare Felder leer statt 0
+// (siehe formatFloatOrEmpty/parseFloatOrNan oben). Groessenrechnung (worst
+// case ~60-70 Byte/Zeile * 168 Zeilen =~ 10-12 KB) siehe docs/entscheidungen.md.
 void DataManager::saveRingbuffer() {
   HourValue buffer[RINGBUFFER_SIZE];
   size_t count = getRingbuffer(buffer, RINGBUFFER_SIZE);
@@ -75,8 +93,15 @@ void DataManager::saveRingbuffer() {
     return;
   }
   for (size_t i = 0; i < count; i++) {
-    f.printf("%ld,%.2f,%.2f\n", static_cast<long>(buffer[i].timestamp), buffer[i].temperature,
-              buffer[i].humidity);
+    const HourValue& hv = buffer[i];
+    f.printf("%ld,%s,%s,%s,%s,%s,%s,%s\n", static_cast<long>(hv.timestamp),
+              formatFloatOrEmpty(hv.sensor1Temperature).c_str(),
+              formatFloatOrEmpty(hv.sensor1Humidity).c_str(),
+              formatFloatOrEmpty(hv.sensor2Temperature).c_str(),
+              formatFloatOrEmpty(hv.sensor2Humidity).c_str(),
+              formatFloatOrEmpty(hv.sensor2PressureHpa).c_str(),
+              formatFloatOrEmpty(hv.sensor2Lux).c_str(),
+              formatFloatOrEmpty(hv.sensor2Eco2Ppm).c_str());
   }
   f.close();
 }
@@ -92,13 +117,33 @@ void DataManager::loadRingbuffer() {
     String line = f.readStringUntil('\n');
     line.trim();
     if (line.isEmpty()) continue;
-    int firstComma = line.indexOf(',');
-    int secondComma = line.indexOf(',', firstComma + 1);
-    if (firstComma < 0 || secondComma < 0) continue;
+
+    // In 8 kommagetrennte Felder zerlegen - alte Zeilen mit nur 3 Feldern
+    // (Format vor 2026-07-15) werden uebersprungen statt falsch interpretiert.
+    String fields[8];
+    int fieldCount = 0;
+    int start = 0;
+    while (fieldCount < 8) {
+      int comma = line.indexOf(',', start);
+      if (comma < 0) {
+        fields[fieldCount++] = line.substring(start);
+        break;
+      }
+      fields[fieldCount++] = line.substring(start, comma);
+      start = comma + 1;
+    }
+    if (fieldCount != 8) continue;
+
     HourValue hv;
-    hv.timestamp = static_cast<time_t>(line.substring(0, firstComma).toInt());
-    hv.temperature = line.substring(firstComma + 1, secondComma).toFloat();
-    hv.humidity = line.substring(secondComma + 1).toFloat();
+    hv.timestamp = static_cast<time_t>(fields[0].toInt());
+    hv.sensor1Temperature = parseFloatOrNan(fields[1]);
+    hv.sensor1Humidity = parseFloatOrNan(fields[2]);
+    hv.sensor2Temperature = parseFloatOrNan(fields[3]);
+    hv.sensor2Humidity = parseFloatOrNan(fields[4]);
+    hv.sensor2PressureHpa = parseFloatOrNan(fields[5]);
+    hv.sensor2Lux = parseFloatOrNan(fields[6]);
+    hv.sensor2Eco2Ppm = parseFloatOrNan(fields[7]);
+
     _ringbuffer[_ringbufferNextIndex] = hv;
     _ringbufferNextIndex = (_ringbufferNextIndex + 1) % RINGBUFFER_SIZE;
     _ringbufferCount++;

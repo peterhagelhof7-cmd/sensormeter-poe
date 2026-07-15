@@ -28,6 +28,12 @@ void RelayManager::loop() {
   if (!reading.valid) return;  // kein gueltiger Messwert -> Zustand unveraendert lassen
 
   float value = (cfg.relayAutoValue == "temp") ? reading.temperature : reading.humidity;
+  // Sensor 2 kann seit der Druck/Lux/Luftguete-Erweiterung "valid" sein,
+  // OHNE Temperatur/Feuchte zu liefern (z.B. BMP280/BH1750/ENS160-Modul,
+  // siehe DataManager.h) - value waere dann NAN, und ein Vergleich mit NAN
+  // ist in IEEE 754 immer false, wuerde das Relais also unbemerkt staendig
+  // ausschalten statt den Zustand unveraendert zu lassen.
+  if (isnan(value)) return;
   bool desired = (cfg.relayAutoCompare == "above") ? (value > cfg.relayAutoThreshold)
                                                     : (value < cfg.relayAutoThreshold);
   setOn(desired);

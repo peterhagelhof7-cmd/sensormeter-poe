@@ -672,3 +672,68 @@ liest - Mehrfach-Nutzung bleibt bewusst offen. `detectedDescription()`
 hängt bei mehr als einem Treffer einen Hinweis an.
 
 Getestet: `pio run` - baut sauber. Nicht getestet: echte Hardware.
+
+## 2026-07-15 — Sensor-2-Datenmodell erweitert: Druck/Lux/Luftgüte + values.csv-Größe
+
+Analoge Änderung zu `sensormeter/repo/docs/entscheidungen.md` vom gleichen
+Datum - dort steht die vollständige Begründung inkl. Größenrechnung. Start
+der Firmware-Einpflege für die in `module-design/README.md` "Firmware-
+Lücke" gelisteten Punkte (BMP280-Chip-ID-Check, BH1750-Lux, ENS160-
+Luftgüte, DHT11/DHT21-Typauswahl) - ausdrücklich NICHT die spätere "Modul-
+Integration" (mehrere gleichzeitig gesteckte Module gemeinsam lesen).
+
+**Sensormeter-PoE-Besonderheit**: anders als bei Sensormeter (dort intern
+DHT11) ist hier sowohl der interne als auch der externe Sensor werkseitig
+ein DHT-22-Pfad (siehe Klassenkommentar `SensorManager.h`) - die neue
+`pin5DhtType`-Typauswahl (DHT11/DHT21) betrifft ausschließlich den
+**externen** RJ45-Anschluss (Sensor 2), der interne, fest verbaute DHT-22
+(Sensor 1) bleibt unverändert `plausibleDht22()`.
+
+**Größenrechnung**: `RINGBUFFER_SIZE` (168) bleibt unverändert. Bei der
+16-MB-Flash-Partition (`default_16MB.csv`) ist die values.csv-Größe (auch
+mit den neuen 8 statt 3 Spalten, ~10-12 KB worst case) ohnehin nie
+relevant eng gewesen - keine weitere Rechnung nötig.
+
+### Umgesetzte Änderungen (identisch zu sensormeter, siehe dortiger Eintrag)
+
+- `ConfigManager`: neues Feld `pin5DhtType` ("DHT11"|"DHT21", Default
+  "DHT21"), persistiert im `<kontakt>`-Element.
+- `SensorManager`: zwei DHT-Objekte (`dhtExternalDht11`/`dhtExternalDht21`)
+  für den externen Pin statt einem fest auf DHT22 codierten; drei neue
+  Lesepfade `readExternalBmp280()`/`readExternalBh1750()`/
+  `readExternalEns160()`. `loop()` umgebaut: `maybeRecordHourValue()`
+  läuft jetzt NACH beiden Sensor-Lesungen (vorher hing die stündliche
+  Ringpuffer-Speicherung an `readInternalSensor()` und lief vor Sensor 2).
+- `SensorDetector`: 0x76/0x77 unterscheidet jetzt per Chip-ID-Register
+  (0xD0) zwischen BME280 (0x60) und BMP280 (0x58) statt pauschal "BME280"
+  zu meldern. `KNOWN_CHIPS` um ENS160 (0x52/0x53) ergänzt.
+- `DataManager`: `HourValue`/`SensorReading` auf 8 Felder erweitert,
+  `saveRingbuffer()`/`loadRingbuffer()` auf 8-Spalten-CSV umgestellt. Alte
+  3-Spalten-Zeilen werden beim Laden übersprungen (einmaliger
+  Historie-Verlust beim ersten Boot nach dem Update, kein Korruptions-
+  Risiko).
+- `WebServerManager`: `values.csv`, `/api/sensors`, `/api/graph`,
+  Dashboard-Zeile auf die neuen Felder erweitert (Chart.js-Darstellung der
+  neuen Sensor-2-Werte bewusst nicht Teil dieser Änderung, nur die Daten
+  sind bereits abrufbar).
+- **Bugfix**: `SensorReading.valid` bedeutet seit den drei neuen
+  Modultypen nicht mehr zwingend "liefert Temperatur/Feuchte" - `SNMPManager`,
+  `MqttManager` und `RelayManager` (Auto-Schalten mit Quelle "sensor2")
+  prüften nur `valid`, jetzt zusätzlich `!isnan(temperature)` abgesichert
+  (sonst NAN-Export per SNMP/MQTT bzw. `RelayManager` hätte das Relais
+  unbemerkt bei jedem Zyklus ausgeschaltet).
+- Neue Bibliotheksabhängigkeiten: `adafruit/Adafruit BMP280
+  Library@^3.0.0`, `claws/BH1750@^1.3.0`, `adafruit/ENS160 - Adafruit
+  Fork@^3.0.1`.
+
+### Bewusst nicht Teil dieser Änderung
+
+SNMP/MQTT-Export der drei neuen Messgrößen, Kalibrier-Offset für Druck,
+Dashboard-Chart-Darstellung der neuen Werte, echtes gleichzeitiges Lesen
+mehrerer gesteckter Module, Verifikation der ENS160-Warmlaufzeit bei
+wiederholtem `begin()` - siehe sensormeter-Eintrag für die Begründung
+je Punkt.
+
+Getestet: `pio run` (PowerShell, siehe Hinweis oben zu MSYS) - baut sauber
+(Flash 22,3%/RAM 19,8%, vorher 22,1%/18,5%), drei neue Bibliotheken
+erfolgreich aufgelöst. Nicht getestet: echte Hardware.

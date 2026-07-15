@@ -96,6 +96,14 @@ struct DeviceConfig {
   // docs/entscheidungen.md.
   String pin5Mode = "sensor";  // "sensor" | "contact"
 
+  // Nur wirksam bei pin5Mode == "sensor": welcher DHT-Typ auf Pin 5 steckt.
+  // Automatische Unterscheidung DHT11 vs. DHT21 ist laut Klassenkommentar
+  // von SensorDetector unzuverlaessig - deshalb manuelle Auswahl auf der
+  // Einstellungsseite (analog zu contactAlarmAt unten). Aendert, welches der
+  // beiden DHT-Objekte in SensorManager::readExternalDht() tatsaechlich
+  // gelesen wird (siehe module-design/README.md "Firmware-Luecke").
+  String pin5DhtType = "DHT21";  // "DHT11" | "DHT21"
+
   // Kontakt-Eingang (nur wirksam, wenn pin5Mode == "contact") - eigener,
   // binaerer Datenpfad statt Wiederverwendung von Sensor 2, da ein Kontakt
   // offen/geschlossen liefert und NICHT in dessen Temperatur/Feuchte-Schema

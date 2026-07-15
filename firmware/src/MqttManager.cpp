@@ -157,7 +157,11 @@ void MqttManager::publishSensorState() {
 
   if (cfg.sensor2Enabled) {
     SensorReading s2 = _data.getSensor2();
-    if (s2.valid) {
+    // s2.valid heisst nur "Lesung erfolgreich", NICHT mehr zwingend
+    // "liefert Temperatur/Feuchte" - siehe Kommentar in SNMPManager.cpp.
+    // Druck/Lux/Luftguete sind noch nicht per MQTT exportiert (siehe
+    // docs/entscheidungen.md).
+    if (s2.valid && !isnan(s2.temperature) && !isnan(s2.humidity)) {
       doc["temperature2"] = serialized(String(s2.temperature, 1));
       doc["humidity2"] = serialized(String(s2.humidity, 1));
     }

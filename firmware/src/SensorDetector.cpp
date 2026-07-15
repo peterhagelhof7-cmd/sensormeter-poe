@@ -17,15 +17,31 @@ const uint8_t DISPLAY_I2C_ADDRESS = 0x3C;
 const uint8_t EXTERNAL_DISPLAY_I2C_ADDRESS = 0x3D;
 
 // Bekannte I2C-Sensor-Adressen (Lastenheft Abschnitt 15.2, erweiterbare
-// Tabelle).
+// Tabelle). 0x76/0x77 fehlen hier bewusst - BME280 und BMP280 teilen sich
+// dieselben zwei Adressen (SDO-Pin), die eigentliche Chip-ID (Register
+// 0xD0) entscheidet erst in knownChipName() unten, welcher der beiden es ist.
 struct KnownChip {
   uint8_t address;
   const char* name;
 };
 const KnownChip KNOWN_CHIPS[] = {
-    {0x76, "BME280"}, {0x77, "BME280"}, {0x23, "BH1750"},  {0x5C, "BH1750"},
+    {0x23, "BH1750"},  {0x5C, "BH1750"},
     {0x44, "SHT30/31/35"}, {0x45, "SHT30/31/35"}, {0x38, "AHT20/AHT21"},
+    {0x52, "ENS160"}, {0x53, "ENS160"},
 };
+
+// Bosch-Chip-ID-Register (identisch bei BME280 und BMP280) - siehe jeweiliges
+// Datenblatt. 0x60 = BME280, 0x58 = BMP280 (Standardvariante). Wire.
+// beginTransmission()/endTransmission() hat die Adresse bereits bestaetigt
+// (siehe scanI2cBus()), hier nur noch ein einzelner Registerzugriff.
+uint8_t readChipIdRegister(uint8_t address) {
+  const uint8_t CHIP_ID_REGISTER = 0xD0;
+  Wire.beginTransmission(address);
+  Wire.write(CHIP_ID_REGISTER);
+  if (Wire.endTransmission(false) != 0) return 0x00;  // repeated start, Bus bleibt gehalten
+  if (Wire.requestFrom(address, static_cast<uint8_t>(1)) != 1) return 0x00;
+  return Wire.read();
+}
 
 // Eigenes DHT-Objekt fuer den Erkennungs-Leseversuch (Lastenheft 15.1,
 // Schritt 2) - unabhaengig von SensorManager's dhtExternal, da hier nur ein
@@ -47,6 +63,12 @@ void SensorDetector::begin() {
 }
 
 String SensorDetector::knownChipName(uint8_t address) {
+  if (address == 0x76 || address == 0x77) {
+    uint8_t chipId = readChipIdRegister(address);
+    if (chipId == 0x60) return "BME280";
+    if (chipId == 0x58) return "BMP280";
+    return "";  // z.B. BMP180 (0x55) oder sonstiges - kein Familienmodul dafuer entworfen
+  }
   for (const KnownChip& chip : KNOWN_CHIPS) {
     if (chip.address == address) return chip.name;
   }

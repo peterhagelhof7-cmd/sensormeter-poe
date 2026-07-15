@@ -225,9 +225,22 @@ String WebServerManager::buildMainPageBody() const {
           (s1.valid ? String(s1.temperature, 1) + " C / " + String(s1.humidity, 0) + " %" : String("-")) +
           "</span></div>";
   if (cfg.sensor2Enabled && cfg.pin5Mode == "sensor") {
-    html += "<div class=\"row\"><span>" + cfg.sensor2Name + "</span><span>" +
-            (s2.valid ? String(s2.temperature, 1) + " C / " + String(s2.humidity, 0) + " %" : String("-")) +
-            "</span></div>";
+    // Je nach gestecktem Modultyp liefert Sensor 2 Temperatur/Feuchte
+    // (DHT/AHT/BME280), nur Druck (BMP280), nur Helligkeit (BH1750) oder
+    // nur Luftguete (ENS160) - siehe DataManager.h HourValue-Kommentar.
+    String sensor2Display = "-";
+    if (s2.valid) {
+      if (!isnan(s2.temperature) && !isnan(s2.humidity)) {
+        sensor2Display = String(s2.temperature, 1) + " C / " + String(s2.humidity, 0) + " %";
+      } else if (!isnan(s2.pressureHpa)) {
+        sensor2Display = String(s2.pressureHpa, 1) + " hPa";
+      } else if (!isnan(s2.lux)) {
+        sensor2Display = String(s2.lux, 0) + " lx";
+      } else if (!isnan(s2.eco2Ppm)) {
+        sensor2Display = String(s2.eco2Ppm, 0) + " ppm eCO2";
+      }
+    }
+    html += "<div class=\"row\"><span>" + cfg.sensor2Name + "</span><span>" + sensor2Display + "</span></div>";
   }
   if (cfg.pin5Mode == "contact") {
     html += "<div class=\"row\"><span>" + cfg.contactName + "</span><span>" + _contact.stateLabel() +
@@ -402,6 +415,15 @@ String WebServerManager::buildSettingsPageBody() const {
   html += "<label><input type=\"checkbox\" name=\"sensor2Enabled\" " + String(cfg.sensor2Enabled ? "checked" : "") +
           "> Sensor 2 (extern, RJ45) aktiv</label>";
   html += "<label>Sensor-2-Name<input type=\"text\" name=\"sensor2Name\" value=\"" + cfg.sensor2Name + "\"></label>";
+  html += "<label>DHT-Typ (nur falls DHT-Modul auf Pin 5 gesteckt, I2C-Module ignorieren dies)"
+          "<select name=\"pin5DhtType\">"
+          "<option value=\"DHT11\"" + String(cfg.pin5DhtType == "DHT11" ? " selected" : "") +
+          ">DHT11</option>"
+          "<option value=\"DHT21\"" + String(cfg.pin5DhtType == "DHT21" ? " selected" : "") +
+          ">DHT21 (AM2301)</option>"
+          "</select></label>";
+  html += "<p class=\"hint\">Automatische Unterscheidung DHT11/DHT21 ist unzuverlaessig - bitte den "
+          "tatsaechlich gesteckten Typ waehlen, sonst werden Werte mit falschen Toleranzen gelesen.</p>";
   html += "<label>Sensor 2 (extern) Korrektur Temperatur (&deg;C)<input type=\"text\" name=\"sensor2TempOffset\" "
           "value=\"" + String(cfg.sensor2TempOffset, 1) + "\"></label>";
   html += "<label>Sensor 2 (extern) Korrektur Feuchte (%)<input type=\"text\" name=\"sensor2HumOffset\" "
@@ -598,14 +620,27 @@ void WebServerManager::handleSettingsPage(AsyncWebServerRequest* request) {
   request->send(200, "text/html", buildPageShell("Einstellungen", buildSettingsPageBody()));
 }
 
+namespace {
+// NAN -> leeres CSV-Feld statt "nan" (Sensor 2 liefert je nach Modultyp nur
+// einen Teil der Spalten, siehe DataManager.h HourValue-Kommentar).
+String csvFloatOrEmpty(float v) {
+  if (isnan(v)) return String();
+  return String(v, 1);
+}
+}  // namespace
+
 void WebServerManager::handleValuesCsv(AsyncWebServerRequest* request) {
   HourValue buffer[DataManager::RINGBUFFER_SIZE];
   size_t count = _data.getRingbuffer(buffer, DataManager::RINGBUFFER_SIZE);
 
-  String csv = "timestamp,temperature,humidity\n";
+  String csv = "timestamp,sensor1_temperature,sensor1_humidity,sensor2_temperature,sensor2_humidity,"
+               "sensor2_pressure_hpa,sensor2_lux,sensor2_eco2_ppm\n";
   for (size_t i = 0; i < count; i++) {
-    csv += formatCsvTimestamp(buffer[i].timestamp) + "," + String(buffer[i].temperature, 1) + "," +
-           String(buffer[i].humidity, 1) + "\n";
+    const HourValue& hv = buffer[i];
+    csv += formatCsvTimestamp(hv.timestamp) + "," + csvFloatOrEmpty(hv.sensor1Temperature) + "," +
+           csvFloatOrEmpty(hv.sensor1Humidity) + "," + csvFloatOrEmpty(hv.sensor2Temperature) + "," +
+           csvFloatOrEmpty(hv.sensor2Humidity) + "," + csvFloatOrEmpty(hv.sensor2PressureHpa) + "," +
+           csvFloatOrEmpty(hv.sensor2Lux) + "," + csvFloatOrEmpty(hv.sensor2Eco2Ppm) + "\n";
   }
 
   AsyncWebServerResponse* response = request->beginResponse(200, "text/csv", csv);
@@ -650,8 +685,14 @@ void WebServerManager::handleApiSensors(AsyncWebServerRequest* request) {
     JsonObject sensor2 = doc["sensor2"].to<JsonObject>();
     sensor2["name"] = cfg.sensor2Name;
     sensor2["valid"] = s2.valid;
+    // Je nach gestecktem Modultyp ist nur eine Teilmenge dieser Felder
+    // belegt (Rest NAN -> serialisiert als JSON null, siehe DataManager.h
+    // HourValue-Kommentar zur Feldbelegung).
     sensor2["temperature"] = s2.temperature;
     sensor2["humidity"] = s2.humidity;
+    sensor2["pressureHpa"] = s2.pressureHpa;
+    sensor2["lux"] = s2.lux;
+    sensor2["eco2Ppm"] = s2.eco2Ppm;
   }
 
   String out;
@@ -709,17 +750,33 @@ void WebServerManager::handleApiGraph(AsyncWebServerRequest* request) {
 
   JsonDocument doc;
   JsonArray labels = doc["labels"].to<JsonArray>();
+  // "temperature"/"humidity": unveraendert Sensor 1 (intern) - das Dashboard-
+  // Chart (buildMainPageBody()) bindet genau diese zwei Felder, siehe dort.
   JsonArray temps = doc["temperature"].to<JsonArray>();
   JsonArray hums = doc["humidity"].to<JsonArray>();
+  // Zusaetzlich Sensor 2 (extern) verfuegbar, falls vorhanden - noch nicht
+  // im Dashboard-Chart dargestellt (Frontend-Erweiterung offen), aber schon
+  // per API abrufbar, da jetzt auch im Ringpuffer erfasst (siehe DataManager.h).
+  JsonArray temps2 = doc["temperature2"].to<JsonArray>();
+  JsonArray hums2 = doc["humidity2"].to<JsonArray>();
+  JsonArray pressures = doc["pressureHpa"].to<JsonArray>();
+  JsonArray luxValues = doc["lux"].to<JsonArray>();
+  JsonArray eco2Values = doc["eco2Ppm"].to<JsonArray>();
 
   for (size_t i = 0; i < count; i++) {
+    const HourValue& hv = buffer[i];
     struct tm ti;
-    localtime_r(&buffer[i].timestamp, &ti);
+    localtime_r(&hv.timestamp, &ti);
     char buf[6];
     strftime(buf, sizeof(buf), "%H:%M", &ti);
     labels.add(String(buf));
-    temps.add(buffer[i].temperature);
-    hums.add(buffer[i].humidity);
+    temps.add(hv.sensor1Temperature);
+    hums.add(hv.sensor1Humidity);
+    temps2.add(hv.sensor2Temperature);
+    hums2.add(hv.sensor2Humidity);
+    pressures.add(hv.sensor2PressureHpa);
+    luxValues.add(hv.sensor2Lux);
+    eco2Values.add(hv.sensor2Eco2Ppm);
   }
 
   String out;
@@ -754,6 +811,7 @@ void WebServerManager::handleApiConfigGet(AsyncWebServerRequest* request) {
   doc["sensor2HumOffset"] = cfg.sensor2HumOffset;
   doc["sensor2CalibratedTs"] = cfg.sensor2CalibratedTs;
   doc["pin5Mode"] = cfg.pin5Mode;
+  doc["pin5DhtType"] = cfg.pin5DhtType;
   doc["contactName"] = cfg.contactName;
   doc["contactAlarmAt"] = cfg.contactAlarmAt;
   doc["syslogServer"] = cfg.syslogServer;
@@ -831,6 +889,10 @@ void WebServerManager::handleApiConfigPost(AsyncWebServerRequest* request) {
   if (request->hasParam("pin5Mode", true)) {
     String mode = request->getParam("pin5Mode", true)->value();
     if (mode == "sensor" || mode == "contact") cfg.pin5Mode = mode;
+  }
+  if (request->hasParam("pin5DhtType", true)) {
+    String dhtType = request->getParam("pin5DhtType", true)->value();
+    if (dhtType == "DHT11" || dhtType == "DHT21") cfg.pin5DhtType = dhtType;
   }
   if (request->hasParam("contactName", true)) {
     cfg.contactName = request->getParam("contactName", true)->value().substring(0, 20);

@@ -53,8 +53,15 @@ void SNMPManager::refreshValues() {
 
   if (cfg.sensor2Enabled) {
     SensorReading s2 = _data.getSensor2();
-    _temperature2X10 = s2.valid ? (int)round(s2.temperature * 10) : 0;
-    _humidity2X10 = s2.valid ? (int)round(s2.humidity * 10) : 0;
+    // s2.valid heisst nur "Lesung erfolgreich", NICHT mehr zwingend
+    // "liefert Temperatur/Feuchte" - ein reines Druck-/Lux-/Luftguete-Modul
+    // (BMP280/BH1750/ENS160) laesst temperature/humidity NAN, siehe
+    // DataManager.h. round(NAN) waere hier Unsinn, daher zusaetzlich
+    // pruefen. Diese drei neuen Messgroessen selbst sind noch nicht per
+    // SNMP exportiert (siehe docs/entscheidungen.md).
+    bool hasTempHum = s2.valid && !isnan(s2.temperature) && !isnan(s2.humidity);
+    _temperature2X10 = hasTempHum ? (int)round(s2.temperature * 10) : 0;
+    _humidity2X10 = hasTempHum ? (int)round(s2.humidity * 10) : 0;
   } else {
     _temperature2X10 = 0;
     _humidity2X10 = 0;

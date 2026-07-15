@@ -127,6 +127,8 @@ bool ConfigManager::importXml(const String& xml) {
   if (kontakt) {
     String mode = attrOrEmpty(kontakt, "pin5Mode");
     if (mode == "sensor" || mode == "contact") cfg.pin5Mode = mode;
+    String dhtType = attrOrEmpty(kontakt, "pin5DhtType");
+    if (dhtType == "DHT11" || dhtType == "DHT21") cfg.pin5DhtType = dhtType;
     String contactName = attrOrEmpty(kontakt, "name");
     if (contactName.length() > 0) cfg.contactName = contactName.substring(0, 20);
     String alarmAt = attrOrEmpty(kontakt, "alarmAt");
@@ -249,6 +251,7 @@ String ConfigManager::exportXml() const {
 
   XMLElement* kontakt = doc.NewElement("kontakt");
   kontakt->SetAttribute("pin5Mode", _config.pin5Mode.c_str());
+  kontakt->SetAttribute("pin5DhtType", _config.pin5DhtType.c_str());
   kontakt->SetAttribute("name", _config.contactName.c_str());
   kontakt->SetAttribute("alarmAt", _config.contactAlarmAt.c_str());
   root->InsertEndChild(kontakt);
