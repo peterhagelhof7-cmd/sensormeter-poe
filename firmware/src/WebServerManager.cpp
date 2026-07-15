@@ -539,8 +539,11 @@ String WebServerManager::buildSettingsPageBody() const {
 
   html += "<div class=\"block\"><h2>Firmware</h2>";
   html += "<form method=\"POST\" action=\"/api/ota/upload\" enctype=\"multipart/form-data\">";
+  html += "<label><input type=\"checkbox\" name=\"otaForceDowngrade\"> Downgrade erzwingen (aeltere Version zulassen)</label>";
   html += "<input type=\"file\" name=\"file\" accept=\".bin\"><input type=\"submit\" value=\".bin hochladen\">";
   html += "</form>";
+  html += "<p class=\"hint\">Die .bin muss zu diesem Projekt gehoeren (Herkunfts-/Versionspruefung, siehe "
+          "docs/entscheidungen.md) - falsche oder aeltere Firmware wird sonst abgelehnt.</p>";
   html += "<a href=\"https://github.com/" GITHUB_REPO_SLUG "/releases\" target=\"_blank\"><button type=\"button\">Releases auf GitHub</button></a>";
   html += "</div>";
 
@@ -1362,6 +1365,20 @@ void WebServerManager::begin() {
           _data.pushLogEntry("OTA (lokaler Upload) erfolgreich, Neustart");
           delay(500);
           ESP.restart();
+        } else if (!_otaInProgress) {
+          _data.pushLogEntry("OTA (lokaler Upload) fehlgeschlagen (Schreibfehler)", 3);
+          r->send(500, "text/plain", "Update fehlgeschlagen (Schreibfehler)");
+        } else if (!_ota.markerFound()) {
+          _data.pushLogEntry("OTA abgelehnt: kein Firmware-Erkennungsmerkmal gefunden", 3);
+          r->send(400, "text/plain", "Update abgelehnt: die Datei enthaelt kein gueltiges Firmware-Erkennungsmerkmal.");
+        } else if (!_ota.identityMatches()) {
+          _data.pushLogEntry("OTA abgelehnt: .bin gehoert zu einem anderen Projekt", 3);
+          r->send(400, "text/plain", "Update abgelehnt: die hochgeladene Firmware stammt von einem anderen Projekt.");
+        } else if (!_ota.versionAllowed()) {
+          _data.pushLogEntry("OTA abgelehnt: aeltere Firmware-Version", 3);
+          r->send(400, "text/plain",
+                  "Update abgelehnt: die hochgeladene Version ist aelter als die laufende "
+                  "(Downgrade nicht aktiviert).");
         } else {
           _data.pushLogEntry("OTA (lokaler Upload) fehlgeschlagen", 3);
           r->send(500, "text/plain", "Update fehlgeschlagen");
@@ -1370,6 +1387,12 @@ void WebServerManager::begin() {
       [this](AsyncWebServerRequest* r, String filename, size_t index, uint8_t* data, size_t len, bool final) {
         if (!checkAuth(r)) return;
         if (index == 0) {
+          // Checkbox steht im Formular VOR dem Datei-Feld, damit sie hier
+          // schon geparst ist - ESPAsyncWebServer parst Multipart-Felder in
+          // Reihenfolge des Request-Bodys, ein Feld nach dem Datei-Input
+          // waere an dieser Stelle (erster Chunk der Datei) noch nicht
+          // verfuegbar.
+          _ota.setAllowDowngrade(r->hasParam("otaForceDowngrade", true));
           _otaInProgress = _ota.beginLocalUpdate(UPDATE_SIZE_UNKNOWN);
           _otaSuccess = false;
         }

@@ -771,3 +771,38 @@ sich das über die Einstellungsseite fest vorgeben.
 Getestet: `pio run` (PowerShell) - baut sauber (Flash 22,3%/RAM 19,8%,
 unverändert gegenüber vorherigem Stand). Nicht getestet: echte Hardware mit
 gleichzeitig aktivem LAN und WLAN.
+
+## 2026-07-16 — OTA-Upload: Projekt-/Versionspruefung gegen Verwechslungen
+
+Direkter Anlass: die Frage, wie sichergestellt wird, dass niemand
+versehentlich die Sensormeter-Display-Firmware auf ein Sensormeter-PoE-
+Geraet hochlaedt (oder umgekehrt) - `/api/ota/upload` pruefte bisher nur
+Basic-Auth, nicht den Inhalt der `.bin`. Identischer Mechanismus in allen
+vier Projekten der Familie umgesetzt, siehe Sensormeter-Eintrag vom
+selben Tag fuer die vollstaendige Begruendung:
+
+- Neues Feld `FIRMWARE_PROJECT_ID` (`"SENSORMETER-POE"`) neben
+  `DEVICE_FIRMWARE_VERSION` in `include/config.h(.example)`. Beide
+  zusammen ergeben den in `main.cpp` einkompilierten Marker
+  `"SM-FW-ID:SENSORMETER-POE:0.9.0-rc4:SM-FW-END"`.
+- `OtaManager` sucht diesen Marker chunk-uebergreifend im Byte-Stream
+  eines Uploads, vergleicht Projekt-ID (exakt) und Version (Semver,
+  `a.b.c[-rcN]`-Schema) gegen die eigenen Werte - `endLocalUpdate()`
+  committet nur bei Uebereinstimmung, sonst `Update.abort()`.
+- Neue Checkbox "Downgrade erzwingen" im Firmware-Formular (bewusst VOR
+  dem Datei-Feld wegen ESPAsyncWebServers Multipart-Parse-Reihenfolge),
+  erlaubt einen bewussten Ruecksprung auf eine aeltere Version.
+- Vier unterscheidbare Fehlermeldungen statt einem generischen "Update
+  fehlgeschlagen" (Schreibfehler / kein Marker / falsches Projekt / zu
+  alte Version).
+- Kein kryptografischer Schutz, nur Verwechslungs-Pruefung - siehe
+  Sensormeter-Eintrag.
+
+Getestet: `pio run` (PowerShell) - baut sauber (Flash 22,4%/RAM 19,8%,
+kaum veraendert gegenueber vorherigem Stand). Marker per Byte-Suche in
+`firmware.bin` verifiziert (`SM-FW-ID:SENSORMETER-POE:0.9.0-rc4:
+SM-FW-END`). Nicht getestet: echter OTA-Upload auf echter Hardware.
+
+**Standing-Vorgabe**: dieser Mechanismus ist ab jetzt fester Bestandteil
+dieses Projekts und laeuft bei kuenftigen Firmware-Versionen automatisch
+mit (siehe Sensormeter-Eintrag).

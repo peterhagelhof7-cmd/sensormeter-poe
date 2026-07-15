@@ -63,6 +63,13 @@
 #error "config.h fehlt! Kopiere include/config.h.example nach include/config.h."
 #endif
 
+// Eingebetteter Marker fuer die OTA-Herkunfts-/Versionspruefung (siehe
+// OtaManager.h/.cpp) - wird beim Firmware-Upload auf einem Schwestergeraet
+// im Byte-Stream dieser .bin gesucht, um Projekt-Identitaet und Version zu
+// pruefen. Ueber den Serial.println() unten referenziert, damit der Linker
+// ihn nicht wegoptimiert.
+const char kFirmwareIdentityMarker[] = "SM-FW-ID:" FIRMWARE_PROJECT_ID ":" DEVICE_FIRMWARE_VERSION ":SM-FW-END";
+
 DataManager dataManager;
 ConfigManager configManager;
 StorageManager storageManager;
@@ -353,6 +360,7 @@ void setup() {
   Serial.print("=== Sensormeter PoE ");
   Serial.print(DEVICE_FIRMWARE_VERSION);
   Serial.println(" ===");
+  Serial.println(kFirmwareIdentityMarker);
   Serial.println("[SERIAL] Kommandos: dhcp <lan|wlan>, ip <lan|wlan> ..., wifi, status, dump, upload, reset[ all] (+ Enter)");
 
   dataManager.begin();
