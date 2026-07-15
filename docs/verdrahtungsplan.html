@@ -132,164 +132,190 @@ es hier ohnehin keine Boot-Strapping-Einschränkung. Siehe
 <code>docs/entscheidungen.md</code> „RJ45 Pin 8: 5V statt Reserve".</p>
 
 <h2>Schema</h2>
-<p class="hint" style="font-size:11px;color:#6b7280;margin-top:-1mm;">Interaktiv: Klick auf einen Draht hebt ihn hervor und zeigt Start-/Zielpin unten an. Klick auf die freie Fläche hebt die Auswahl wieder auf. <b>Alle</b> physisch vorhandenen Header-Pins sind beschriftet, nicht nur die genutzten - grau/schmal = frei oder reserviert (kein Draht), farbig/fett = tatsächlich verdrahtet.</p>
-<svg id="wiringSvg" viewBox="-90 0 1010 970" style="width:100%; max-width:210mm; height:auto; font-family:inherit;">
-  <!-- ESP32-S3-ETH board -->
-  <rect x="30" y="20" width="210" height="930" rx="6" fill="#2b2f36"/>
-  <text x="135" y="40" text-anchor="middle" font-size="12" fill="#fff" font-weight="700">Waveshare</text>
-  <text x="135" y="56" text-anchor="middle" font-size="12" fill="#fff" font-weight="700">ESP32-S3-ETH</text>
-  <text x="135" y="70" text-anchor="middle" font-size="9.5" fill="#9fb3d9">W5500 onboard</text>
+<div class="callout warn">
+  <div class="callout-title">Korrektur 2026-07-15 (2. Durchgang)</div>
+  Die vorherige Fassung dieses Schemas zeigte die Header-Pins in einer
+  abstrakten, umsortierten Liste (genutzte Pins zuerst) - dadurch nicht
+  zum Nachzählen am echten Board geeignet. Diese Fassung zeigt stattdessen
+  die <b>reale physische Anordnung</b>: zwei Pin-Reihen links/rechts vom
+  Board, in der tatsächlichen Reihenfolge und mit der offiziellen
+  Pin-<b>Positionsnummer</b> (1-40) aus dem Hersteller-Pinout
+  (<code>docs/ESP32-S3-ETH-Datenblatt.pdf</code>, Abschnitt 3 - direkt von
+  Waveshare, zuverlässiger als das eigene Abfotografieren). Dabei fiel auf:
+  <b>GPIO16 wurde in der vorherigen Fassung fälschlich als „nicht auf dem
+  Header gefunden" vermutet</b> - ein Lesefehler beim Auszählen der Fotos.
+  GPIO16 existiert (Position 32) und die Verdrahtung in <code>pins.h</code>
+  war die ganze Zeit korrekt. Ebenso korrigiert: der Pin zwischen GPIO15
+  und GPIO18 heißt laut Hersteller <code>CHIP_UP</code>, nicht „RUN" wie
+  zuvor vermutet.
+</div>
+<p class="hint" style="font-size:11px;color:#6b7280;margin-top:-1mm;">Interaktiv: Klick auf einen Draht hebt ihn hervor und zeigt Start-/Zielpin unten an. Board in derselben Ausrichtung wie die Fotos <code>SM-POE-oben/-unten.jpg</code> (SD-Karten-Ende oben, USB-C-Ende unten). Format je Zeile: <b>Pin-Position (1-40) · GPIO-Name</b> - damit lässt sich am echten Board von einer Ecke aus abzählen. Farbig/fett = tatsächlich verdrahtet, grau = frei, durchgestrichen = bewusst vermieden.</p>
+<svg id="wiringSvg" viewBox="260 0 860 900" style="width:100%; max-width:245mm; height:auto; font-family:inherit;">
+  <!-- ESP32-S3-ETH board, Pico-kompatibler 2x20-Header, Positionsnummern lt. Hersteller-Pinout -->
+  <rect x="400" y="20" width="200" height="800" rx="6" fill="#2b2f36"/>
+  <text x="500" y="42" text-anchor="middle" font-size="12.5" fill="#fff" font-weight="700">Waveshare</text>
+  <text x="500" y="58" text-anchor="middle" font-size="12.5" fill="#fff" font-weight="700">ESP32-S3-ETH</text>
+  <text x="500" y="72" text-anchor="middle" font-size="9.5" fill="#9fb3d9">SD-Karten-Ende oben ↑</text>
 
-  <!-- Genutzte Pins (farbig, fett, verdrahtet) -->
-  <g font-size="11.5" fill="#1c2430">
-    <text x="22" y="98" text-anchor="end" font-weight="700" fill="#c0392b">3V3</text>
-    <text x="22" y="122" text-anchor="end" font-weight="700" fill="#1c2430">GND</text>
-    <text x="22" y="146" text-anchor="end" font-weight="700" fill="#2e6da4">GPIO15</text>
-    <text x="22" y="170" text-anchor="end" font-weight="700" fill="#5c9e6c">GPIO1</text>
-    <text x="22" y="194" text-anchor="end" font-weight="700" fill="#c8622a">GPIO2</text>
-    <text x="22" y="218" text-anchor="end" font-weight="700" fill="#7a5cad">GPIO16</text>
-    <text x="22" y="242" text-anchor="end" font-weight="700" fill="#a63d2e">GPIO17</text>
-    <text x="22" y="266" text-anchor="end" font-weight="700" fill="#c9a227">GPIO18</text>
-    <text x="22" y="290" text-anchor="end" font-weight="700" fill="#d6553f">5V</text>
-    <text x="22" y="314" text-anchor="end">GPIO0 (BOOT)</text>
-  </g>
-  <text x="55" y="205" font-size="7.5" font-style="italic" fill="#8a93a3">↳ SDA/SCL auch auf sep.</text>
-  <text x="55" y="214" font-size="7.5" font-style="italic" fill="#8a93a3">I2C-Steckverbinder</text>
-  <g>
-    <circle cx="30" cy="94" r="3" fill="#c0392b"/>
-    <circle cx="30" cy="118" r="3" fill="#1c2430"/>
-    <circle cx="30" cy="142" r="3" fill="#2e6da4"/>
-    <circle cx="30" cy="166" r="3" fill="#5c9e6c"/>
-    <circle cx="30" cy="190" r="3" fill="#c8622a"/>
-    <circle cx="30" cy="214" r="3" fill="#7a5cad"/>
-    <circle cx="30" cy="238" r="3" fill="#a63d2e"/>
-    <circle cx="30" cy="262" r="3" fill="#c9a227"/>
-    <circle cx="30" cy="286" r="3" fill="#d6553f"/>
-    <circle cx="30" cy="310" r="2.5" fill="#8a93a3"/>
-  </g>
-
-  <!-- RJ45 jack, integriert auf der Platine (Ethernet, nicht Modularanschluss) -->
-  <rect x="55" y="332" width="140" height="46" rx="3" fill="#4a5568"/>
-  <text x="125" y="352" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">RJ45 (Ethernet)</text>
-  <text x="125" y="367" text-anchor="middle" font-size="8.5" fill="#c9d2de">W5500, onboard, SPI GPIO9-14</text>
-
-  <!-- Trenner -->
-  <text x="135" y="398" text-anchor="middle" font-size="10" font-style="italic" fill="#9fb3d9">— weitere Pins am Header (frei / reserviert) —</text>
-
-  <!-- Unbenutzte/reservierte Pins (grau, nicht verdrahtet) -->
-  <g font-size="10.5" fill="#c3cddc">
-    <text x="22" y="419" text-anchor="end">GPIO19</text>
-    <text x="22" y="441" text-anchor="end">GPIO20</text>
-    <text x="22" y="463" text-anchor="end">GPIO21</text>
-    <text x="22" y="485" text-anchor="end" fill="#e0a868">GPIO33 ?</text>
-    <text x="22" y="507" text-anchor="end" fill="#e0a868">GPIO34 ?</text>
-    <text x="22" y="529" text-anchor="end" text-decoration="line-through">GPIO35</text>
-    <text x="22" y="551" text-anchor="end" text-decoration="line-through">GPIO36</text>
-    <text x="22" y="573" text-anchor="end" text-decoration="line-through">GPIO37</text>
-    <text x="22" y="595" text-anchor="end">GPIO38</text>
-    <text x="22" y="617" text-anchor="end">GPIO39</text>
-    <text x="22" y="639" text-anchor="end">GPIO40</text>
-    <text x="22" y="661" text-anchor="end">GPIO41</text>
-    <text x="22" y="683" text-anchor="end">GPIO42</text>
-    <text x="22" y="705" text-anchor="end" text-decoration="line-through">GPIO3</text>
-    <text x="22" y="727" text-anchor="end" font-style="italic">GPIO43 (UART)</text>
-    <text x="22" y="749" text-anchor="end" font-style="italic">GPIO44 (UART)</text>
-    <text x="22" y="771" text-anchor="end" text-decoration="line-through">GPIO45</text>
-    <text x="22" y="793" text-anchor="end" text-decoration="line-through">GPIO46</text>
-    <text x="22" y="815" text-anchor="end">GPIO47</text>
-    <text x="22" y="837" text-anchor="end">GPIO48</text>
-    <text x="22" y="859" text-anchor="end">RUN (EN)</text>
-    <text x="22" y="881" text-anchor="end">3V3_EN</text>
-    <text x="22" y="903" text-anchor="end">VSYS</text>
-    <text x="22" y="925" text-anchor="end">VBUS</text>
+  <!-- LINKE Spalte: Positionen 20 -> 1 (von oben nach unten, wie auf dem Foto) -->
+  <g font-size="11.5">
+    <text x="390" y="94" text-anchor="end" fill="#c3cddc">20 · GPIO33</text>
+    <text x="390" y="130" text-anchor="end" fill="#e0a868">19 · GPIO34 ?</text>
+    <text x="390" y="166" text-anchor="end" fill="#c3cddc">18 · GND</text>
+    <text x="390" y="202" text-anchor="end" fill="#8a93a3" text-decoration="line-through">17 · GPIO35</text>
+    <text x="390" y="238" text-anchor="end" fill="#8a93a3" text-decoration="line-through">16 · GPIO36</text>
+    <text x="390" y="274" text-anchor="end" fill="#8a93a3" text-decoration="line-through">15 · GPIO37</text>
+    <text x="390" y="310" text-anchor="end" fill="#c3cddc">14 · GPIO38</text>
+    <text x="390" y="346" text-anchor="end" fill="#c3cddc">13 · GND</text>
+    <text x="390" y="382" text-anchor="end" fill="#c3cddc">12 · GPIO39</text>
+    <text x="390" y="418" text-anchor="end" fill="#c3cddc">11 · GPIO40</text>
+    <text x="390" y="454" text-anchor="end" fill="#c3cddc">10 · GPIO41</text>
+    <text x="390" y="490" text-anchor="end" fill="#c3cddc">9 · GPIO42</text>
+    <text x="390" y="526" text-anchor="end" fill="#c3cddc">8 · GND</text>
+    <text x="390" y="562" text-anchor="end" fill="#8a93a3" text-decoration="line-through">7 · GPIO45</text>
+    <text x="390" y="598" text-anchor="end" fill="#8a93a3" text-decoration="line-through">6 · GPIO46</text>
+    <text x="390" y="634" text-anchor="end" fill="#c3cddc">5 · GPIO47</text>
+    <text x="390" y="670" text-anchor="end" fill="#c3cddc">4 · GPIO48</text>
+    <text x="390" y="706" text-anchor="end" fill="#c3cddc">3 · GND</text>
+    <text x="390" y="742" text-anchor="end" fill="#c3cddc">2 · GPIO19</text>
+    <text x="390" y="778" text-anchor="end" fill="#c3cddc">1 · GPIO20</text>
   </g>
   <g fill="#5b6472">
-    <circle cx="30" cy="415" r="2.2"/><circle cx="30" cy="437" r="2.2"/><circle cx="30" cy="459" r="2.2"/>
-    <circle cx="30" cy="481" r="2.4" fill="none" stroke="#c8622a" stroke-width="1.2"/>
-    <circle cx="30" cy="503" r="2.4" fill="none" stroke="#c8622a" stroke-width="1.2"/>
-    <circle cx="30" cy="525" r="2.2"/><circle cx="30" cy="547" r="2.2"/><circle cx="30" cy="569" r="2.2"/>
-    <circle cx="30" cy="591" r="2.2"/><circle cx="30" cy="613" r="2.2"/><circle cx="30" cy="635" r="2.2"/>
-    <circle cx="30" cy="657" r="2.2"/><circle cx="30" cy="679" r="2.2"/><circle cx="30" cy="701" r="2.2"/>
-    <circle cx="30" cy="723" r="2.2"/><circle cx="30" cy="745" r="2.2"/>
-    <circle cx="30" cy="767" r="2.2"/><circle cx="30" cy="789" r="2.2"/>
-    <circle cx="30" cy="811" r="2.2"/><circle cx="30" cy="833" r="2.2"/>
-    <circle cx="30" cy="855" r="2.2"/><circle cx="30" cy="877" r="2.2"/>
-    <circle cx="30" cy="899" r="2.2"/><circle cx="30" cy="921" r="2.2"/>
+    <circle cx="400" cy="90" r="2.4"/><circle cx="400" cy="126" r="2.6" fill="none" stroke="#c8622a" stroke-width="1.3"/>
+    <circle cx="400" cy="162" r="2.4"/><circle cx="400" cy="198" r="2.2"/><circle cx="400" cy="234" r="2.2"/>
+    <circle cx="400" cy="270" r="2.2"/><circle cx="400" cy="306" r="2.4"/><circle cx="400" cy="342" r="2.4"/>
+    <circle cx="400" cy="378" r="2.4"/><circle cx="400" cy="414" r="2.4"/><circle cx="400" cy="450" r="2.4"/>
+    <circle cx="400" cy="486" r="2.4"/><circle cx="400" cy="522" r="2.4"/><circle cx="400" cy="558" r="2.2"/>
+    <circle cx="400" cy="594" r="2.2"/><circle cx="400" cy="630" r="2.4"/><circle cx="400" cy="666" r="2.4"/>
+    <circle cx="400" cy="702" r="2.4"/><circle cx="400" cy="738" r="2.4"/><circle cx="400" cy="774" r="2.4"/>
   </g>
-  <text x="135" y="945" text-anchor="middle" font-size="8" fill="#7a8494">? = GPIO33/34: PSRAM-Status ungeklärt, siehe Warnhinweis unten · durchgestrichen = bewusst vermieden</text>
+
+  <!-- RECHTE Spalte: Positionen 21 -> 40 (von oben nach unten). Kurzform
+       "Pos. * Name" - Funktion steht im Wire-Tooltip (Klick) und in der
+       Tabelle "Vollstaendige Pin-Uebersicht" unten, nicht hier, damit die
+       Labels nicht unter die Modul-Boxen rechts daneben laufen. -->
+  <g font-size="11.5">
+    <text x="610" y="94" text-anchor="start" fill="#9fb3d9" font-style="italic">21 · GPIO43</text>
+    <text x="610" y="130" text-anchor="start" fill="#9fb3d9" font-style="italic">22 · GPIO44</text>
+    <text x="610" y="166" text-anchor="start" fill="#c3cddc">23 · GND</text>
+    <text x="610" y="202" text-anchor="start" font-weight="700" fill="#6b7280">24 · GPIO0</text>
+    <text x="610" y="238" text-anchor="start" font-weight="700" fill="#5c9e6c">25 · GPIO1</text>
+    <text x="610" y="274" text-anchor="start" font-weight="700" fill="#c8622a">26 · GPIO2</text>
+    <text x="610" y="310" text-anchor="start" fill="#8a93a3" text-decoration="line-through">27 · GPIO3</text>
+    <text x="610" y="346" text-anchor="start" font-weight="700" fill="#1c2430">28 · GND ↓</text>
+    <text x="610" y="382" text-anchor="start" font-weight="700" fill="#2e6da4">29 · GPIO15</text>
+    <text x="610" y="418" text-anchor="start" fill="#c3cddc">30 · CHIP_UP</text>
+    <text x="610" y="454" text-anchor="start" font-weight="700" fill="#c9a227">31 · GPIO18</text>
+    <text x="610" y="490" text-anchor="start" font-weight="700" fill="#7a5cad">32 · GPIO16</text>
+    <text x="610" y="526" text-anchor="start" font-weight="700" fill="#1c2430">33 · GND ↓</text>
+    <text x="610" y="562" text-anchor="start" font-weight="700" fill="#a63d2e">34 · GPIO17</text>
+    <text x="610" y="598" text-anchor="start" fill="#c3cddc">35 · GPIO21</text>
+    <text x="610" y="634" text-anchor="start" font-weight="700" fill="#c0392b">36 · 3V3</text>
+    <text x="610" y="670" text-anchor="start" fill="#c3cddc">37 · 3V3_EN</text>
+    <text x="610" y="706" text-anchor="start" fill="#c3cddc">38 · GND</text>
+    <text x="610" y="742" text-anchor="start" font-weight="700" fill="#d6553f">39 · VSYS</text>
+    <text x="610" y="778" text-anchor="start" fill="#c3cddc">40 · VBUS</text>
+  </g>
+  <g>
+    <circle cx="600" cy="90" r="2.4" fill="#5b6472"/><circle cx="600" cy="126" r="2.4" fill="#5b6472"/>
+    <circle cx="600" cy="162" r="2.4" fill="#5b6472"/>
+    <circle cx="600" cy="198" r="3.2" fill="#6b7280"/>
+    <circle cx="600" cy="234" r="3.2" fill="#5c9e6c"/>
+    <circle cx="600" cy="270" r="3.2" fill="#c8622a"/>
+    <circle cx="600" cy="306" r="2.2" fill="#5b6472"/>
+    <circle cx="600" cy="342" r="3.2" fill="#1c2430"/>
+    <circle cx="600" cy="378" r="3.2" fill="#2e6da4"/>
+    <circle cx="600" cy="414" r="2.4" fill="#5b6472"/>
+    <circle cx="600" cy="450" r="3.2" fill="#c9a227"/>
+    <circle cx="600" cy="486" r="3.2" fill="#7a5cad"/>
+    <circle cx="600" cy="522" r="3.2" fill="#1c2430"/>
+    <circle cx="600" cy="558" r="3.2" fill="#a63d2e"/>
+    <circle cx="600" cy="594" r="2.4" fill="#5b6472"/>
+    <circle cx="600" cy="630" r="3.2" fill="#c0392b"/>
+    <circle cx="600" cy="666" r="2.4" fill="#5b6472"/>
+    <circle cx="600" cy="702" r="2.4" fill="#5b6472"/>
+    <circle cx="600" cy="738" r="3.2" fill="#d6553f"/>
+    <circle cx="600" cy="774" r="2.4" fill="none" stroke="#d6553f" stroke-width="1.3"/>
+  </g>
+
+  <text x="500" y="808" text-anchor="middle" font-size="8.5" fill="#7a8494">? = PSRAM-Status ungeklärt (Warnhinweis unten) · durchgestrichen = bewusst vermieden · ↓ = als Wire-Quelle in diesem Schema gewählt (jede GND-Position ist elektrisch gleichwertig)</text>
+
+  <!-- RJ45-Ethernet-Buchse, fest onboard (Netzwerkkabel, NICHT der Modularanschluss) -->
+  <rect x="420" y="835" width="160" height="46" rx="3" fill="#4a5568"/>
+  <text x="500" y="855" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">RJ45 (Ethernet)</text>
+  <text x="500" y="870" text-anchor="middle" font-size="8.5" fill="#c9d2de">W5500, onboard, SPI Pos. n/a (GPIO9-14)</text>
 
   <!-- DHT22 module -->
-  <rect x="500" y="50" width="160" height="115" rx="4" fill="#f2f0e9" stroke="#c7c2b4"/>
-  <text x="580" y="71" text-anchor="middle" font-size="11.5" font-weight="700">DHT-22 (intern)</text>
-  <text x="580" y="85" text-anchor="middle" font-size="9.5" fill="#6b7280">3-Pin-Modul</text>
-  <circle cx="520" cy="108" r="3.2" fill="#c0392b"/><text x="531" y="112" font-size="10.5">VCC</text>
-  <circle cx="520" cy="129" r="3.2" fill="#1c2430"/><text x="531" y="133" font-size="10.5">GND</text>
-  <circle cx="520" cy="150" r="3.2" fill="#2e6da4"/><text x="531" y="154" font-size="10.5">DATA</text>
+  <rect x="760" y="100" width="170" height="140" rx="4" fill="#f2f0e9" stroke="#c7c2b4"/>
+  <text x="845" y="122" text-anchor="middle" font-size="11.5" font-weight="700">OLED SSD1306</text>
+  <text x="845" y="136" text-anchor="middle" font-size="9.5" fill="#6b7280">0,96" · 128×64 · I2C</text>
+  <circle cx="780" cy="160" r="3.2" fill="#c0392b"/><text x="791" y="164" font-size="10.5">VCC</text>
+  <circle cx="780" cy="182" r="3.2" fill="#1c2430"/><text x="791" y="186" font-size="10.5">GND</text>
+  <circle cx="780" cy="204" r="3.2" fill="#5c9e6c"/><text x="791" y="208" font-size="10.5">SDA</text>
+  <circle cx="780" cy="226" r="3.2" fill="#c8622a"/><text x="791" y="230" font-size="10.5">SCL</text>
 
-  <!-- OLED module -->
-  <rect x="500" y="185" width="160" height="135" rx="4" fill="#f2f0e9" stroke="#c7c2b4"/>
-  <text x="580" y="206" text-anchor="middle" font-size="11.5" font-weight="700">OLED SSD1306</text>
-  <text x="580" y="220" text-anchor="middle" font-size="9.5" fill="#6b7280">0,96" · 128×64 · I2C</text>
-  <circle cx="520" cy="243" r="3.2" fill="#c0392b"/><text x="531" y="247" font-size="10.5">VCC</text>
-  <circle cx="520" cy="264" r="3.2" fill="#1c2430"/><text x="531" y="268" font-size="10.5">GND</text>
-  <circle cx="520" cy="285" r="3.2" fill="#5c9e6c"/><text x="531" y="289" font-size="10.5">SDA</text>
-  <circle cx="520" cy="306" r="3.2" fill="#c8622a"/><text x="531" y="310" font-size="10.5">SCL</text>
+  <rect x="760" y="270" width="170" height="115" rx="4" fill="#f2f0e9" stroke="#c7c2b4"/>
+  <text x="845" y="290" text-anchor="middle" font-size="11.5" font-weight="700">DHT-22 (intern)</text>
+  <text x="845" y="304" text-anchor="middle" font-size="9.5" fill="#6b7280">3-Pin-Modul</text>
+  <circle cx="780" cy="327" r="3.2" fill="#c0392b"/><text x="791" y="331" font-size="10.5">VCC</text>
+  <circle cx="780" cy="348" r="3.2" fill="#1c2430"/><text x="791" y="352" font-size="10.5">GND</text>
+  <circle cx="780" cy="369" r="3.2" fill="#2e6da4"/><text x="791" y="373" font-size="10.5">DATA</text>
 
-  <!-- RJ45 Buchse zum Modularanschluss (8 Pins, EINE durchgehende vertikale Reihe) -->
-  <rect x="560" y="380" width="220" height="250" rx="4" fill="#f2f0e9" stroke="#c7c2b4"/>
-  <text x="670" y="402" text-anchor="middle" font-size="12" font-weight="700">RJ45-Buchse (Modul)</text>
-  <text x="670" y="417" text-anchor="middle" font-size="9.5" fill="#6b7280">Sensor 2 / Relais / 5V — Pin 1-8</text>
-  <circle cx="580" cy="440" r="3.2" fill="#c0392b"/><text x="592" y="444" font-size="10.5">Pin 1 · 3V3</text>
-  <circle cx="580" cy="464" r="3.2" fill="#1c2430"/><text x="592" y="468" font-size="10.5">Pin 2 · GND</text>
-  <circle cx="580" cy="488" r="3.2" fill="#c8622a"/><text x="592" y="492" font-size="10.5">Pin 3 · SCL</text>
-  <circle cx="580" cy="512" r="3.2" fill="#5c9e6c"/><text x="592" y="516" font-size="10.5">Pin 4 · SDA</text>
-  <circle cx="580" cy="536" r="3.2" fill="#7a5cad"/><text x="592" y="540" font-size="10.5">Pin 5 · DHT-DATA</text>
-  <circle cx="580" cy="560" r="3.2" fill="#a63d2e"/><text x="592" y="564" font-size="10.5">Pin 6 · Relais-CTRL</text>
-  <circle cx="580" cy="584" r="3.2" fill="#c9a227"/><text x="592" y="588" font-size="10.5">Pin 7 · Relais-FB</text>
-  <circle cx="580" cy="608" r="3.2" fill="#d6553f"/><text x="592" y="612" font-size="10.5">Pin 8 · 5V</text>
+  <!-- RJ45-Buchse (Modularanschluss), EINE durchgehende vertikale Pin-1-bis-8-Reihe -->
+  <rect x="830" y="420" width="220" height="250" rx="4" fill="#f2f0e9" stroke="#c7c2b4"/>
+  <text x="940" y="442" text-anchor="middle" font-size="12" font-weight="700">RJ45-Buchse (Modul)</text>
+  <text x="940" y="457" text-anchor="middle" font-size="9.5" fill="#6b7280">Sensor 2 / Relais / 5V — Pin 1-8</text>
+  <circle cx="850" cy="480" r="3.2" fill="#c0392b"/><text x="862" y="484" font-size="10.5">Pin 1 · 3V3</text>
+  <circle cx="850" cy="504" r="3.2" fill="#1c2430"/><text x="862" y="508" font-size="10.5">Pin 2 · GND</text>
+  <circle cx="850" cy="528" r="3.2" fill="#c8622a"/><text x="862" y="532" font-size="10.5">Pin 3 · SCL</text>
+  <circle cx="850" cy="552" r="3.2" fill="#5c9e6c"/><text x="862" y="556" font-size="10.5">Pin 4 · SDA</text>
+  <circle cx="850" cy="576" r="3.2" fill="#7a5cad"/><text x="862" y="580" font-size="10.5">Pin 5 · DHT-DATA</text>
+  <circle cx="850" cy="600" r="3.2" fill="#a63d2e"/><text x="862" y="604" font-size="10.5">Pin 6 · Relais-CTRL</text>
+  <circle cx="850" cy="624" r="3.2" fill="#c9a227"/><text x="862" y="628" font-size="10.5">Pin 7 · Relais-FB</text>
+  <circle cx="850" cy="648" r="3.2" fill="#d6553f"/><text x="862" y="652" font-size="10.5">Pin 8 · 5V (VSYS)</text>
 
-  <!-- Wires: 3V3 -> alle VCC/Pin1 (rot) -->
-  <path class="wire-hit" data-wire="w1" d="M30,94 C 280,94 280,108 500,108"/>
-  <path class="wire" data-wire="w1" data-from="3V3" data-to="DHT-22 VCC" d="M30,94 C 280,94 280,108 500,108" fill="none" stroke="#c0392b" stroke-width="1.8"/>
-  <path class="wire-hit" data-wire="w2" d="M30,94 C 300,94 300,243 500,243"/>
-  <path class="wire" data-wire="w2" data-from="3V3" data-to="OLED VCC" d="M30,94 C 300,94 300,243 500,243" fill="none" stroke="#c0392b" stroke-width="1.8"/>
-  <path class="wire-hit" data-wire="w3" d="M30,94 C 320,94 320,440 580,440"/>
-  <path class="wire" data-wire="w3" data-from="3V3" data-to="RJ45 Pin 1 (3V3)" d="M30,94 C 320,94 320,440 580,440" fill="none" stroke="#c0392b" stroke-width="1.8"/>
-  <!-- Wires: GND -> alle GND/Pin2 (schwarz) -->
-  <path class="wire-hit" data-wire="w4" d="M30,118 C 290,118 290,129 500,129"/>
-  <path class="wire" data-wire="w4" data-from="GND" data-to="DHT-22 GND" d="M30,118 C 290,118 290,129 500,129" fill="none" stroke="#1c2430" stroke-width="1.8"/>
-  <path class="wire-hit" data-wire="w5" d="M30,118 C 310,118 310,264 500,264"/>
-  <path class="wire" data-wire="w5" data-from="GND" data-to="OLED GND" d="M30,118 C 310,118 310,264 500,264" fill="none" stroke="#1c2430" stroke-width="1.8"/>
-  <path class="wire-hit" data-wire="w6" d="M30,118 C 330,118 330,464 580,464"/>
-  <path class="wire" data-wire="w6" data-from="GND" data-to="RJ45 Pin 2 (GND)" d="M30,118 C 330,118 330,464 580,464" fill="none" stroke="#1c2430" stroke-width="1.8"/>
-  <!-- Wire: GPIO15 -> DHT22 DATA (blau) -->
-  <path class="wire-hit" data-wire="w7" d="M30,142 C 340,142 340,150 500,150"/>
-  <path class="wire" data-wire="w7" data-from="GPIO15" data-to="DHT-22 DATA" d="M30,142 C 340,142 340,150 500,150" fill="none" stroke="#2e6da4" stroke-width="1.8"/>
-  <!-- Wire: GPIO1 -> OLED SDA + RJ45 Pin4 (gruen) -->
-  <path class="wire-hit" data-wire="w8" d="M30,166 C 350,166 350,285 500,285"/>
-  <path class="wire" data-wire="w8" data-from="GPIO1" data-to="OLED SDA" d="M30,166 C 350,166 350,285 500,285" fill="none" stroke="#5c9e6c" stroke-width="1.8"/>
-  <path class="wire-hit" data-wire="w9" d="M30,166 C 370,166 370,512 580,512"/>
-  <path class="wire" data-wire="w9" data-from="GPIO1" data-to="RJ45 Pin 4 (SDA, gemeinsamer I2C-Bus)" d="M30,166 C 370,166 370,512 580,512" fill="none" stroke="#5c9e6c" stroke-width="1.8" stroke-dasharray="4 3"/>
-  <!-- Wire: GPIO2 -> OLED SCL + RJ45 Pin3 (orange) -->
-  <path class="wire-hit" data-wire="w10" d="M30,190 C 360,190 360,306 500,306"/>
-  <path class="wire" data-wire="w10" data-from="GPIO2" data-to="OLED SCL" d="M30,190 C 360,190 360,306 500,306" fill="none" stroke="#c8622a" stroke-width="1.8"/>
-  <path class="wire-hit" data-wire="w11" d="M30,190 C 380,190 380,488 580,488"/>
-  <path class="wire" data-wire="w11" data-from="GPIO2" data-to="RJ45 Pin 3 (SCL, gemeinsamer I2C-Bus)" d="M30,190 C 380,190 380,488 580,488" fill="none" stroke="#c8622a" stroke-width="1.8" stroke-dasharray="4 3"/>
-  <!-- Wire: GPIO16 -> RJ45 Pin5 (lila) -->
-  <path class="wire-hit" data-wire="w12" d="M30,214 C 420,214 420,536 580,536"/>
-  <path class="wire" data-wire="w12" data-from="GPIO16" data-to="RJ45 Pin 5 (Sensor-2-DATA)" d="M30,214 C 420,214 420,536 580,536" fill="none" stroke="#7a5cad" stroke-width="1.8"/>
-  <!-- Wire: GPIO17 -> RJ45 Pin6 (dunkelrot) -->
-  <path class="wire-hit" data-wire="w13" d="M30,238 C 440,238 440,560 580,560"/>
-  <path class="wire" data-wire="w13" data-from="GPIO17" data-to="RJ45 Pin 6 (Relais-Steuerung, active LOW)" d="M30,238 C 440,238 440,560 580,560" fill="none" stroke="#a63d2e" stroke-width="1.8"/>
-  <!-- Wire: GPIO18 -> RJ45 Pin7 (gelb) -->
-  <path class="wire-hit" data-wire="w14" d="M30,262 C 460,262 460,584 580,584"/>
-  <path class="wire" data-wire="w14" data-from="GPIO18" data-to="RJ45 Pin 7 (Relais-Feedback, optional)" d="M30,262 C 460,262 460,584 580,584" fill="none" stroke="#c9a227" stroke-width="1.8"/>
-  <!-- Wire: 5V (Board-Eingang) -> RJ45 Pin8 -->
-  <path class="wire-hit" data-wire="w15" d="M30,286 C 480,286 480,608 580,608"/>
-  <path class="wire" data-wire="w15" data-from="5V (Board-Eingang, kein GPIO)" data-to="RJ45 Pin 8 (5V-Versorgung)" d="M30,286 C 480,286 480,608 580,608" fill="none" stroke="#d6553f" stroke-width="1.8"/>
+  <!-- Wires: 3V3 (Pos. 36) -> alle VCC/Pin1 (rot) -->
+  <path class="wire-hit" data-wire="w1" d="M600,630 C 700,630 700,327 760,327"/>
+  <path class="wire" data-wire="w1" data-from="3V3 (Pos. 36)" data-to="DHT-22 VCC" d="M600,630 C 700,630 700,327 760,327" fill="none" stroke="#c0392b" stroke-width="1.8"/>
+  <path class="wire-hit" data-wire="w2" d="M600,630 C 680,630 680,160 760,160"/>
+  <path class="wire" data-wire="w2" data-from="3V3 (Pos. 36)" data-to="OLED VCC" d="M600,630 C 680,630 680,160 760,160" fill="none" stroke="#c0392b" stroke-width="1.8"/>
+  <path class="wire-hit" data-wire="w3" d="M600,630 C 750,630 750,480 830,480"/>
+  <path class="wire" data-wire="w3" data-from="3V3 (Pos. 36)" data-to="RJ45 Pin 1 (3V3)" d="M600,630 C 750,630 750,480 830,480" fill="none" stroke="#c0392b" stroke-width="1.8"/>
+  <!-- Wires: GND -> DHT/OLED (Pos. 28) und RJ45-Modul (Pos. 33), schwarz -->
+  <path class="wire-hit" data-wire="w4" d="M600,342 C 690,342 690,348 760,348"/>
+  <path class="wire" data-wire="w4" data-from="GND (Pos. 28)" data-to="DHT-22 GND" d="M600,342 C 690,342 690,348 760,348" fill="none" stroke="#1c2430" stroke-width="1.8"/>
+  <path class="wire-hit" data-wire="w5" d="M600,342 C 700,342 700,182 760,182"/>
+  <path class="wire" data-wire="w5" data-from="GND (Pos. 28)" data-to="OLED GND" d="M600,342 C 700,342 700,182 760,182" fill="none" stroke="#1c2430" stroke-width="1.8"/>
+  <path class="wire-hit" data-wire="w6" d="M600,522 C 720,522 720,504 830,504"/>
+  <path class="wire" data-wire="w6" data-from="GND (Pos. 33)" data-to="RJ45 Pin 2 (GND)" d="M600,522 C 720,522 720,504 830,504" fill="none" stroke="#1c2430" stroke-width="1.8"/>
+  <!-- Wire: GPIO15 (Pos. 29) -> DHT22 DATA (blau) -->
+  <path class="wire-hit" data-wire="w7" d="M600,378 C 690,378 690,369 760,369"/>
+  <path class="wire" data-wire="w7" data-from="GPIO15 (Pos. 29)" data-to="DHT-22 DATA" d="M600,378 C 690,378 690,369 760,369" fill="none" stroke="#2e6da4" stroke-width="1.8"/>
+  <!-- Wire: GPIO1 (Pos. 25) -> OLED SDA + RJ45 Pin4 (gruen) -->
+  <path class="wire-hit" data-wire="w8" d="M600,234 C 690,234 690,204 760,204"/>
+  <path class="wire" data-wire="w8" data-from="GPIO1 (Pos. 25)" data-to="OLED SDA" d="M600,234 C 690,234 690,204 760,204" fill="none" stroke="#5c9e6c" stroke-width="1.8"/>
+  <path class="wire-hit" data-wire="w9" d="M600,234 C 740,234 740,552 830,552"/>
+  <path class="wire" data-wire="w9" data-from="GPIO1 (Pos. 25)" data-to="RJ45 Pin 4 (SDA, gemeinsamer I2C-Bus)" d="M600,234 C 740,234 740,552 830,552" fill="none" stroke="#5c9e6c" stroke-width="1.8" stroke-dasharray="4 3"/>
+  <!-- Wire: GPIO2 (Pos. 26) -> OLED SCL + RJ45 Pin3 (orange) -->
+  <path class="wire-hit" data-wire="w10" d="M600,270 C 700,270 700,226 760,226"/>
+  <path class="wire" data-wire="w10" data-from="GPIO2 (Pos. 26)" data-to="OLED SCL" d="M600,270 C 700,270 700,226 760,226" fill="none" stroke="#c8622a" stroke-width="1.8"/>
+  <path class="wire-hit" data-wire="w11" d="M600,270 C 760,270 760,528 830,528"/>
+  <path class="wire" data-wire="w11" data-from="GPIO2 (Pos. 26)" data-to="RJ45 Pin 3 (SCL, gemeinsamer I2C-Bus)" d="M600,270 C 760,270 760,528 830,528" fill="none" stroke="#c8622a" stroke-width="1.8" stroke-dasharray="4 3"/>
+  <!-- Wire: GPIO16 (Pos. 32) -> RJ45 Pin5 (lila) -->
+  <path class="wire-hit" data-wire="w12" d="M600,486 C 730,486 730,576 830,576"/>
+  <path class="wire" data-wire="w12" data-from="GPIO16 (Pos. 32)" data-to="RJ45 Pin 5 (Sensor-2-DATA)" d="M600,486 C 730,486 730,576 830,576" fill="none" stroke="#7a5cad" stroke-width="1.8"/>
+  <!-- Wire: GPIO17 (Pos. 34) -> RJ45 Pin6 (dunkelrot) -->
+  <path class="wire-hit" data-wire="w13" d="M600,558 C 720,558 720,600 830,600"/>
+  <path class="wire" data-wire="w13" data-from="GPIO17 (Pos. 34)" data-to="RJ45 Pin 6 (Relais-Steuerung, active LOW)" d="M600,558 C 720,558 720,600 830,600" fill="none" stroke="#a63d2e" stroke-width="1.8"/>
+  <!-- Wire: GPIO18 (Pos. 31) -> RJ45 Pin7 (gelb) -->
+  <path class="wire-hit" data-wire="w14" d="M600,450 C 740,450 740,624 830,624"/>
+  <path class="wire" data-wire="w14" data-from="GPIO18 (Pos. 31)" data-to="RJ45 Pin 7 (Relais-Feedback, optional)" d="M600,450 C 740,450 740,624 830,624" fill="none" stroke="#c9a227" stroke-width="1.8"/>
+  <!-- Wire: VSYS (Pos. 39, empfohlen fuer "5V") -> RJ45 Pin8 -->
+  <path class="wire-hit" data-wire="w15" d="M600,738 C 750,738 750,648 830,648"/>
+  <path class="wire" data-wire="w15" data-from="VSYS (Pos. 39) - empfohlen statt VBUS, siehe Warnhinweis" data-to="RJ45 Pin 8 (5V-Versorgung)" d="M600,738 C 750,738 750,648 830,648" fill="none" stroke="#d6553f" stroke-width="1.8"/>
 </svg>
 <div id="wireInfo" class="wire-info">Klicke auf einen Draht, um Start- und Zielpin anzuzeigen.</div>
-<p class="hint" style="font-size:11px;color:#6b7280;">Gestrichelte Linien = derselbe I2C-Bus (Display + RJ45 Pin 3/4), kein zweites Signal. Die RJ45-Modul-Buchse ist bewusst als eine durchgehende vertikale Pin-1-bis-8-Reihe gezeichnet (statt zweispaltig wie in der Vorfassung), damit sich die ankommenden Drähte weniger überschneiden.</p>
+<p class="hint" style="font-size:11px;color:#6b7280;">Gestrichelte Linien = derselbe I2C-Bus (Display + RJ45 Pin 3/4), kein zweites Signal. Jede GND-Position ist elektrisch gleichwertig (alle intern verbunden) - Pos. 28 und Pos. 33 wurden gewählt, weil sie am nächsten an den jeweils verdrahteten Signalen liegen, nicht weil sie besonders wären.</p>
 <script>
 (function () {
   var svg = document.getElementById('wiringSvg');
@@ -335,10 +361,10 @@ unterscheiden sich (anderer Chip). Siehe
   <tr><td>2</td><td>GND (Masse)</td><td><code>GND</code></td></tr>
   <tr><td>3</td><td>I2C SCL (gemeinsamer Bus mit Display)</td><td><code>GPIO2</code></td></tr>
   <tr><td>4</td><td>I2C SDA (gemeinsamer Bus mit Display)</td><td><code>GPIO1</code></td></tr>
-  <tr><td>5</td><td>GPIO Reserve / externer DHT-22, DATA</td><td><code>GPIO16</code></td></tr>
-  <tr><td>6</td><td>Relais-Steuerung, active LOW</td><td><code>GPIO17</code></td></tr>
-  <tr><td>7</td><td>Relais-Feedback / Interrupt</td><td><code>GPIO18</code></td></tr>
-  <tr><td>8</td><td>5V-Versorgung (Board-Eingang, kein GPIO)</td><td><code>5V</code></td></tr>
+  <tr><td>5</td><td>GPIO Reserve / externer DHT-22, DATA</td><td><code>GPIO16</code> (Pin-Position 32)</td></tr>
+  <tr><td>6</td><td>Relais-Steuerung, active LOW</td><td><code>GPIO17</code> (Pin-Position 34)</td></tr>
+  <tr><td>7</td><td>Relais-Feedback / Interrupt</td><td><code>GPIO18</code> (Pin-Position 31)</td></tr>
+  <tr><td>8</td><td>5V-Versorgung (Board-Eingang, kein GPIO)</td><td><code>VSYS</code> (Pin-Position 39, empfohlen) - <b>nicht</b> <code>VBUS</code> (Pos. 40), siehe Warnhinweis unten</td></tr>
 </table>
 
 <h3>Modul-Typen (identisch zu Sensormeter)</h3>
@@ -364,12 +390,21 @@ Board mit einem Ethernet-Kabel verbinden. Details siehe
   Boards sind intern verbunden.
 </div>
 <div class="callout warn">
-  <div class="callout-title">Pin 8 = 5V, nicht 3,3V-tolerant verwechseln</div>
+  <div class="callout-title">Pin 8 = 5V, nicht 3,3V-tolerant verwechseln — welcher physische Pin genau?</div>
   Anders als Pin 1 (3,3V) liegt auf Pin 8 die Board-5V-Schiene an -
   Module, die nur 3,3V-tolerant sind, dürfen Pin 8 nicht an ihre VCC
-  anschließen. Genutztes Strombudget/Belastbarkeit der 5V-Schiene ist noch
-  nicht gegen das echte Schaltbild verifiziert (kein Board zum
-  Nachmessen vorhanden) - vor dem Bestücken eines 5V-Moduls prüfen.
+  anschließen. Der Hersteller-Pinheader hat keinen Pin, der wörtlich „5V"
+  heißt - zwei Kandidaten stehen zur Wahl: <code>VBUS</code> (Pos. 40,
+  rohe 5V direkt von der USB-C-Buchse - <b>liegt nur an, wenn USB-C
+  angeschlossen ist</b>) und <code>VSYS</code> (Pos. 39, die
+  Systemversorgung, die auch beim PoE-Betrieb ohne USB-Kabel anliegen
+  sollte, da das aufgesteckte PoE-Modul dort einspeist). Da dieses Gerät
+  dauerhaft über PoE betrieben wird, ist <code>VSYS</code> die
+  plausiblere Wahl - <b>nicht abschließend mit einem Multimeter
+  verifiziert</b>, nur aus der Schaltungslogik hergeleitet. Genutztes
+  Strombudget/Belastbarkeit dieser Schiene ist ebenfalls noch nicht gegen
+  das echte Schaltbild verifiziert (kein Board zum Nachmessen vorhanden) -
+  vor dem Bestücken eines 5V-Moduls beides prüfen.
   Siehe <code>docs/entscheidungen.md</code> „RJ45 Pin 8: 5V statt Reserve".
 </div>
 <div class="callout warn">
@@ -389,6 +424,11 @@ Board mit einem Ethernet-Kabel verbinden. Details siehe
   PSRAM-frei sind (z. B. durch Testaufbau), da die beiden vorhandenen
   Projektquellen sich hier widersprechen. Siehe
   <code>docs/entscheidungen.md</code> „GPIO35-37 vorsorglich nicht belegt".
+  Der offizielle nummerierte Hersteller-Pinout (<code>docs/ESP32-S3-ETH-
+  Datenblatt.pdf</code>, Abschnitt 3) zeigt GPIO33-37 durchgehend als
+  normale grüne „GPIO"-Pins, ohne PSRAM-Warnhinweis - das bestätigt weder
+  noch widerlegt es die Angabe aus <code>board-recherche.md</code>, der
+  Widerspruch bleibt also weiterhin offen.
 </div>
 
 <h2>Vermiedene Pins</h2>
@@ -403,32 +443,52 @@ oben - physisch am Header vorhanden, siehe Übersicht unten, aber bis zur
 Klärung nicht für neue Peripherie einplanen). Details siehe
 <code>docs/entscheidungen.md</code>.</p>
 
-<h2>Vollständige Pin-Übersicht (Board-Foto-Abgleich, 2026-07-15)</h2>
-<p>Alle Pins, die auf dem 2×20-Hauptheader sowie dem zusätzlichen kleinen
-I2C-Steckverbinder tatsächlich herausgeführt sind - abgelesen von den
-Fotos <code>SM-POE-oben.jpg</code>/<code>-unten.jpg</code>/<code>-seite.jpg</code>
-(liegen lokal neben, nicht im Repo). Ergänzt die „Pinbelegung"-Tabelle
-oben, die nur die tatsächlich verdrahteten Pins zeigt - hier stattdessen
-der komplette physische Pin-Bestand inkl. freier Pins.</p>
+<h2>Vollständige Pin-Übersicht (Positionsnummern lt. Hersteller-Pinout)</h2>
+<p>Quelle: <code>docs/ESP32-S3-ETH-Datenblatt.pdf</code> Abschnitt 3
+(offizielles, nummeriertes Waveshare-Pinout) - abgeglichen mit den
+Board-Fotos <code>SM-POE-oben/-unten/-seite.jpg</code> (liegen lokal
+neben dem Repo, nicht committed). Position 1-40, gezählt wie im Schema
+oben. Ergänzt die „Pinbelegung"-Tabelle oben, die nur die tatsächlich
+verdrahteten Pins zeigt.</p>
 <table>
-  <tr><th>Pin(s)</th><th>Status</th><th>Hinweis</th></tr>
-  <tr><td><code>GPIO15</code>, <code>GPIO1</code>, <code>GPIO2</code>, <code>GPIO16-18</code>, <code>GPIO0</code></td><td>Genutzt</td><td>Siehe „Pinbelegung (Hauptplatine)" oben</td></tr>
-  <tr><td><code>GPIO19</code>, <code>GPIO20</code>, <code>GPIO21</code></td><td>Frei</td><td><code>GPIO19</code> ehemals RJ45 Pin 8 (jetzt 5V statt GPIO, siehe oben); 20/21 nie belegt</td></tr>
-  <tr><td><code>GPIO33</code>, <code>GPIO34</code></td><td>Frei, aber ungeklärt</td><td>Auf dem Header vorhanden - siehe PSRAM-Warnhinweis oben, vor Nutzung erst klären</td></tr>
-  <tr><td><code>GPIO35-37</code></td><td>Vorsorglich vermieden</td><td>Silizium-seitig für Octal-PSRAM reserviert (siehe Warnhinweis)</td></tr>
-  <tr><td><code>GPIO38-42</code>, <code>GPIO45-48</code></td><td>Frei</td><td>Physisch am Header vorhanden, bislang keine Verwendung im Projekt</td></tr>
-  <tr><td><code>GPIO43</code>, <code>GPIO44</code></td><td>Reserviert</td><td>UART0/seriell (Debug-Konsole) - nicht für Peripherie nutzen</td></tr>
-  <tr><td><code>GPIO0</code></td><td>Genutzt</td><td>Onboard-BOOT-Taster (siehe oben)</td></tr>
-  <tr><td><code>GPIO3</code>, <code>GPIO45</code>, <code>GPIO46</code></td><td>Vermieden</td><td>Boot-Strapping-Pins</td></tr>
-  <tr><td><code>GPIO4-7</code></td><td>Intern belegt</td><td>Micro-SD-Slot, direkt verdrahtet - erscheinen NICHT auf dem externen Header</td></tr>
-  <tr><td><code>GPIO8-14</code></td><td>Intern belegt</td><td>W5500-Ethernet (SPI + IRQ + RST), direkt verdrahtet - erscheinen NICHT auf dem externen Header</td></tr>
-  <tr><td><code>RUN</code>, <code>3V3</code>, <code>3V3_EN</code>, <code>GND</code>, <code>VSYS</code>, <code>VBUS</code></td><td>Versorgung/Steuerung</td><td>Keine GPIOs - Chip-Enable bzw. Spannungsversorgung</td></tr>
-  <tr><td>Kleiner I2C-Steckverbinder (separat vom Hauptheader)</td><td>Teilgenutzt</td><td>Explizit „SDA"/„SCL" beschriftet - das sind <code>GPIO1</code>/<code>GPIO2</code>, siehe oben. Weitere Pins auf diesem Steckverbinder auf dem Foto nicht sicher lesbar (zu klein), vermutlich zusätzliche Boot-nahe IOs + GND/Power.</td></tr>
+  <tr><th>Pos.</th><th>Pin</th><th>Status</th><th>Hinweis</th></tr>
+  <tr><td>1</td><td><code>GPIO20</code></td><td>Frei</td><td>Zugleich native USB-D_P-Leitung (OTG), elektrisch unabhängig von der USB-C-Buchse</td></tr>
+  <tr><td>2</td><td><code>GPIO19</code></td><td>Frei</td><td>Zugleich native USB-D_N-Leitung; ehemals RJ45 Pin 8 in einer älteren Firmware-Fassung, jetzt unbenutzt</td></tr>
+  <tr><td>3, 8, 13, 18, 23, 28, 33, 38</td><td><code>GND</code></td><td>Teils genutzt</td><td>Alle GND-Positionen elektrisch gleichwertig; Pos. 28 und 33 werden im Schema oben als Wire-Quelle verwendet</td></tr>
+  <tr><td>4-7</td><td><code>GPIO48-45</code></td><td>Frei</td><td>Physisch vorhanden, unbenutzt</td></tr>
+  <tr><td>9-12</td><td><code>GPIO42-39</code></td><td>Frei</td><td>Physisch vorhanden, unbenutzt</td></tr>
+  <tr><td>14-17</td><td><code>GPIO38, 37, 36, 35</code></td><td>Vorsorglich vermieden (35-37)</td><td>Octal-PSRAM-Verdacht, siehe Warnhinweis oben (Pos. 14/GPIO38 ist frei, nicht betroffen)</td></tr>
+  <tr><td>19, 20</td><td><code>GPIO34, GPIO33</code></td><td>Frei, aber ungeklärt</td><td>Siehe PSRAM-Warnhinweis oben - vor Nutzung erst klären</td></tr>
+  <tr><td>21, 22</td><td><code>GPIO43, GPIO44</code></td><td>Reserviert</td><td>UART0 TX/RX (Debug-Konsole) - nicht für Peripherie nutzen</td></tr>
+  <tr><td>24</td><td><code>GPIO0</code></td><td><b>Genutzt</b></td><td>Onboard-BOOT-Taster</td></tr>
+  <tr><td>25</td><td><code>GPIO1</code></td><td><b>Genutzt</b></td><td>I2C SDA (OLED + RJ45 Pin 4)</td></tr>
+  <tr><td>26</td><td><code>GPIO2</code></td><td><b>Genutzt</b></td><td>I2C SCL (OLED + RJ45 Pin 3)</td></tr>
+  <tr><td>27</td><td><code>GPIO3</code></td><td>Vermieden</td><td>Boot-Strapping-Pin</td></tr>
+  <tr><td>29</td><td><code>GPIO15</code></td><td><b>Genutzt</b></td><td>DHT-22 (intern) DATA</td></tr>
+  <tr><td>30</td><td><code>CHIP_UP</code></td><td>Systemsteuerung</td><td>Chip-Enable/Reset (in einer früheren Fassung dieses Plans fälschlich „RUN" genannt) - kein normales GPIO</td></tr>
+  <tr><td>31</td><td><code>GPIO18</code></td><td><b>Genutzt</b></td><td>RJ45 Pin 7 (Relais-Feedback)</td></tr>
+  <tr><td>32</td><td><code>GPIO16</code></td><td><b>Genutzt</b></td><td>RJ45 Pin 5 (Sensor-2-DATA) - <b>in einer früheren Fassung dieses Plans fälschlich als „nicht auf dem Header gefunden" vermutet, das war ein Lesefehler beim Fotoauszählen</b></td></tr>
+  <tr><td>34</td><td><code>GPIO17</code></td><td><b>Genutzt</b></td><td>RJ45 Pin 6 (Relais-Steuerung)</td></tr>
+  <tr><td>35</td><td><code>GPIO21</code></td><td>Frei</td><td>Physisch vorhanden, unbenutzt</td></tr>
+  <tr><td>36</td><td><code>3V3</code></td><td><b>Genutzt</b></td><td>Versorgung für DHT-22/OLED/RJ45-Modul Pin 1</td></tr>
+  <tr><td>37</td><td><code>3V3_EN</code></td><td>Systemsteuerung</td><td>Enable-Pin des 3,3V-Reglers - <b>nicht</b> mit Pos. 36 (3V3) verwechseln</td></tr>
+  <tr><td>39</td><td><code>VSYS</code></td><td><b>Genutzt (empfohlen)</b></td><td>Kandidat für RJ45 Pin 8 „5V" - siehe Warnhinweis oben</td></tr>
+  <tr><td>40</td><td><code>VBUS</code></td><td>Frei (Alternative)</td><td>Rohe USB-C-5V, nur bei angeschlossenem USB-Kabel aktiv - für PoE-Dauerbetrieb ungeeignet</td></tr>
+  <tr><td>—</td><td><code>GPIO4-7</code></td><td>Intern belegt</td><td>Micro-SD-Slot, direkt verdrahtet - erscheinen NICHT auf dem 40-Pin-Header</td></tr>
+  <tr><td>—</td><td><code>GPIO9-14</code></td><td>Intern belegt</td><td>W5500-Ethernet (SPI + IRQ + RST), direkt verdrahtet - erscheinen NICHT auf dem 40-Pin-Header</td></tr>
 </table>
-<p style="font-size:10.5px;color:#6b7280;">„POE Power Port" (5-Pin-Header zwischen ESP32-Board und PoE Module (B))
+<p style="font-size:10.5px;color:#6b7280;">Ein zusätzlicher kleiner Pfostenstecker oben rechts auf dem Board
+(sichtbar auf <code>SM-POE-oben.jpg</code>) wurde in einer früheren
+Fassung dieses Plans fälschlich als separater I2C-Steckverbinder
+gedeutet - das war unsicher gelesen und lässt sich anhand des
+Hersteller-Pinouts nicht bestätigen (dort nicht abgebildet). Vermutlich
+eher der „PoE module header" oder die Kamera-/IPEX-Antennenschnittstelle
+(Punkte 8-11 im Datenblatt) - für dieses Projekt ohne Bedeutung, da I2C
+bereits eindeutig auf Pos. 25/26 lokalisiert ist. „POE Power Port"
+(5-Pin-Header unten am Board, zwischen ESP32-Board und PoE Module (B))
 ist die Stromversorgungs-Schnittstelle zwischen beiden Platinen (PoE-
-Extraktion → 5V/3V3-Regler) - kein Teil des RJ45-Modularanschlusses oben
-und für Steckmodule nicht relevant.</p>
+Extraktion → 5V/3V3-Regler) - ebenfalls kein Teil des RJ45-
+Modularanschlusses und für Steckmodule nicht relevant.</p>
 
 <footer>
   Sensormeter PoE — Verdrahtungsplan (erste Fassung, ungeprüft) · github.com/peterhagelhof7-cmd/sensormeter-poe ·
