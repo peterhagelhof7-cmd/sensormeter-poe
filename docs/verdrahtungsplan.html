@@ -67,7 +67,7 @@
 <body>
 
 <header>
-  <div class="eyebrow">Firmware-Projekt · Hobby / Privat · Erste Fassung, ungeprueft auf echter Hardware</div>
+  <div class="eyebrow">Firmware-Projekt · Hobby / Privat · Pinout per Board-Foto abgeglichen (2026-07-15), elektrisch weiterhin ungeprueft</div>
   <div style="display:flex; align-items:center; gap:12px;">
     <svg viewBox="0 0 48 48" fill="none" width="32" height="32" style="flex-shrink:0;">
       <path d="M24,9 L37.6,32.5 L10.4,32.5 Z" stroke="#8E97A3" stroke-width="2.2" stroke-linejoin="round"/>
@@ -90,13 +90,16 @@
 </header>
 
 <div class="callout warn">
-  <div class="callout-title">Status: ungeprueft</div>
+  <div class="callout-title">Status: elektrisch ungeprueft, Pinout jetzt per Foto abgeglichen</div>
   Dieser Verdrahtungsplan beschreibt die erste Firmware-Fassung
-  (<code>0.1.0-p0</code>) - zum Erstellungszeitpunkt lag noch kein Board
-  vor, nichts wurde geflasht oder an echter Hardware nachgemessen. Die
-  GPIO-Zuordnung basiert auf dem Hersteller-Pinout
-  (<code>docs/ESP32-S3-ETH-Datenblatt.pdf</code>), ist aber nicht
-  durchmessen.
+  (<code>0.1.0-p0</code>) - ursprünglich ohne vorliegendes Board erstellt,
+  rein aus dem Hersteller-Pinout (<code>docs/ESP32-S3-ETH-Datenblatt.pdf</code>).
+  Am 2026-07-15 gegen drei Fotos des tatsächlich beschafften Boards
+  (Waveshare ESP32-S3-ETH + PoE Module (B)) geprüft: alle hier genutzten
+  Pins (<code>GPIO15/1/2/16/17/18/0</code>) stimmen mit der Silkscreen-
+  Beschriftung überein. <b>Weiterhin nicht verifiziert</b>: tatsächliches
+  elektrisches Verhalten (nichts geflasht/durchmessen) sowie das
+  Strombudget der 5V-Schiene auf RJ45 Pin 8.
 </div>
 
 <h2>Bauteile</h2>
@@ -324,13 +327,22 @@ Board mit einem Ethernet-Kabel verbinden. Details siehe
   Siehe <code>docs/entscheidungen.md</code> „RJ45 Pin 8: 5V statt Reserve".
 </div>
 <div class="callout warn">
-  <div class="callout-title">GPIO35-37 bewusst vermieden</div>
+  <div class="callout-title">GPIO35-37 bewusst vermieden — GPIO33/34 offener Punkt</div>
   Der verbaute ESP32-S3R8 nutzt bei Octal-PSRAM (das „R8" in der
-  Chipbezeichnung) diese drei Pins silizium-seitig für die PSRAM-Anbindung.
+  Chipbezeichnung) mehrere Pins silizium-seitig für die PSRAM-Anbindung.
   Das Hersteller-Pinout markiert sie zwar als frei nutzbares GPIO (grün),
   das ließ sich ohne echte Hardware aber nicht verifizieren - deshalb hier
-  vorsorglich für keine neue Peripherie verwendet. Siehe
-  <code>docs/entscheidungen.md</code>.
+  vorsorglich für keine neue Peripherie verwendet.
+  <b>Ungeklärter Widerspruch, noch nicht aufgelöst</b>: <code>board-recherche.md</code>
+  nennt an anderer Stelle „GPIO33-37 intern durch PSRAM belegt" (also zwei
+  Pins mehr als hier tatsächlich vermieden), während <code>pins.h</code>
+  und dieser Plan nur GPIO35-37 ausschließen. Die Board-Fotos vom
+  2026-07-15 bestätigen: <b>GPIO33 und GPIO34 sind auf dem 2×20-Header
+  physisch herausgeführt</b> und aktuell komplett unbenutzt - vor einer
+  künftigen Belegung dieser beiden Pins zuerst klären, ob sie tatsächlich
+  PSRAM-frei sind (z. B. durch Testaufbau), da die beiden vorhandenen
+  Projektquellen sich hier widersprechen. Siehe
+  <code>docs/entscheidungen.md</code> „GPIO35-37 vorsorglich nicht belegt".
 </div>
 
 <h2>Vermiedene Pins</h2>
@@ -339,8 +351,38 @@ könnten den Bootvorgang stören - Ausnahme <code>GPIO0</code>, dort
 bewusst als vorhandener BOOT-Taster genutzt), <code>GPIO4-7</code>
 (Micro-SD-Slot, in diesem Projekt ungenutzt), <code>GPIO9-14</code>
 (W5500-Ethernet, siehe oben), <code>GPIO43/44</code> (UART0/seriell),
-<code>GPIO35-37</code> (siehe Warnhinweis oben). Details siehe
+<code>GPIO35-37</code> (siehe Warnhinweis oben) sowie vorsorglich auch
+<code>GPIO33/34</code> (ungeklärter PSRAM-Verdacht, siehe Warnhinweis
+oben - physisch am Header vorhanden, siehe Übersicht unten, aber bis zur
+Klärung nicht für neue Peripherie einplanen). Details siehe
 <code>docs/entscheidungen.md</code>.</p>
+
+<h2>Vollständige Pin-Übersicht (Board-Foto-Abgleich, 2026-07-15)</h2>
+<p>Alle Pins, die auf dem 2×20-Hauptheader sowie dem zusätzlichen kleinen
+I2C-Steckverbinder tatsächlich herausgeführt sind - abgelesen von den
+Fotos <code>SM-POE-oben.jpg</code>/<code>-unten.jpg</code>/<code>-seite.jpg</code>
+(liegen lokal neben, nicht im Repo). Ergänzt die „Pinbelegung"-Tabelle
+oben, die nur die tatsächlich verdrahteten Pins zeigt - hier stattdessen
+der komplette physische Pin-Bestand inkl. freier Pins.</p>
+<table>
+  <tr><th>Pin(s)</th><th>Status</th><th>Hinweis</th></tr>
+  <tr><td><code>GPIO15</code>, <code>GPIO1</code>, <code>GPIO2</code>, <code>GPIO16-18</code>, <code>GPIO0</code></td><td>Genutzt</td><td>Siehe „Pinbelegung (Hauptplatine)" oben</td></tr>
+  <tr><td><code>GPIO19</code>, <code>GPIO20</code>, <code>GPIO21</code></td><td>Frei</td><td><code>GPIO19</code> ehemals RJ45 Pin 8 (jetzt 5V statt GPIO, siehe oben); 20/21 nie belegt</td></tr>
+  <tr><td><code>GPIO33</code>, <code>GPIO34</code></td><td>Frei, aber ungeklärt</td><td>Auf dem Header vorhanden - siehe PSRAM-Warnhinweis oben, vor Nutzung erst klären</td></tr>
+  <tr><td><code>GPIO35-37</code></td><td>Vorsorglich vermieden</td><td>Silizium-seitig für Octal-PSRAM reserviert (siehe Warnhinweis)</td></tr>
+  <tr><td><code>GPIO38-42</code>, <code>GPIO45-48</code></td><td>Frei</td><td>Physisch am Header vorhanden, bislang keine Verwendung im Projekt</td></tr>
+  <tr><td><code>GPIO43</code>, <code>GPIO44</code></td><td>Reserviert</td><td>UART0/seriell (Debug-Konsole) - nicht für Peripherie nutzen</td></tr>
+  <tr><td><code>GPIO0</code></td><td>Genutzt</td><td>Onboard-BOOT-Taster (siehe oben)</td></tr>
+  <tr><td><code>GPIO3</code>, <code>GPIO45</code>, <code>GPIO46</code></td><td>Vermieden</td><td>Boot-Strapping-Pins</td></tr>
+  <tr><td><code>GPIO4-7</code></td><td>Intern belegt</td><td>Micro-SD-Slot, direkt verdrahtet - erscheinen NICHT auf dem externen Header</td></tr>
+  <tr><td><code>GPIO8-14</code></td><td>Intern belegt</td><td>W5500-Ethernet (SPI + IRQ + RST), direkt verdrahtet - erscheinen NICHT auf dem externen Header</td></tr>
+  <tr><td><code>RUN</code>, <code>3V3</code>, <code>3V3_EN</code>, <code>GND</code>, <code>VSYS</code>, <code>VBUS</code></td><td>Versorgung/Steuerung</td><td>Keine GPIOs - Chip-Enable bzw. Spannungsversorgung</td></tr>
+  <tr><td>Kleiner I2C-Steckverbinder (separat vom Hauptheader)</td><td>Teilgenutzt</td><td>Explizit „SDA"/„SCL" beschriftet - das sind <code>GPIO1</code>/<code>GPIO2</code>, siehe oben. Weitere Pins auf diesem Steckverbinder auf dem Foto nicht sicher lesbar (zu klein), vermutlich zusätzliche Boot-nahe IOs + GND/Power.</td></tr>
+</table>
+<p style="font-size:10.5px;color:#6b7280;">„POE Power Port" (5-Pin-Header zwischen ESP32-Board und PoE Module (B))
+ist die Stromversorgungs-Schnittstelle zwischen beiden Platinen (PoE-
+Extraktion → 5V/3V3-Regler) - kein Teil des RJ45-Modularanschlusses oben
+und für Steckmodule nicht relevant.</p>
 
 <footer>
   Sensormeter PoE — Verdrahtungsplan (erste Fassung, ungeprüft) · github.com/peterhagelhof7-cmd/sensormeter-poe ·
