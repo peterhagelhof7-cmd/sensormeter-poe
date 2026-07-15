@@ -156,6 +156,16 @@ struct DeviceConfig {
   String mqttPassword;
   String mqttTopicPrefix;
 
+  // Legt fest, ueber welches Interface MqttManager seine Verbindung zum
+  // Broker aufbaut, statt es dem lwIP-Standardrouting zu ueberlassen (siehe
+  // MqttManager-Klassenkommentar/docs/entscheidungen.md "Zwei-Interface-
+  // Besonderheit" - dort als "nicht verifiziert" markiert, welches
+  // Interface lwIP waehlt, wenn LAN und WLAN gleichzeitig eine IP haben).
+  // Bewusst kein "auto"/dritte Option - fest "entweder oder": ist das
+  // gewaehlte Interface gerade nicht verbunden, schlaegt der MQTT-Connect
+  // regulaer fehl, auch wenn das jeweils andere Interface eine IP haette.
+  String mqttInterface = "lan";  // "lan" | "wlan"
+
   // Anbieter-Branding (Weisslabel): frei einstellbarer Vendor-Name, erscheint
   // zusaetzlich zum weiterhin bestehenden, frei editierbaren Systemnamen auf
   // OLED-Slide und Webseiten-Header, sobald gesetzt. Das Logo-Bild selbst

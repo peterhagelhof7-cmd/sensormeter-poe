@@ -466,6 +466,16 @@ String WebServerManager::buildSettingsPageBody() const {
   html += "<label>Topic-Praefix (leer = aus Systemname abgeleitet)<input type=\"text\" name=\"mqttTopicPrefix\" "
           "value=\"" + cfg.mqttTopicPrefix + "\" placeholder=\"" + NetManager::sanitizeHostname(cfg.systemName) +
           "\"></label>";
+  html += "<label>Interface<select name=\"mqttInterface\">"
+          "<option value=\"lan\"" + String(cfg.mqttInterface == "lan" ? " selected" : "") +
+          ">LAN</option>"
+          "<option value=\"wlan\"" + String(cfg.mqttInterface == "wlan" ? " selected" : "") +
+          ">WLAN</option>"
+          "</select></label>";
+  html += "<p class=\"hint\">Erzwingt, ueber welches Interface die Verbindung zum Broker aufgebaut wird - "
+          "ohne das waere laut lwIP nicht eindeutig festgelegt, welches von beiden genutzt wird, wenn LAN "
+          "und WLAN gleichzeitig eine IP haben. Ist das gewaehlte Interface gerade nicht verbunden, "
+          "schlaegt die MQTT-Verbindung fehl, auch wenn das andere Interface erreichbar waere.</p>";
   html += "<p class=\"hint\">Meldet Sensoren (und bei aktivem Relais den Aktor) per MQTT-Discovery bei Home "
           "Assistant an. Bleibt inaktiv, solange keine Broker-Adresse eingetragen ist.</p>";
   html += "</div>";
@@ -829,6 +839,7 @@ void WebServerManager::handleApiConfigGet(AsyncWebServerRequest* request) {
   doc["mqttUser"] = cfg.mqttUser;
   doc["mqttPassword"] = cfg.mqttPassword;
   doc["mqttTopicPrefix"] = cfg.mqttTopicPrefix;
+  doc["mqttInterface"] = cfg.mqttInterface;
   doc["brandingVendorName"] = cfg.brandingVendorName;
   doc["brandingHasLogo"] = _branding.hasLogo();
   doc["extDisplayPages"] = cfg.extDisplayPages;
@@ -950,6 +961,10 @@ void WebServerManager::handleApiConfigPost(AsyncWebServerRequest* request) {
   if (request->hasParam("mqttPassword", true)) cfg.mqttPassword = request->getParam("mqttPassword", true)->value();
   if (request->hasParam("mqttTopicPrefix", true)) {
     cfg.mqttTopicPrefix = request->getParam("mqttTopicPrefix", true)->value();
+  }
+  if (request->hasParam("mqttInterface", true)) {
+    String interfaceChoice = request->getParam("mqttInterface", true)->value();
+    if (interfaceChoice == "lan" || interfaceChoice == "wlan") cfg.mqttInterface = interfaceChoice;
   }
 
   if (request->hasParam("brandingVendorName", true)) {

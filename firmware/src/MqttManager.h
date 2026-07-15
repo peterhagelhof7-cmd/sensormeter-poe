@@ -16,6 +16,19 @@
 // Sensorwerte bei jedem Sensorzyklus (erkannt wie bei SyslogManager an einer
 // Aenderung von lastReadMillis), Relais-Zustand sofort bei Aenderung -
 // Discovery-Payload nur einmal je (Re-)Connect.
+//
+// Zwei-Interface-Besonderheit (LAN + WLAN gleichzeitig moeglich): seit
+// 2026-07-16 (ConfigManager::mqttInterface) wird das nicht dem lwIP-
+// Standardverhalten ueberlassen - ensureConnected() setzt vor jedem
+// connect()-Versuch per lwIP netif_set_default() (lwip/netif.h) explizit das
+// gewaehlte Interface als Default und stellt danach den vorherigen Zustand
+// wieder her (siehe MqttManager.cpp) - damit ist deterministisch festgelegt,
+// ueber welches Interface der Broker erreicht wird, auch wenn beide
+// gleichzeitig eine IP haben. Bewusst die lwIP-Funktion statt
+// esp_netif_set_default_netif(): identischer Code wie bei Sensormeter
+// (WT32-ETH01, Arduino-ESP32 2.0.17), wo esp_netif_set_default_netif() noch
+// nicht existiert - die lwIP-Funktion darunter gibt es auf beiden Core-
+// Versionen. Siehe docs/entscheidungen.md.
 
 class MqttManager {
  public:

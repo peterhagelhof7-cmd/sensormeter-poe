@@ -737,3 +737,37 @@ je Punkt.
 Getestet: `pio run` (PowerShell, siehe Hinweis oben zu MSYS) - baut sauber
 (Flash 22,3%/RAM 19,8%, vorher 22,1%/18,5%), drei neue Bibliotheken
 erfolgreich aufgelöst. Nicht getestet: echte Hardware.
+
+## 2026-07-16 — MQTT fest an ein Interface binden
+
+Wie bei Sensormeter WLAN hat auch dieses Board zwei mögliche aktive
+Interfaces (LAN + WLAN). Bisher war offen, welches Interface lwIP für die
+MQTT-Verbindung wählt, wenn beide gleichzeitig eine IP haben - jetzt lässt
+sich das über die Einstellungsseite fest vorgeben.
+
+- Neues Feld `ConfigManager::mqttInterface` (`"lan"` | `"wlan"`, Default
+  `"lan"`), per `interface`-Attribut im `<mqtt .../>`-Element persistiert.
+  Bewusst **kein** `"auto"`/dritte Option - ist das gewählte Interface
+  gerade nicht verbunden, schlägt der MQTT-Connect regulär fehl, auch wenn
+  das jeweils andere Interface erreichbar wäre (bewusst kein stilles
+  Failover).
+- Einstellungsseite: neues Pulldown "Interface" (LAN/WLAN) im MQTT-Block,
+  REST-API (`/api/config` GET/POST) um `mqttInterface` erweitert.
+- `MqttManager::ensureConnected()` setzt vor jedem `connect()`-Versuch per
+  lwIP `netif_set_default()` (`lwip/netif.h`) explizit das gewählte
+  Interface als Default-Netif und stellt danach den vorherigen Zustand
+  wieder her.
+- **Bewusst `netif_set_default()` (lwIP) statt `esp_netif_set_default_netif()`
+  (esp_netif)**, obwohl letztere auf diesem Core (3.x) verfügbar wäre: bei
+  Sensormeter (Arduino-ESP32 2.0.17) existiert diese Funktion nicht (siehe
+  dortiger Eintrag vom selben Tag), die lwIP-Funktion darunter dagegen auf
+  beiden Core-Versionen - damit ist der Code hier identisch zu Sensormeter,
+  statt zweier divergierender Implementierungen für dasselbe Problem.
+  Umsetzung: `esp_netif_get_netif_impl_index()` liefert den lwIP-
+  "Netif-Index" (`netif->num + 1`), passend zu lwIPs `netif_get_by_index()`
+  - so lässt sich vom esp_netif-Handle (ifkey `"ETH_DEF"`/`"WIFI_STA_DEF"`)
+  auf das darunterliegende `struct netif*` schließen.
+
+Getestet: `pio run` (PowerShell) - baut sauber (Flash 22,3%/RAM 19,8%,
+unverändert gegenüber vorherigem Stand). Nicht getestet: echte Hardware mit
+gleichzeitig aktivem LAN und WLAN.

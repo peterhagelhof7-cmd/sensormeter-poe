@@ -180,6 +180,7 @@ MQTT (Home Assistant):
 - Broker-Adresse, Port
 - Benutzername, Passwort (optional)
 - Topic-Präfix
+- Interface (LAN/WLAN, erzwingt festes Interface für die Broker-Verbindung)
 
 Konfiguration:
 - XML Export (config.xml, Aufbau siehe Abschnitt 10.1)
@@ -556,6 +557,8 @@ Neue Felder auf der Einstellungsseite (Abschnitt 6, Block "MQTT"):
 - Benutzername, Passwort (optional, je nach Broker-Konfiguration)
 - Topic-Präfix (Default: aus Systemname abgeleitet, wie beim
   mDNS-Hostnamen, Abschnitt Pflichtenheft 3.3)
+- Interface (LAN/WLAN, seit 2026-07-16 - erzwingt, über welches Interface
+  die Broker-Verbindung aufgebaut wird, siehe docs/entscheidungen.md)
 
 ------------------------------------------------------------
 

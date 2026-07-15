@@ -169,6 +169,8 @@ bool ConfigManager::importXml(const String& xml) {
     cfg.mqttUser = attrOrEmpty(mqtt, "user");
     cfg.mqttPassword = attrOrEmpty(mqtt, "password");
     cfg.mqttTopicPrefix = attrOrEmpty(mqtt, "topicPrefix");
+    String interfaceChoice = attrOrEmpty(mqtt, "interface");
+    if (interfaceChoice == "lan" || interfaceChoice == "wlan") cfg.mqttInterface = interfaceChoice;
   }
 
   const XMLElement* branding = root->FirstChildElement("branding");
@@ -277,6 +279,7 @@ String ConfigManager::exportXml() const {
   mqtt->SetAttribute("user", _config.mqttUser.c_str());
   mqtt->SetAttribute("password", _config.mqttPassword.c_str());
   mqtt->SetAttribute("topicPrefix", _config.mqttTopicPrefix.c_str());
+  mqtt->SetAttribute("interface", _config.mqttInterface.c_str());
   root->InsertEndChild(mqtt);
 
   XMLElement* branding = doc.NewElement("branding");
