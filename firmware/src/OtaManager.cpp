@@ -1,6 +1,7 @@
 #include "OtaManager.h"
 
 #include <Update.h>
+#include <cstring>
 
 #if __has_include("config.h")
 #include "config.h"
@@ -56,13 +57,26 @@ int compareVersions(const String& a, const String& b) {
 }
 }  // namespace
 
+namespace {
+// Byte-sichere Teilstring-Suche (memmem-Ersatz - nicht auf allen Plattformen
+// verfuegbar) - im Unterschied zu String::indexOf()/strstr() bricht das
+// NICHT am ersten eingebetteten Null-Byte ab.
+int findBytes(const uint8_t* haystack, size_t haystackLen, const char* needle, size_t needleLen) {
+  if (needleLen == 0 || haystackLen < needleLen) return -1;
+  for (size_t i = 0; i + needleLen <= haystackLen; i++) {
+    if (memcmp(haystack + i, needle, needleLen) == 0) return (int)i;
+  }
+  return -1;
+}
+}  // namespace
+
 bool OtaManager::beginLocalUpdate(size_t contentLength) {
   _markerFound = false;
   _identityMatches = false;
   _versionAllowed = false;
   _capturing = false;
-  _tail = "";
-  _capture = "";
+  _tailLen = 0;
+  _captureLen = 0;
   return Update.begin(contentLength);
 }
 
@@ -77,40 +91,67 @@ bool OtaManager::writeLocalUpdateChunk(uint8_t* data, size_t len) {
 // Text dann in handleMarkerPayload() aus. Das eigentliche Update.write()
 // laeuft unabhaengig davon weiter - erst endLocalUpdate() entscheidet
 // anhand des Scan-Ergebnisses, ob committet oder verworfen wird.
+//
+// Arbeitet bewusst auf rohen Bytes (nicht Arduino String/strstr) - eine
+// .bin ist Binaerdaten mit reichlich eingebetteten Null-Bytes (bereits ab
+// Byte 9 im ESP32-Image-Header gesehen), String-basierte Suche wuerde dort
+// abbrechen und den Marker nie finden, egal wie weit hinten er im File
+// liegt. Siehe docs/entscheidungen.md fuer den Befund, der das aufgedeckt
+// hat (uebernommen aus sensormeter).
 void OtaManager::scanChunkForMarker(uint8_t* data, size_t len) {
-  String chunkText;
-  chunkText.reserve(_tail.length() + len);
-  chunkText += _tail;
-  for (size_t i = 0; i < len; i++) chunkText += (char)data[i];
-
+  static const size_t kJoinCap = kTailCap + 512;
   if (!_capturing) {
-    int prefixPos = chunkText.indexOf(kMarkerPrefix);
+    uint8_t joinBuf[kJoinCap];
+    size_t offset = 0;
+    if (_tailLen > 0) {
+      memcpy(joinBuf, _tailBuf, _tailLen);
+      offset = _tailLen;
+    }
+    size_t copyLen = len;
+    if (offset + copyLen > kJoinCap) copyLen = kJoinCap - offset;
+    memcpy(joinBuf + offset, data, copyLen);
+    size_t joinLen = offset + copyLen;
+
+    int prefixPos = findBytes(joinBuf, joinLen, kMarkerPrefix, kMarkerPrefixLen);
     if (prefixPos < 0) {
-      // Ueberlappungspuffer fuer den naechsten Chunk - der Marker koennte
-      // genau an der Chunk-Grenze zerschnitten sein.
       size_t keep = kMarkerPrefixLen > 0 ? kMarkerPrefixLen - 1 : 0;
-      _tail = chunkText.length() > keep ? chunkText.substring(chunkText.length() - keep) : chunkText;
+      if (keep > kTailCap) keep = kTailCap;
+      size_t start = joinLen > keep ? joinLen - keep : 0;
+      _tailLen = joinLen - start;
+      memcpy(_tailBuf, joinBuf + start, _tailLen);
       return;
     }
     _capturing = true;
-    chunkText = chunkText.substring(prefixPos + kMarkerPrefixLen);
+    size_t afterPrefix = prefixPos + kMarkerPrefixLen;
+    size_t remaining = joinLen - afterPrefix;
+    if (remaining > kCaptureCap) remaining = kCaptureCap;
+    memcpy(_captureBuf, joinBuf + afterPrefix, remaining);
+    _captureLen = remaining;
+    _tailLen = 0;
+  } else {
+    size_t copyLen = len;
+    if (_captureLen + copyLen > kCaptureCap) copyLen = kCaptureCap - _captureLen;
+    memcpy(_captureBuf + _captureLen, data, copyLen);
+    _captureLen += copyLen;
   }
 
-  _capture += chunkText;
-  int suffixPos = _capture.indexOf(kMarkerSuffix);
+  int suffixPos = findBytes(_captureBuf, _captureLen, kMarkerSuffix, strlen(kMarkerSuffix));
   if (suffixPos >= 0) {
-    handleMarkerPayload(_capture.substring(0, suffixPos));
+    String payload;
+    payload.reserve(suffixPos);
+    for (int i = 0; i < suffixPos; i++) payload += (char)_captureBuf[i];
+    handleMarkerPayload(payload);
     _capturing = false;
-    _capture = "";
-    _tail = "";
+    _captureLen = 0;
+    _tailLen = 0;
     return;
   }
-  if (_capture.length() > kMaxCaptureLen) {
+  if (_captureLen >= kCaptureCap) {
     // Kein gueltiger Marker in plausibler Laenge - wie "nicht gefunden"
     // behandeln, nicht endlos weiter aufsammeln.
     _capturing = false;
-    _capture = "";
-    _tail = "";
+    _captureLen = 0;
+    _tailLen = 0;
   }
 }
 

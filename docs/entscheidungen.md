@@ -828,3 +828,25 @@ kaum veraendert). Nicht getestet: echte Hardware.
 
 **Standing-Vorgabe**: analog zur OTA-Pruefung oben ist dieser Mechanismus
 ab jetzt fester Bestandteil dieses Projekts.
+
+## 2026-07-16 — OTA-Marker-Scan byte-sicher gemacht (Bug uebernommen aus Sensormeter)
+
+Beim Debuggen eines Zeitzonen-Fixes im Schwesterprojekt `sensormeter`
+wurde entdeckt, dass der dortige OTA-Marker-Scan (`OtaManager::
+scanChunkForMarker()`) eine echte, gueltige `.bin`-Datei nie akzeptieren
+konnte: die Suche nutzte Arduino `String`/`indexOf()` (intern
+`strstr()`-basiert) auf den rohen Binaerdaten des Uploads - `strstr()`
+bricht am ersten eingebetteten Null-Byte ab, ein kompiliertes
+ESP32-Image hat sein erstes Null-Byte aber schon bei Byte 9
+(Image-Header-Padding), lange vor dem Marker selbst. Dieses Projekt hat
+denselben OTA-Marker-Mechanismus mit identischem Code-Muster (siehe
+`sensormeter`-Eintrag "OTA-Marker-Scan fand echte .bin nie" fuer die
+volle Herleitung) - Bug bestaetigt, gleiche Ursache.
+
+Fix uebernommen: `OtaManager::scanChunkForMarker()` auf rohe
+`uint8_t`-Puffer und eine Null-Byte-sichere `findBytes()`-Suche
+(memcmp-basiert statt strstr-basiert) umgestellt, `String _tail`/
+`_capture` durch feste Byte-Puffer ersetzt. `pio run` erfolgreich (Flash
+22,5%/RAM 19,8%, praktisch unveraendert). Nicht getestet: echter
+OTA-Upload auf echter Hardware - kein Board in dieser Sitzung
+angeschlossen.
