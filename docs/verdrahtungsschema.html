@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Sensormeter PoE — Verdrahtungsschema</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  @page { size: A4; margin: 16mm 15mm 18mm 15mm; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #1c2430;
+    background: #ffffff;
+    font-size: 12.5px;
+    line-height: 1.48;
+  }
+  section.sheet { page-break-after: always; }
+  section.sheet:last-child { page-break-after: auto; }
+
+  header {
+    background: #0f1f3d;
+    color: #fff;
+    padding: 7mm 10mm 6mm 10mm;
+    border-radius: 3px;
+    margin-bottom: 5mm;
+  }
+  .eyebrow { font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: #9fb3d9; margin-bottom: 2mm; }
+  h1 { margin: 0 0 1.5mm 0; font-size: 19px; }
+  .subtitle { color: #cdd8ec; font-size: 11px; }
+  .badge-row { margin-top: 3.5mm; display: flex; gap: 5px; flex-wrap: wrap; }
+  .badge { display: inline-block; padding: 2.5px 8px; border-radius: 3px; font-size: 9.5px; font-weight: 600; background: #24365c; color: #cdd8ec; }
+  .badge-orange { background: #c8622a; color: #fff; }
+
+  h2 { font-size: 13px; color: #8f4a1e; margin: 5mm 0 2.5mm 0; border-bottom: 1px solid #e4e1d8; padding-bottom: 1.3mm; }
+  h3 { font-size: 11.5px; color: #1c2430; margin: 4mm 0 1.8mm 0; }
+  p { margin: 0 0 2.5mm 0; }
+  code { font-family: Consolas, "Cascadia Mono", "Courier New", monospace; background: #f2f0e9; border: 1px solid #e4e1d8; border-radius: 3px; padding: 1px 4px; font-size: 11px; }
+  table { border-collapse: collapse; width: 100%; margin: 1.5mm 0 3.5mm 0; }
+  table th, table td { border: 1px solid #e4e1d8; padding: 1.5mm 2.5mm; font-size: 11px; text-align: left; vertical-align: middle; }
+  table th { background: #f2f0e9; }
+  .two-col { display: flex; gap: 6mm; }
+  .two-col > div { flex: 1; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 3mm 6mm; margin: 0 0 4mm 0; padding: 2.5mm 3.5mm; background: #f7f5f0; border: 1px solid #e4e1d8; border-radius: 3px; font-size: 10.5px; }
+  .legend .item { display: flex; align-items: center; gap: 1.6mm; }
+  .dot { display: inline-block; width: 2.6mm; height: 2.6mm; border-radius: 50%; flex-shrink: 0; }
+
+  .callout { border-left: 3px solid #5c9e6c; background: #f0f6ef; padding: 2.5mm 3.5mm; margin: 2.5mm 0; border-radius: 0 3px 3px 0; }
+  .callout-title { font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: #3f6b46; margin-bottom: 1mm; }
+  .callout.warn { border-left-color: #a63d2e; background: #fbeeec; }
+  .callout.warn .callout-title { color: #a63d2e; }
+
+  footer.pagefoot { margin-top: 4mm; padding-top: 2mm; border-top: 1px solid #e4e1d8; font-size: 9px; color: #6b7280; display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================= -->
+<!-- SEITE 1 — Übersicht -->
+<!-- ============================================================= -->
+<section class="sheet">
+<header>
+  <div class="eyebrow">Waveshare ESP32-S3-ETH · v1.0 · Pinout per Board-Foto abgeglichen (2026-07-15), elektrisch ungeprüft</div>
+  <h1>WAVESHARE ESP32-S3-ETH — KOMPLETTES VERDRAHTUNGSSCHEMA</h1>
+  <div class="subtitle">Interne Sensoren · Display SSD1306 · W5500-Ethernet (SPI, onboard) · RJ45-Modularanschluss (Sensor 2 / Relais / 5V)</div>
+  <div class="badge-row">
+    <span class="badge badge-orange">GPIO15 · DHT-22 intern</span>
+    <span class="badge">GPIO1/2 · I2C OLED + RJ45</span>
+    <span class="badge">GPIO16-18 · RJ45-Modul</span>
+    <span class="badge badge-orange">5V · RJ45 Pin 8</span>
+    <span class="badge">github.com/peterhagelhof7-cmd/sensormeter-poe</span>
+  </div>
+</header>
+
+<div class="legend">
+  <span class="item"><span class="dot" style="background:#c0392b;"></span>3,3V / 5V Stromversorgung</span>
+  <span class="item"><span class="dot" style="background:#1c2430;"></span>Masse (GND)</span>
+  <span class="item"><span class="dot" style="background:#2e6da4;"></span>Allgemeiner Ein-/Ausgang GPIO</span>
+  <span class="item"><span class="dot" style="background:#7a5cad;"></span>I2C-Bus (SDA/SCL)</span>
+  <span class="item"><span class="dot" style="background:#c9a227;"></span>Relais-Steuerung</span>
+</div>
+
+<h2>Waveshare ESP32-S3-ETH — Hauptübersicht</h2>
+<div class="two-col">
+  <div>
+    <table>
+      <tr><th>ESP32-S3-ETH (Waveshare)</th><th></th></tr>
+      <tr><td>ESP32-S3R8-Chip</td><td>Haupt-MCU</td></tr>
+      <tr><td>GND</td><td>Stern-Massepunkt</td></tr>
+      <tr><td>3,3V / 5V (VSYS)</td><td>Versorgung Peripherie / RJ45 Pin 8</td></tr>
+    </table>
+  </div>
+  <div>
+    <table>
+      <tr><th>W5500 (Ethernet) / USB-C</th><th></th></tr>
+      <tr><td>SPI</td><td>fest verdrahtet: GPIO9-14 (CS/IRQ/RST/SCK/MISO/MOSI)</td></tr>
+      <tr><td>USB-C (natives USB)</td><td>Programmierung, kein manueller BOOT/EN-Handgriff nötig</td></tr>
+      <tr><td>BOOT-Taster</td><td>GPIO0, onboard, frei nutzbar</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="callout">
+  <div class="callout-title">Unterschiede zum Sensormeter-Schwesterprojekt (WT32-ETH01)</div>
+  Gleiches RJ45-Modularanschluss-Konzept (Sensor 2 / I2C-Sensor / Relais austauschbar), aber andere GPIO-Nummern
+  und ein anderer Ethernet-Anschluss: <b>W5500 über SPI</b> (GPIO9-14) statt LAN8720 über RMII. Dadurch ist
+  <code>GPIO0</code> hier frei als BOOT-Taster nutzbar (kein RMII-Takt-Konflikt wie beim WT32-ETH01) und der
+  interne I2C-Bus liegt auf <code>GPIO1/GPIO2</code> statt <code>IO32/IO33</code>. RJ45 Pin 8 führt bei diesem
+  Board bewusst <b>5V (VSYS)</b> statt eines Reserve-GPIOs (Entscheidung „RJ45 Pin 8: 5V statt Reserve",
+  siehe <code>docs/entscheidungen.md</code>).
+</div>
+<div class="callout warn">
+  <div class="callout-title">Offener Punkt: GPIO33/34 (Octal-PSRAM)</div>
+  Der verbaute ESP32-S3R8 nutzt bei Octal-PSRAM ggf. mehrere Pins silizium-seitig. GPIO35-37 werden deshalb
+  grundsätzlich gemieden; ob GPIO33/34 ebenfalls betroffen sind, ist unter den Projektquellen widersprüchlich
+  dokumentiert und bis zu einem Testaufbau ungeklärt — vorsorglich für keine neue Peripherie verwendet.
+</div>
+
+<footer class="pagefoot">
+  <span>Sensormeter PoE Monitoring System | Verdrahtungsschema v1.0</span>
+  <span>Seite 1 / 4</span>
+</footer>
+</section>
+
+<!-- ============================================================= -->
+<!-- SEITE 2 — Stromversorgung & Daten, interne Sensoren + RJ45 -->
+<!-- ============================================================= -->
+<section class="sheet">
+<h2 style="margin-top:0;">STROMVERSORGUNG &amp; DATEN — INTERNE SENSOREN</h2>
+<p style="font-size:10.5px;color:#6b7280;">Interner Sensor 1 (DHT-22) · Display (I2C) · RJ45-Modularanschluss (Sensor 2 / Relais / 5V)</p>
+
+<div class="two-col">
+  <div>
+    <table>
+      <tr><th>ESP32-S3-Pin</th><th>Funktion</th></tr>
+      <tr><td><code>GPIO15</code></td><td>DHT-22 (intern) Data</td></tr>
+      <tr><td><code>GPIO1</code></td><td>I2C SDA</td></tr>
+      <tr><td><code>GPIO2</code></td><td>I2C SCL</td></tr>
+      <tr><td><code>GPIO16</code></td><td>RJ45 Pin 5 (Sensor 2 / Kontakt)</td></tr>
+      <tr><td><code>GPIO17</code></td><td>RJ45 Pin 6 (Relais OUT, active LOW)</td></tr>
+      <tr><td><code>GPIO18</code></td><td>RJ45 Pin 7 (Relais FB)</td></tr>
+      <tr><td><code>3V3 / GND</code></td><td>Versorgung</td></tr>
+      <tr><td><code>VSYS (5V)</code></td><td>RJ45 Pin 8 — Board-Eingang, kein GPIO</td></tr>
+    </table>
+  </div>
+  <div>
+    <table>
+      <tr><th>Display SSD1306 (I2C, 128×64, 0x3C)</th><th></th></tr>
+      <tr><td>VCC</td><td>3,3V</td></tr>
+      <tr><td>GND</td><td>GND</td></tr>
+      <tr><td>SCL</td><td>GPIO2</td></tr>
+      <tr><td>SDA</td><td>GPIO1</td></tr>
+    </table>
+    <table>
+      <tr><th>Interner DHT-22 (Sensor 1)</th><th></th></tr>
+      <tr><td>VCC</td><td>3,3V</td></tr>
+      <tr><td>GND</td><td>GND</td></tr>
+      <tr><td>DATA</td><td>GPIO15 (Pull-up 10kΩ → 3,3V)</td></tr>
+    </table>
+  </div>
+</div>
+
+<h3>RJ45-Buchse (Modularer Anschluss)</h3>
+<table>
+  <tr><th>Pin</th><th>Belegung</th><th>zu ESP32-S3</th></tr>
+  <tr><td>1</td><td>3,3V (Strom)</td><td><code>3V3</code></td></tr>
+  <tr><td>2</td><td>GND (Masse)</td><td><code>GND</code></td></tr>
+  <tr><td>3</td><td>GPIO2 / I2C SCL (gemeinsamer Bus mit Display)</td><td><code>GPIO2</code></td></tr>
+  <tr><td>4</td><td>GPIO1 / I2C SDA (gemeinsamer Bus mit Display)</td><td><code>GPIO1</code></td></tr>
+  <tr><td>5</td><td>Sensor 2 (DHT-22) / Kontakt</td><td><code>GPIO16</code></td></tr>
+  <tr><td>6</td><td>Relais-Steuerung (active LOW)</td><td><code>GPIO17</code></td></tr>
+  <tr><td>7</td><td>Relais-Feedback / Interrupt</td><td><code>GPIO18</code></td></tr>
+  <tr><td>8</td><td>5V-Versorgung (Board-Eingang, <b>kein GPIO</b>)</td><td><code>VSYS</code></td></tr>
+</table>
+<div class="callout warn">
+  <div class="callout-title">Anders als beim WT32-ETH01: Pin 8 = 5V, nicht Reserve</div>
+  Auf dem Sensormeter-Schwesterprojekt (WT32-ETH01) ist RJ45 Pin 8 ein Reserve-GPIO mit Boot-Strapping-Vorsicht
+  (IO12 muss beim Boot LOW sein). Hier auf der ESP32-S3-ETH liegt Pin 8 stattdessen direkt auf der 5V-Schiene
+  (<code>VSYS</code>) — Module, die nur 3,3V-tolerant sind, dürfen diesen Pin nicht an ihre VCC anschließen.
+</div>
+
+<footer class="pagefoot">
+  <span>Sensormeter PoE Monitoring System | Verdrahtungsschema v1.0</span>
+  <span>Seite 2 / 4</span>
+</footer>
+</section>
+
+<!-- ============================================================= -->
+<!-- SEITE 3 — RJ45-Farbcode + Modul-Adapter -->
+<!-- ============================================================= -->
+<section class="sheet">
+<h2 style="margin-top:0;">RJ45-BUCHSE — FARBCODE &amp; MODUL-ADAPTER</h2>
+<p style="font-size:10.5px;color:#6b7280;">RJ45-Buchse 8P8C, geschirmt · Farbcode nach T568A-Konvention (Standard-Patchkabel)</p>
+
+<table>
+  <tr><th>Pin</th><th>Farbe (T568A)</th><th>ESP32-S3-Pin</th><th>Modul-Typ (alternierend)</th></tr>
+  <tr><td>1</td><td>Weiß/Grün</td><td><code>3V3</code></td><td>Stromversorgung für Modul</td></tr>
+  <tr><td>2</td><td>Grün</td><td><code>GND</code></td><td>Masse</td></tr>
+  <tr><td>3</td><td>Weiß/Orange</td><td><code>GPIO2</code></td><td>I2C SCL (Display + externer I2C-Sensor)</td></tr>
+  <tr><td>4</td><td>Blau</td><td><code>GPIO1</code></td><td>I2C SDA (Display + externer I2C-Sensor)</td></tr>
+  <tr><td>5</td><td>Weiß/Blau</td><td><code>GPIO16</code></td><td>Sensor 2 (DHT-22) / Kontakt</td></tr>
+  <tr><td>6</td><td>Orange</td><td><code>GPIO17</code></td><td>Relais-Steuerung (active LOW)</td></tr>
+  <tr><td>7</td><td>Weiß/Braun</td><td><code>GPIO18</code></td><td>Relais-Feedback / Interrupt</td></tr>
+  <tr><td>8</td><td>Braun</td><td><code>VSYS</code></td><td>5V-Versorgung (kein GPIO)</td></tr>
+</table>
+
+<h3>Modul-Adapter (RJ45-Stecker — Bauseite)</h3>
+<p style="font-size:10.5px;color:#6b7280;">Pin-<b>Rollen</b> identisch zum Sensormeter-Schwesterprojekt (WT32-ETH01) — austauschbare Module funktionieren auf beiden Boards gleich, nur die konkreten GPIO-Nummern unterscheiden sich. Siehe <code>docs/lastenheft.txt</code> Abschnitt 14.</p>
+
+<table>
+  <tr><th colspan="2">Modul 1: DHT-22 (GPIO-Sensor)</th></tr>
+  <tr><td>Pin 1</td><td>VCC (3,3V)</td></tr>
+  <tr><td>Pin 2</td><td>GND</td></tr>
+  <tr><td>Pin 5</td><td>DATA (OUT)</td></tr>
+  <tr><td>Pin 3,4,6,7,8</td><td>nicht verbunden</td></tr>
+</table>
+<p style="font-size:10px;color:#a63d2e;">Pull-up-Widerstand: 4,7kΩ zwischen Pin 1 (3,3V) und Pin 5 (DATA) erforderlich.</p>
+
+<table>
+  <tr><th colspan="2">Modul 2: I2C-Sensor (z. B. BME280, BH1750, SH1107)</th></tr>
+  <tr><td>Pin 1</td><td>VCC (3,3V)</td></tr>
+  <tr><td>Pin 2</td><td>GND</td></tr>
+  <tr><td>Pin 3</td><td>SCL (I2C)</td></tr>
+  <tr><td>Pin 4</td><td>SDA (I2C)</td></tr>
+  <tr><td>Pin 5-8</td><td>nicht verbunden</td></tr>
+</table>
+<p style="font-size:10px;color:#a63d2e;">Pull-up-Widerstände: 4,7kΩ zwischen Pin 1+3 und Pin 1+4. I2C-Adresse darf sich nicht mit dem internen Display (0x3C) überschneiden — z. B. externes SH1107 auf 0x3D.</p>
+
+<table>
+  <tr><th colspan="2">Modul 3: Relais-Modul (GPIO-Ausgang, active LOW)</th></tr>
+  <tr><td>Pin 1</td><td>VCC (3,3V / 5V — je nach Relais)</td></tr>
+  <tr><td>Pin 2</td><td>GND</td></tr>
+  <tr><td>Pin 3-5</td><td>nicht verbunden</td></tr>
+  <tr><td>Pin 6</td><td>IN (Steuersignal, active LOW)</td></tr>
+  <tr><td>Pin 7</td><td>Status-Feedback (optional)</td></tr>
+  <tr><td>Pin 8</td><td>nicht verbunden (5V-Schiene, nur wenn 5V-Relais benötigt)</td></tr>
+</table>
+<p style="font-size:10px;color:#a63d2e;">Relais mit Optokoppler und Freilaufdiode empfohlen.</p>
+
+<footer class="pagefoot">
+  <span>Sensormeter PoE Monitoring System | Verdrahtungsschema v1.0</span>
+  <span>Seite 3 / 4</span>
+</footer>
+</section>
+
+<!-- ============================================================= -->
+<!-- SEITE 4 — Masseführung, Onboard-Ethernet, Pin-Zusammenfassung -->
+<!-- ============================================================= -->
+<section class="sheet">
+<h2 style="margin-top:0;">STROMLAUFPLAN, MASSEFÜHRUNG &amp; PIN-ZUSAMMENFASSUNG</h2>
+
+<div class="two-col">
+  <div>
+    <table>
+      <tr><th colspan="2">5V / 3,3V Versorgung</th></tr>
+      <tr><td>PoE-Modul (802.3af) oder USB-C VBUS</td><td>→ VSYS/3,3V-Schiene des Boards</td></tr>
+      <tr><td>VSYS (Pos. 39)</td><td>→ RJ45 Pin 8 (5V für externe Module)</td></tr>
+    </table>
+    <table>
+      <tr><th colspan="2">Onboard-Ethernet (W5500, SPI)</th></tr>
+      <tr><td>GPIO14</td><td>CS</td></tr>
+      <tr><td>GPIO10</td><td>IRQ</td></tr>
+      <tr><td>GPIO9</td><td>RST</td></tr>
+      <tr><td>GPIO13</td><td>SCK</td></tr>
+      <tr><td>GPIO12</td><td>MISO</td></tr>
+      <tr><td>GPIO11</td><td>MOSI</td></tr>
+    </table>
+  </div>
+  <div>
+    <table>
+      <tr><th colspan="2">RJ45-Buchse (Modularer Anschluss)</th></tr>
+      <tr><td>Pin 1 → 3,3V</td><td>Pin 5 → GPIO16</td></tr>
+      <tr><td>Pin 2 → GND</td><td>Pin 6 → GPIO17</td></tr>
+      <tr><td>Pin 3 → GPIO2</td><td>Pin 7 → GPIO18</td></tr>
+      <tr><td>Pin 4 → GPIO1</td><td>Pin 8 → VSYS (5V)</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="callout">
+  <div class="callout-title">Globaler Massepunkt (sternförmige Masseführung)</div>
+  Alle GND-Leitungen (DHT-22 intern, Display, RJ45 Pin 2) sind an einen zentralen Punkt mit Masse des ESP32-S3
+  verbunden. Empfehlung: keine Daisy-Chains — alle GND einzeln zum Board zurückführen. Alle GND-Positionen am
+  40-Pin-Header sind elektrisch gleichwertig (intern verbunden).
+</div>
+
+<h3>Zusammenfassung der Pin-Belegung</h3>
+<table>
+  <tr><th>ESP32-S3-Pin</th><th>Verbunden mit</th><th>Funktion</th><th>Typ</th></tr>
+  <tr><td><code>3V3</code></td><td>DHT-22 VCC, Display VCC, RJ45 Pin 1</td><td>Stromversorgung Peripherie</td><td>Power out</td></tr>
+  <tr><td><code>GND</code></td><td>Alle Komponenten (Stern)</td><td>Gemeinsamer Massepunkt</td><td>Power</td></tr>
+  <tr><td><code>GPIO15</code></td><td>DHT-22 (intern) — Data</td><td>Sensor 1 (intern) — Temperatur/Feuchte</td><td>Input (Pull-up)</td></tr>
+  <tr><td><code>GPIO1</code></td><td>Display SDA · RJ45 Pin 4 (gemeinsamer Bus)</td><td>I2C SDA</td><td>I2C (SDA)</td></tr>
+  <tr><td><code>GPIO2</code></td><td>Display SCL · RJ45 Pin 3 (gemeinsamer Bus)</td><td>I2C SCL</td><td>I2C (SCL)</td></tr>
+  <tr><td><code>GPIO16</code></td><td>RJ45 Pin 5</td><td>Sensor 2 (DHT-22) / Kontakt</td><td>Input/Output</td></tr>
+  <tr><td><code>GPIO17</code></td><td>RJ45 Pin 6 (RELAY_OUT)</td><td>Relais-Steuerung (active LOW)</td><td>Output</td></tr>
+  <tr><td><code>GPIO18</code></td><td>RJ45 Pin 7 (RELAY_FB)</td><td>Relais-Feedback / Interrupt</td><td>Input</td></tr>
+  <tr><td><code>VSYS</code></td><td>RJ45 Pin 8</td><td>5V-Versorgung (kein GPIO)</td><td>Power out</td></tr>
+  <tr><td><code>GPIO0</code></td><td>onboard BOOT-Taster</td><td>Bootmodus-Auslöser, frei nutzbar</td><td>Input</td></tr>
+  <tr><td><code>GPIO9-14</code></td><td>W5500 (onboard, fest verdrahtet)</td><td>Ethernet SPI/IRQ/RST</td><td>—</td></tr>
+  <tr><td><code>GPIO33/34</code></td><td>nicht verwendet</td><td>Vorsorglich vermieden — PSRAM-Verdacht ungeklärt</td><td>—</td></tr>
+  <tr><td><code>GPIO35-37</code></td><td>nicht verwendet</td><td>Octal-PSRAM (ESP32-S3R8), vermieden</td><td>—</td></tr>
+</table>
+<p style="font-size:10px;color:#6b7280;">I2C-Pull-ups: bei Verwendung zusätzlicher I2C-Module sind 4,7kΩ Pull-up-Widerstände zwischen 3,3V und SCL/SDA erforderlich, falls das Modul keine eigenen mitbringt.</p>
+
+<footer class="pagefoot">
+  <span>Sensormeter PoE Monitoring System | Verdrahtungsschema v1.0</span>
+  <span>Seite 4 / 4</span>
+</footer>
+</section>
+
+</body>
+</html>
