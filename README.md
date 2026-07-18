@@ -72,6 +72,26 @@ phasenbasiert auf SemVer) siehe
 `firmware/` ist ein PlatformIO-Projekt (Board `esp32-s3-devkitc-1`,
 Framework Arduino).
 
+**Version:** `0.9.0-rc4` (Beta) — Versionsschema siehe
+[docs/entscheidungen.md](docs/entscheidungen.md#versionierung).
+
+Aktueller Stand: **Board-Bringup abgeschlossen (2026-07-18),
+Qualitätskontrolle läuft**. Erstes Gerät (nur interner DHT bestückt,
+noch kein Display gesteckt) über natives USB geflasht und live
+verifiziert: Ethernet+PoE, Webserver, SNMP, interner Sensor, NTP,
+OTA. Dabei drei reale Bugs gefunden und live behoben — ein
+Konstruktor-Absturz vor `app_main()` (statische
+Initialisierungsreihenfolge über Übersetzungseinheiten hinweg, Bug in
+der `SNMP_Agent`-Bibliothek selbst), ein `loopTask`-Stack-Overflow und
+eine Endlos-Fehlerschleife bei fehlendem Display (`Adafruit_SSD1306`
+prüft nie den I2C-Erfolg) — sowie ein Zeitzonen-Bug (identisch zu
+Sensormeter, dort zuerst gefunden). PSRAM (Octal, ESP32-S3R8) nach
+anfänglicher Fehldiagnose als tatsächlich funktionsfähig bestätigt.
+Noch nicht live getestet mangels Modul/Broker/zweitem Gerät: Relais,
+externes RJ45-Modul, MQTT gegen echten Broker, Branding-Upload,
+Werksreset, XML-Import. Details siehe
+[docs/entscheidungen.md](docs/entscheidungen.md).
+
 **Wichtig (Toolchain):** braucht Arduino-ESP32 3.x für W5500-Support -
 das offizielle PlatformIO-`espressif32`-Platform bündelt das noch nicht,
 daher nutzt `platformio.ini` den Community-Fork
