@@ -1076,3 +1076,39 @@ Sensorwerte haben, falls der allererste DHT-Leseversuch (der im selben
 zur naechsten Stunde verbraucht. Identischer Code/identisches Verhalten
 in sensormeter, dort nie als Bug behandelt - familienweite Eigenschaft,
 nicht Ursache der urspruenglich gemeldeten Beobachtung.
+
+## 2026-07-18, spaeter am selben Tag — CSS-Layoutfehler: Werksreset-Dropdown bricht aus der Karte aus
+
+Identischer Fund/Fix wie bei sensormeter (siehe dortiges
+`docs/entscheidungen.md`): `<select id="resetScope">` hatte keine
+CSS-Breitenbegrenzung, rendert deshalb so breit wie seine laengste
+`<option>` und lief ueber den Rand der "KONFIGURATION"-Karte hinaus.
+Neue Regel `select{...max-width:100%;...}` ergaenzt - kurze Selects
+(z.B. "Automatisch schalten") bleiben kompakt, nur lange Options-Texte
+werden gedeckelt. Live per OTA verifiziert (Vorher/Nachher-Screenshot,
+headless Chrome).
+
+## 2026-07-18, spaeter am selben Tag — PSRAM-Korrektur: intermittierend, nicht build-cache-bedingt
+
+Beim CSS-Fix-Deploy (per OTA, inkrementeller Build - nur
+`WebServerManager.cpp` geaendert) trat der PSRAM-Fehler ("PSRAM chip is
+not connected, or wrong PSRAM line mode") ERNEUT auf, obwohl der vorige
+Eintrag ("Korrektur: PSRAM-Fehler war veralteter Bootloader-Cache") ihn
+bereits als geloest eingestuft hatte. Das widerlegt die
+"veralteter-Bootloader"-Erklaerung - ein inkrementeller Build aendert
+`bootloader.bin` gar nicht erst. Diesmal aber **kein Absturz**: das
+Geraet bootete trotz der PSRAM-Warnung normal durch (`uptimeSeconds`
+stieg sauber, per HTTP erreichbar, Boot-Log per USB mitgeschnitten).
+
+**Praezisierte Einordnung**: PSRAM-Init ist auf diesem Testgeraet
+**intermittierend unzuverlaessig** (mal erfolgreich, mal nicht, exakt
+gleiche `opi`-Konfiguration) - aber folgenlos, weil kein Anwendungscode
+PSRAM tatsaechlich nutzt (`ps_malloc`/`MALLOC_CAP_SPIRAM` kommt in
+`src/` nicht vor). Der urspruengliche Absturz bei PSRAM-Fehler (siehe
+Bringup-Eintrag oben) lag nicht an PSRAM selbst, sondern am damals noch
+ungefixten SNMP-Konstruktor-Absturz, der zufaellig zur gleichen Zeit
+auftrat - seit dessen Fix ist ein PSRAM-Fehlschlag nur noch eine
+Logzeile, kein Blocker mehr. `board_build.psram_type = opi` bleibt
+gesetzt (schadet nicht, hilft wenn PSRAM diesmal doch initialisiert) -
+kein weiterer Handlungsbedarf, ausser ein zukuenftiges Feature braucht
+PSRAM wirklich zuverlaessig.

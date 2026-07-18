@@ -152,6 +152,13 @@ String WebServerManager::buildPageShell(const String& title, const String& bodyC
   html += "th{background:#f2f0e9;}";
   html += "input[type=text],input[type=password]{font-size:14px;padding:7px;width:80%;"
           "border:1px solid #d8d4c8;border-radius:4px;}";
+  // max-width statt fester width: kurze Selects (z.B. "Automatisch schalten:
+  // Ja/Nein") bleiben kompakt, nur lange Options-Texte (z.B. Werksreset-
+  // Umfang) werden auf die Breite des umgebenden Labels gedeckelt statt
+  // darueber hinauszulaufen - identischer Fund/Fix wie bei sensormeter,
+  // siehe docs/entscheidungen.md.
+  html += "select{font-size:14px;padding:7px;max-width:100%;"
+          "border:1px solid #d8d4c8;border-radius:4px;}";
   html += "label{display:block;margin-top:10px;text-align:left;max-width:420px;margin-left:auto;"
           "margin-right:auto;font-size:13px;}";
   html += "a{color:#8f4a1e;text-decoration:none;}";
