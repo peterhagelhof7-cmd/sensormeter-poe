@@ -98,34 +98,66 @@ bool OtaManager::writeLocalUpdateChunk(uint8_t* data, size_t len) {
 // abbrechen und den Marker nie finden, egal wie weit hinten er im File
 // liegt. Siehe docs/entscheidungen.md fuer den Befund, der das aufgedeckt
 // hat (uebernommen aus sensormeter).
+//
+// 2026-07-18 korrigiert (uebernommen aus sensormeter, siehe dortiges
+// docs/entscheidungen.md): die vorherige Fassung kopierte jeden Chunk in
+// einen auf kTailCap+512 Byte GEDECKELTEN Zwischenpuffer und durchsuchte
+// nur diesen - ein echter HTTP-Upload liefert aber regelmaessig groessere
+// Chunks als 512 Byte, wodurch alles jenseits der Deckelung
+// STILLSCHWEIGEND uebersprungen wurde (weder gescannt noch als Tail
+// vorgemerkt). Bei sensormeter hat der erste echte End-to-End-OTA-Test
+// auf realer Hardware genau das aufgedeckt: der Marker war nachweislich
+// in der .bin vorhanden, wurde aber trotzdem nicht gefunden. Fix: kein
+// kopierter Zwischenpuffer mehr fuer den Chunk selbst - findBytes()
+// durchsucht "data"/"len" direkt (beliebig gross, keine Kopie noetig, da
+// bereits zusammenhaengend im Speicher). Der kleine Join-Puffer wird nur
+// noch fuer den echten Grenzfall gebraucht, dass der Prefix im vorigen
+// Tail beginnt und in den ersten Bytes dieses Chunks endet - dafuer
+// reichen kTailCap+kMarkerPrefixLen Byte, unabhaengig von der
+// tatsaechlichen Chunkgroesse.
 void OtaManager::scanChunkForMarker(uint8_t* data, size_t len) {
-  static const size_t kJoinCap = kTailCap + 512;
   if (!_capturing) {
-    uint8_t joinBuf[kJoinCap];
-    size_t offset = 0;
+    // 1. Grenzfall: Prefix beginnt im Tail des vorigen Chunks und setzt
+    // sich in den ersten Bytes dieses Chunks fort. Nur relevant, wenn
+    // ueberhaupt ein Tail vorliegt.
+    bool spansTail = false;
+    size_t afterPrefixInData = 0;
     if (_tailLen > 0) {
+      uint8_t joinBuf[kTailCap + kMarkerPrefixLen];
+      size_t headLen = len < kMarkerPrefixLen ? len : kMarkerPrefixLen;
       memcpy(joinBuf, _tailBuf, _tailLen);
-      offset = _tailLen;
+      memcpy(joinBuf + _tailLen, data, headLen);
+      size_t joinLen = _tailLen + headLen;
+      int p = findBytes(joinBuf, joinLen, kMarkerPrefix, kMarkerPrefixLen);
+      // Nur als "spannend" werten, wenn der Fund tatsaechlich noch im
+      // Tail-Anteil beginnt - sonst liegt er komplett in "data" und wird
+      // gleich ohnehin von der Direktsuche unten gefunden.
+      if (p >= 0 && (size_t)p < _tailLen) {
+        spansTail = true;
+        afterPrefixInData = (size_t)p + kMarkerPrefixLen - _tailLen;
+      }
     }
-    size_t copyLen = len;
-    if (offset + copyLen > kJoinCap) copyLen = kJoinCap - offset;
-    memcpy(joinBuf + offset, data, copyLen);
-    size_t joinLen = offset + copyLen;
 
-    int prefixPos = findBytes(joinBuf, joinLen, kMarkerPrefix, kMarkerPrefixLen);
-    if (prefixPos < 0) {
+    // 2. Regulaerer Fall: Prefix komplett innerhalb des aktuellen Chunks -
+    // direkt auf "data"/"len" gesucht, keine Groessenbeschraenkung.
+    int prefixPos = spansTail ? -1 : findBytes(data, len, kMarkerPrefix, kMarkerPrefixLen);
+
+    if (!spansTail && prefixPos < 0) {
+      // Kein Treffer - letzte kMarkerPrefixLen-1 Byte DIESES Chunks (nicht
+      // eines gedeckelten Zwischenpuffers) als Tail fuer den naechsten
+      // Aufruf vormerken.
       size_t keep = kMarkerPrefixLen > 0 ? kMarkerPrefixLen - 1 : 0;
       if (keep > kTailCap) keep = kTailCap;
-      size_t start = joinLen > keep ? joinLen - keep : 0;
-      _tailLen = joinLen - start;
-      memcpy(_tailBuf, joinBuf + start, _tailLen);
+      size_t start = len > keep ? len - keep : 0;
+      _tailLen = len - start;
+      memcpy(_tailBuf, data + start, _tailLen);
       return;
     }
     _capturing = true;
-    size_t afterPrefix = prefixPos + kMarkerPrefixLen;
-    size_t remaining = joinLen - afterPrefix;
+    size_t afterPrefix = spansTail ? afterPrefixInData : (size_t)prefixPos + kMarkerPrefixLen;
+    size_t remaining = len - afterPrefix;
     if (remaining > kCaptureCap) remaining = kCaptureCap;
-    memcpy(_captureBuf, joinBuf + afterPrefix, remaining);
+    memcpy(_captureBuf, data + afterPrefix, remaining);
     _captureLen = remaining;
     _tailLen = 0;
   } else {
