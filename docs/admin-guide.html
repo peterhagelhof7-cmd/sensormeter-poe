@@ -1,0 +1,1180 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Sensormeter PoE — Admin-Guide</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  @page { size: A4; margin: 18mm 16mm 20mm 16mm; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #1c2430;
+    background: #ffffff;
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+  .cover {
+    background: #0f1f3d;
+    color: #fff;
+    margin: -18mm -16mm 12mm -16mm;
+    padding: 30mm 16mm 16mm 16mm;
+  }
+  .cover .eyebrow { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: #9fb3d9; margin-bottom: 6mm; }
+  .cover h1 { margin: 0 0 4mm 0; font-size: 30px; }
+  .cover .subtitle { color: #cdd8ec; font-size: 13px; max-width: 130mm; }
+  .cover .badges { margin-top: 8mm; display: flex; gap: 6px; flex-wrap: wrap; }
+  .badge { display: inline-block; padding: 3px 9px; border-radius: 3px; font-size: 10px; font-weight: 600; background: #24365c; color: #cdd8ec; }
+  .badge-orange { background: #c8622a; color: #fff; }
+
+  h1.section { font-size: 18px; color: #0f1f3d; border-bottom: 2px solid #c8622a; padding-bottom: 2mm; margin: 14mm 0 5mm 0; page-break-after: avoid; break-after: avoid; }
+  h1.section .num { color: #c8622a; margin-right: 2mm; }
+  h2 { font-size: 13.5px; color: #8f4a1e; margin: 6mm 0 2mm 0; page-break-after: avoid; break-after: avoid; }
+  h3 { font-size: 12px; color: #1c2430; margin: 4mm 0 1.5mm 0; page-break-after: avoid; break-after: avoid; }
+  h4 { font-size: 10.5px; color: #8f4a1e; text-transform: uppercase; letter-spacing: .03em; margin: 3.5mm 0 1mm 0; page-break-after: avoid; break-after: avoid; }
+  p { margin: 0 0 3mm 0; }
+  ul, ol { margin: 0 0 3mm 0; padding-left: 5mm; }
+  li { margin-bottom: 1.2mm; }
+  code, .code {
+    font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
+    background: #f2f0e9;
+    border: 1px solid #e4e1d8;
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-size: 11px;
+    word-break: break-all;
+  }
+  pre.code-block {
+    font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
+    background: #f2f0e9;
+    color: #1c2430;
+    border: 1px solid #c7c2b4;
+    border-left: 3px solid #8f4a1e;
+    border-radius: 0 4px 4px 0;
+    padding: 3mm 4mm;
+    font-size: 11px;
+    line-height: 1.6;
+    margin: 2mm 0 4mm 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .callout {
+    border-left: 3px solid #c8622a;
+    background: #fbf3ee;
+    padding: 3mm 4mm;
+    margin: 3mm 0;
+    border-radius: 0 3px 3px 0;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .callout.warn { border-left-color: #a63d2e; background: #fbeeec; }
+  .callout.warn .callout-title { color: #a63d2e; }
+  .callout-title { font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #8f4a1e; margin-bottom: 1mm; }
+  table { border-collapse: collapse; width: 100%; margin: 2mm 0 4mm 0; page-break-inside: avoid; break-inside: avoid; }
+  table th, table td { border: 1px solid #e4e1d8; padding: 1.5mm 2.5mm; font-size: 11px; text-align: left; vertical-align: top; }
+  table th { background: #f2f0e9; }
+
+  /* Generischer Wrapper, um eine Ueberschrift + ihren direkt folgenden
+     Absatz/ihre Tabelle als Einheit zusammenzuhalten. */
+  .keep { page-break-inside: avoid; break-inside: avoid; }
+
+  /* --- OLED sketches --- */
+  .sketch-wrap { display: flex; gap: 6mm; align-items: flex-start; margin: 3mm 0 5mm 0; page-break-inside: avoid; break-inside: avoid; }
+  .sketch-wrap.stack { flex-direction: column; }
+  .sketch-notes { flex: 1; font-size: 11px; }
+  .sketch-notes ul { padding-left: 4mm; }
+  .device {
+    flex-shrink: 0;
+    width: 60mm;
+    background: #2b2f36;
+    border-radius: 3mm;
+    padding: 4mm 3mm;
+  }
+  .device .screen {
+    position: relative;
+    width: 100%;
+    height: 27mm;
+    background: #05070a;
+    overflow: hidden;
+    font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
+  }
+  .device .screen .oled-text {
+    position: absolute;
+    left: 0; right: 0;
+    text-align: center;
+    color: #7fd8ff;
+    text-shadow: 0 0 1.2px #7fd8ff;
+  }
+  .device.ext .screen { height: 40mm; }
+
+  /* --- Board-Skizze (vereinfacht, kein WT32-ETH01-Umriss - siehe Text) --- */
+  .board-wrap { display: flex; gap: 6mm; align-items: flex-start; margin: 3mm 0 5mm 0; page-break-inside: avoid; break-inside: avoid; }
+  .board {
+    position: relative;
+    width: 50mm; height: 62mm;
+    background: #1f4a6b;
+    border: 0.4mm solid #123047;
+    border-radius: 2mm;
+    flex-shrink: 0;
+  }
+  .board .module {
+    position: absolute; top: 6mm; left: 7mm;
+    width: 36mm; height: 26mm;
+    background: #8a8f98; border: 0.3mm solid #5c6068; border-radius: 1mm;
+  }
+  .board .module-label {
+    position: absolute; top: 17mm; left: 10mm;
+    font-size: 6.5px; color: #24272b; font-family: Consolas, "Cascadia Mono", monospace;
+  }
+  .board .usb {
+    position: absolute; top: 6mm; left: 20mm; width: 10mm; height: 3mm;
+    background: #cdd8ec; border-radius: 0.4mm;
+  }
+  .board .usb-label {
+    position: absolute; top: 1mm; left: 15mm; font-size: 6px; color: #cdd8ec;
+  }
+  .board .rj45 {
+    position: absolute; top: 36mm; left: 7mm;
+    width: 16mm; height: 12mm;
+    background: #2b2f36; border: 0.3mm solid #0d0f11; border-radius: 0.6mm;
+  }
+  .board .rj45-label {
+    position: absolute; top: 49mm; left: 7mm; width: 16mm; text-align: center;
+    font-size: 6.5px; color: #cdd8ec;
+  }
+  .board .poe-label {
+    position: absolute; top: 36mm; left: 27mm; width: 18mm;
+    font-size: 6.5px; color: #cdd8ec;
+  }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="eyebrow">Firmware-Projekt · Hobby / Privat</div>
+  <div style="display:flex; align-items:center; gap:12px;">
+    <svg viewBox="0 0 48 48" fill="none" width="32" height="32" style="flex-shrink:0;">
+      <path d="M24,9 L37.6,32.5 L10.4,32.5 Z" stroke="#8E97A3" stroke-width="2.2" stroke-linejoin="round"/>
+      <circle cx="24" cy="9" r="5" fill="#E08A4C"/>
+      <circle cx="37.6" cy="32.5" r="5" fill="#7FA0D9"/>
+      <circle cx="10.4" cy="32.5" r="5" fill="#74B7A6"/>
+      <line x1="24" y1="24.67" x2="31.07" y2="17.6" stroke="#E9E4D8" stroke-width="2.8" stroke-linecap="round"/>
+      <circle cx="24" cy="24.67" r="2.6" fill="#E9E4D8"/>
+    </svg>
+    <h1>SENSORMETER PoE</h1>
+  </div>
+  <div class="subtitle">Admin-Guide — Inbetriebnahme, OLED-Anzeige und Konfiguration über die Weboberfläche</div>
+  <div class="badges">
+    <span class="badge badge-orange">v0.9.0-rc4 · Beta</span>
+    <span class="badge">Waveshare ESP32-S3-ETH+PoE · LAN + WLAN</span>
+    <span class="badge">DHT22 intern · Sensor 2/Relais/Kontakt über RJ45</span>
+    <span class="badge">OLED SSD1306 (+ optional SH1107) · Webserver · SNMP · Syslog · MQTT/HA · OTA</span>
+    <span class="badge">github.com/peterhagelhof7-cmd/sensormeter-poe</span>
+  </div>
+</div>
+
+<div class="toc">
+  <div class="toc-row"><a href="#sec1">1. Erste Inbetriebnahme (Auspacken, Verkabeln, Flashen)</a></div>
+  <div class="toc-row"><a href="#sec2">2. Erststart am Gerät (Netzwerk-Ersteinrichtung)</a></div>
+  <div class="toc-row"><a href="#sec3">3. OLED-Anzeige</a></div>
+  <div class="toc-row"><a href="#sec4">4. Konfiguration über die Weboberfläche</a></div>
+  <div class="toc-row"><a href="#sec5">5. Firmware-Updates</a></div>
+  <div class="toc-row"><a href="#sec6">6. SNMP, Syslog, MQTT &amp; Branding (für Netzwerk-Admins)</a></div>
+  <div class="toc-row"><a href="#sec7">7. Konfigurations- und Datenexport (config.xml / values.csv)</a></div>
+  <div class="toc-row"><a href="#sec8">8. Serial-Kommandozeile (USB)</a></div>
+  <div class="toc-row"><a href="#sec-anhang">Anhang: Troubleshooting</a></div>
+</div>
+
+<div class="callout warn">
+  <div class="callout-title">Verifikationsstand dieser Ausgabe</div>
+  Das erste reale Board (Waveshare ESP32-S3-ETH+PoE, nur interner Sensor
+  bestückt, kein OLED gesteckt) wurde am 18.07.2026 erstmals in Betrieb
+  genommen. Auf echter Hardware bestätigt: PoE-Stromversorgung, LAN-Verbindung,
+  Weboberfläche/REST-API, interner Sensor, NTP-Zeitsynchronisierung
+  (inkl. Zeitzonen-Fix), SNMP-Grundfunktion sowie ein OTA-Update per
+  USB-Neuflash. <b>Noch nicht auf echter Hardware verifiziert:</b> OLED-Anzeige
+  (kein Display gesteckt), externes SH1107-Modul, Relais/Aktor, Kontaktmodul,
+  Sensor 2 (RJ45), MQTT gegen einen echten Broker, Branding-Logo-Upload sowie
+  ein Werksreset über Taster/Weboberfläche. Entsprechende Abschnitte sind unten
+  einzeln gekennzeichnet.
+</div>
+
+<!-- ============================================================ -->
+<h1 class="section" id="sec1"><span class="num">1</span>Erste Inbetriebnahme</h1>
+
+<h2>1.1 Auspacken &amp; Hardware-Übersicht</h2>
+<p>Das Gerät basiert auf dem <b>Waveshare ESP32-S3-ETH</b>-Modul (ESP32-S3R8,
+Dual-Core, 8&nbsp;MB Octal-PSRAM im Chip-Package/16&nbsp;MB Flash — PSRAM wird
+von der Anwendung aktuell nicht genutzt) mit <b>W5500-Ethernet-PHY über SPI</b>
+statt eines nativen RMII-PHY, ergänzt um einen internen <b>DHT22</b>-Sensor,
+ein <b>OLED-Display SSD1306</b> (0,96", 128×64, I2C) und einen
+RJ45-Modularanschluss für Sensor 2, Relais oder Kontaktmodul. Anders als die
+Geschwisterprojekte <b>Sensormeter</b> (WT32-ETH01) besitzt dieses Board
+<b>natives USB</b> für Programmierung und serielle Kommunikation — keine
+externe Debug-Burning-Schnittstelle nötig. Genaues Pin-/Verkabelungsschema:
+<span class="code">docs/verdrahtungsplan.html</span>, Hersteller-Pinout:
+<span class="code">docs/ESP32-S3-ETH-Datenblatt.pdf</span> /
+<span class="code">docs/ESP32-S3-ETH-Schematic.pdf</span>.</p>
+
+<div class="board-wrap">
+  <div class="board">
+    <div class="module"></div>
+    <div class="module-label">ESP32-S3-ETH</div>
+    <div class="usb"></div>
+    <div class="usb-label">USB-C</div>
+    <div class="rj45"></div>
+    <div class="rj45-label">RJ45<br>(Ethernet)</div>
+    <div class="poe-label">+ separater<br>RJ45-Modul-<br>anschluss</div>
+  </div>
+  <div class="sketch-notes">
+    <p><b>Anders als Sensormeter</b> (WT32-ETH01, ohne Onboard-USB, muss über
+    eine externe Debug-Burning-Schnittstelle mit manuellem Boot-Modus-Wechsel
+    geflasht werden) hat dieses Board ein <b>natives USB-C</b> über das sowohl
+    geflasht als auch die Serial-Kommandozeile (Abschnitt 8) bedient wird —
+    kein zusätzlicher USB-Seriell-Adapter, kein manuelles Halten von
+    EN/IO0 nötig. Am ersten realen Testboard funktionierte der automatische
+    Upload über <span class="code">pio run --target upload</span> ohne jeden
+    manuellen Handgriff. Der abgebildete RJ45-Modularanschluss ist ein
+    separater Stecker für Sensor 2/Relais/Kontakt — <b>nicht</b> zu verwechseln
+    mit der Ethernet-RJ45-Buchse für das Netzwerkkabel (Abschnitt 4.2
+    „Externe Schnittstelle" bzw. Abschnitt 6 für die PoE-Stromversorgung).</p>
+  </div>
+</div>
+
+<div class="callout">
+  <div class="callout-title">PoE optional, kein Zwang</div>
+  Je nach bestücktem Board/Zubehör kann die Stromversorgung über ein
+  PoE-Modul am Ethernet-Port erfolgen (am ersten Testgerät so verifiziert) —
+  alternativ funktioniert auch eine normale USB-C-Versorgung. Für Details
+  zum Strombudget der 5V-Schiene, die zusätzlich am RJ45-Modularanschluss
+  (Pin 8) zur Verfügung steht, siehe
+  <span class="code">docs/verdrahtungsplan.html</span>.
+</div>
+
+<h2>1.2 Flash-Bereitschaft herstellen</h2>
+<p>Da natives USB vorhanden ist, entfällt der bei Sensormeter (WT32-ETH01)
+nötige externe USB-Seriell-Adapter samt manuellem EN/IO0-Handling
+vollständig:</p>
+<ol>
+  <li>Board per USB-C-Kabel an den PC anschließen (liefert bereits genug
+  Strom zum Flashen, kein separates Netzteil nötig)</li>
+  <li>Treiber: Windows erkennt das native USB-CDC-Gerät in der Regel ohne
+  zusätzlichen Treiber; erscheint kein COM-Port, siehe Anhang</li>
+  <li>Kein manueller Boot-Modus-Wechsel nötig — der Onboard-BOOT-Taster
+  (GPIO0, Abschnitt 3) ist im Normalbetrieb frei für Seitenwechsel/Werksreset
+  nutzbar und muss beim Flashen <b>nicht</b> gehalten werden</li>
+</ol>
+
+<h2>1.3 PowerShell-Skript ausführen</h2>
+<p>Das Skript <span class="code">scripts/flash.ps1</span> übernimmt die
+komplette Einrichtung: es fragt zuerst, welches der vier
+Sensormeter-Projekte geflasht werden soll (dasselbe Skript liegt identisch
+in allen vier Repos), installiert dann fehlende Werkzeuge (Python, Git,
+PlatformIO), holt den Quellcode, legt bei Bedarf
+<span class="code">firmware/include/config.h</span> an und baut/flasht die
+Firmware.</p>
+<pre class="code-block">.\flash.ps1 -Project poe</pre>
+<table>
+  <tr><th>Parameter</th><th>Wirkung</th></tr>
+  <tr><td><span class="code">-Project poe</span></td><td>Projekt direkt angeben, ohne die interaktive Abfrage (alternativ <span class="code">sensormeter</span>, <span class="code">wlan</span> oder <span class="code">display</span>)</td></tr>
+  <tr><td><span class="code">-RepoPath &lt;Pfad&gt;</span></td><td>Zielordner für den Checkout (Default: Ordner „sensormeter-poe" neben dem Skript)</td></tr>
+  <tr><td><span class="code">-Port COM8</span></td><td>Seriellen Port fest vorgeben, falls die automatische Erkennung fehlschlägt</td></tr>
+  <tr><td><span class="code">-SkipUpload</span></td><td>Nur bauen, nicht flashen — z. B. um vorab zu prüfen, ob alles kompiliert</td></tr>
+</table>
+<div class="callout warn">
+  <div class="callout-title">Windows: PowerShell statt Git-Bash/MSYS verwenden</div>
+  Der Toolchain-Installer (<span class="code">idf_tools.py</span>) bricht
+  unter Git-Bash/MSYS mit „MSys/Mingw is not supported" ab — Skript und
+  alle <span class="code">pio</span>-Aufrufe für dieses Projekt müssen unter
+  echtem PowerShell laufen (<span class="code">docs/entscheidungen.md</span>).
+</div>
+
+<h2>1.4 Flashen</h2>
+<p>Ohne <span class="code">-SkipUpload</span> schließt das Skript direkt mit
+dem eigentlichen Flash-Vorgang ab (<span class="code">pio run --target
+upload</span>). Das Board bootet danach automatisch neu.</p>
+<div class="callout warn">
+  <div class="callout-title">Bei Fehlschlag</div>
+  Häufigste Ursachen: falscher COM-Port, USB-Kabel ohne Datenleitungen
+  (reines Ladekabel), oder ein anderes Programm blockiert den seriellen
+  Port (z. B. ein offenes Terminalfenster). Ein inkrementeller Build nach
+  einem zuvor abgebrochenen Flash-Vorgang kann vereinzelt fehlschlagen —
+  in dem Fall hilft ein kompletter Neubau
+  (<span class="code">.pio\build\esp32-s3-eth</span> löschen, dann erneut
+  <span class="code">pio run --target upload</span>).
+</div>
+<div class="callout">
+  <div class="callout-title">Einstellungen bleiben beim Flashen erhalten</div>
+  Ein normaler Flash-Vorgang schreibt ausschließlich den App-Bereich
+  (Bootloader, Partitionstabelle, Firmware-Image). Die separate
+  LittleFS-Datenpartition, auf der <span class="code">config.xml</span>,
+  <span class="code">history.csv</span> und <span class="code">log.txt</span>
+  liegen (siehe Abschnitt 7), bleibt dabei unangetastet — LAN/WLAN-Zugangsdaten,
+  statische IP, Web-Passwort etc. gehen beim Neuflashen also nicht verloren.
+  Nur ein expliziter kompletter Flash-Löschvorgang oder ein Werksreset über
+  die Weboberfläche (Abschnitt 4.2) setzt sie zurück.
+</div>
+
+<!-- ============================================================ -->
+<h1 class="section" id="sec2"><span class="num">2</span>Erststart am Gerät</h1>
+
+<p>Die Netzwerk-Ersteinrichtung läuft über die Weboberfläche (Abschnitt 4),
+erreichbar sobald das Gerät im Netzwerk ist. Wie bei Sensormeter gibt es
+<b>zwei</b> Netzwerk-Interfaces: LAN (Ethernet über den W5500, primär) und
+optional WLAN parallel dazu.</p>
+
+<h2>2.1 Boot-Ablauf</h2>
+<ol>
+  <li><b>BOOT / INIT</b> — kurze Initialisierung, das OLED zeigt Systemname
+  + Systemtyp und einen Countdown (sofern ein OLED gesteckt ist)</li>
+  <li><b>NETWORK_CHECK</b> — Ethernet startet automatisch (DHCP oder
+  statisch), WLAN parallel dazu falls Zugangsdaten hinterlegt sind; bis zu
+  5 Minuten lang</li>
+  <li>Bei Erfolg (LAN <b>oder</b> WLAN hat eine IP): <b>Normalbetrieb</b>,
+  das OLED wechselt zu den rotierenden Infoseiten (Abschnitt 3)</li>
+  <li>Haben nach 5 Minuten <b>weder</b> LAN <b>noch</b> WLAN eine IP:
+  <b>Fallback-Modus</b> — das Gerät spannt einen eigenen Access Point auf
+  (siehe Abschnitt 2.2)</li>
+</ol>
+<p>Ist ein LAN-Kabel angeschlossen, ist der Fallback-Fall in der Praxis
+selten — er greift vor allem, wenn weder Kabel gesteckt noch ein WLAN
+konfiguriert ist.</p>
+
+<h2>2.2 Ersteinrichtung über den eigenen Access Point</h2>
+<div class="callout">
+  <div class="callout-title">Eigener Access Point „installer"</div>
+  <p>Findet das Gerät nach 5 Minuten weder über LAN noch über WLAN eine
+  Verbindung, spannt es selbst ein Netzwerk auf: SSID
+  <span class="code">installer</span>, Passwort
+  <span class="code">installer</span>, feste IP
+  <span class="code">192.168.4.1</span>, DHCP-Server aktiv. Kein
+  Internetzugang über diesen Access Point. Das OLED zeigt währenddessen
+  nur „Fallback aktiv" + die eigene IP (Abschnitt 3).</p>
+</div>
+<ol>
+  <li>Mit einem Smartphone, Tablet oder Laptop im WLAN nach
+  <span class="code">installer</span> suchen und mit Passwort
+  <span class="code">installer</span> verbinden</li>
+  <li>Im Browser <span class="code">http://192.168.4.1/</span> aufrufen</li>
+  <li>Auf der Einstellungsseite (Abschnitt 4, Login erforderlich) im
+  Bereich „WLAN" SSID/Passwort eintragen und „Verbinden &amp; testen
+  (Neustart)" klicken</li>
+  <li>Klappt die Verbindung, verlässt das Gerät den Fallback-Modus. Klappt
+  sie nicht (und ist auch kein LAN-Kabel gesteckt), spannt es automatisch
+  wieder den Access Point auf</li>
+</ol>
+<p>Steckt stattdessen einfach ein LAN-Kabel — das genügt in den meisten
+Fällen, ganz ohne den Umweg über den Access Point.</p>
+
+<!-- ============================================================ -->
+<h1 class="section" id="sec3"><span class="num">3</span>OLED-Anzeige</h1>
+<p>Das interne 128×64-SSD1306-Display (I2C-Adresse 0x3C) zeigt im
+Normalbetrieb sieben Infoseiten im 10-Sekunden-Takt (sechs Standardseiten +
+eine optionale Branding-Seite, siehe unten). Alle Seiten sind horizontal und
+vertikal zentriert und nutzen eine feste, bewusst große Schrift; passt eine
+Zeile nicht auf einmal (z. B. eine lange WLAN-SSID), läuft sie waagerecht
+durch, bis sie komplett zu lesen war, statt die Schrift zu verkleinern.</p>
+
+<div class="callout">
+  <div class="callout-title">Fehlt das Display, bleibt es einfach dunkel</div>
+  Vor jedem <span class="code">display.begin()</span> prüft die Firmware
+  per I2C-ACK-Probe, ob unter 0x3C überhaupt ein Gerät antwortet — erst bei
+  echtem ACK wird das Display initialisiert. Ohne gestecktes OLED (wie beim
+  ersten Testboard) meldet die Firmware das im Boot-Log einmalig und läuft
+  ansonsten normal weiter, ohne endlose I2C-Fehlermeldungen zu erzeugen
+  (früherer Bug, siehe <span class="code">docs/entscheidungen.md</span>).
+</div>
+
+<div class="sketch-wrap">
+  <div class="device"><div class="screen">
+    <div class="oled-text" style="top:9mm; font-size:4.4mm; font-weight:700;">Sensormeter PoE</div>
+    <div class="oled-text" style="top:17mm; font-size:4mm; font-weight:700;">Sensormeter PoE PRO</div>
+  </div></div>
+  <div class="sketch-notes">
+    <p><b>Seite 1 — Systemname + Systemtyp</b><br>Zeile 1: frei editierbarer
+    Systemname (Abschnitt 4, Feld „Systemname"), Default „Sensormeter PoE".
+    Zeile 2: automatisch ermittelter Systemtyp — Grundname mit nur dem
+    internen Sensor, „… PRO", sobald Sensor 2 aktiviert ist.</p>
+  </div>
+</div>
+
+<div class="sketch-wrap">
+  <div class="device"><div class="screen">
+    <div class="oled-text" style="top:9mm; font-size:4.2mm; font-weight:700;">LAN 192.168.1.10</div>
+    <div class="oled-text" style="top:17mm; font-size:4.2mm; font-weight:700;">WLAN ---</div>
+  </div></div>
+  <div class="sketch-notes">
+    <p><b>Seite 2 — IPs</b><br>Zeile 1: LAN-IP (leer/„---", solange kein
+    Kabel verbunden). Zeile 2: WLAN-IP, nur relevant falls ein WLAN
+    konfiguriert ist.</p>
+  </div>
+</div>
+
+<div class="sketch-wrap">
+  <div class="device"><div class="screen">
+    <div class="oled-text" style="top:6mm; font-size:5mm; font-weight:700;">18.07.2026</div>
+    <div class="oled-text" style="top:15mm; font-size:5mm; font-weight:700;">14:32:07</div>
+  </div></div>
+  <div class="sketch-notes">
+    <p><b>Seite 3 — Uhrzeit</b><br>Datum und Uhrzeit per NTP. Zeigt
+    „<span class="code">--:--:--</span>", solange die Zeit noch nicht
+    synchronisiert ist. Die Zeitzone (Europe/Berlin) wird bei
+    <b>jedem</b> Boot neu gesetzt, auch nach einem reinen Software-Reset —
+    die ESP32-Hardware-RTC übersteht einen Neustart, die TZ-Umgebungsvariable
+    nicht, siehe <span class="code">docs/entscheidungen.md</span>.</p>
+  </div>
+</div>
+
+<div class="sketch-wrap">
+  <div class="device"><div class="screen">
+    <div class="oled-text" style="top:9mm; font-size:3.8mm; font-weight:700;">Intern 21.4C 53%</div>
+    <div class="oled-text" style="top:17mm; font-size:3.8mm; font-weight:700;">Extern 19.8C 61%</div>
+  </div></div>
+  <div class="sketch-notes">
+    <p><b>Seite 4 — Sensorwerte</b><br>Zeile 1: interner <b>DHT22</b>. Zeile 2
+    nur bei aktiviertem Sensor 2 (RJ45, Modultyp „Sensor"): je nach
+    gestecktem Modul Temperatur+Feuchte (DHT11/DHT21/AHT20/AHT21), nur
+    Luftdruck (BMP280: „1013hPa"), nur Helligkeit (BH1750: „420lx") oder nur
+    Luftgüte (ENS160: „450ppm"), mit dem konfigurierten Sensor-2-Namen
+    (Default „Extern"). Zeigt „<span class="code">---</span>", falls noch
+    kein gültiger Messwert vorliegt.</p>
+  </div>
+</div>
+
+<div class="sketch-wrap">
+  <div class="device"><div class="screen">
+    <div class="oled-text" style="top:4mm; font-size:4mm; font-weight:700;">LAN OK</div>
+    <div class="oled-text" style="top:12mm; font-size:4mm; font-weight:700;">WLAN --</div>
+    <div class="oled-text" style="top:19mm; font-size:3mm;">v0.9.0-rc4</div>
+  </div></div>
+  <div class="sketch-notes">
+    <p><b>Seite 5 — Status</b><br>Zeile 1: LAN-Status
+    („<span class="code">OK</span>"/„<span class="code">--</span>"). Zeile
+    2: WLAN-Status, oder „<span class="code">WLAN Fallback</span>" (im
+    Fallback-Fall wird stattdessen die dedizierte Fallback-Seite gezeigt,
+    siehe unten). Zeile 3: aktuelle Firmware-Version.</p>
+  </div>
+</div>
+
+<div class="sketch-wrap">
+  <div class="device"><div class="screen">
+    <div class="oled-text" style="top:9mm; font-size:4mm; font-weight:700;">WLAN-Signal</div>
+    <div class="oled-text" style="top:17mm; font-size:4.6mm; font-weight:700;">-52dB</div>
+  </div></div>
+  <div class="sketch-notes">
+    <p><b>Seite 6 — WLAN-Signal</b><br>Aktuelle Empfangsstärke (RSSI) in
+    dBm, nur relevant wenn das optionale WLAN verbunden oder der
+    Fallback-Access-Point aktiv ist. Zeigt „<span class="code">---</span>",
+    solange keine WLAN-Verbindung besteht — für rein LAN-betriebene Geräte
+    also dauerhaft.</p>
+  </div>
+</div>
+
+<div class="sketch-wrap">
+  <div class="device"><div class="screen">
+    <div class="oled-text" style="top:5mm; font-size:3.4mm; font-weight:700;">Sensormeter PoE</div>
+    <div class="oled-text" style="top:12mm; font-size:3.4mm; font-weight:700;">Sensormeter PoE PRO</div>
+    <div class="oled-text" style="top:19mm; font-size:3.2mm;">42 warte</div>
+  </div></div>
+  <div class="sketch-notes">
+    <p><b>Boot-Countdown</b><br>Während BOOT/INIT/NETWORK_CHECK (vor der
+    Seitenrotation oben): Systemname / Systemtyp / ein Countdown von 100
+    auf 0 gefolgt von „warte". Der Countdown läuft schneller als die
+    tatsächliche Wartezeit ab und bleibt danach bei 0 stehen — er zeigt
+    „wir warten noch", keine exakte Restzeit.</p>
+  </div>
+</div>
+
+<div class="sketch-wrap">
+  <div class="device"><div class="screen">
+    <div class="oled-text" style="top:9mm; font-size:4.2mm; font-weight:700;">Fallback aktiv</div>
+    <div class="oled-text" style="top:17mm; font-size:4.6mm; font-weight:700;">192.168.4.1</div>
+  </div></div>
+  <div class="sketch-notes">
+    <p><b>Fallback-Modus</b><br>Solange das Gerät den eigenen Access Point
+    „installer" hostet (Abschnitt 2.2), zeigt das OLED ausschließlich
+    diese Seite — keine Seitenrotation.</p>
+  </div>
+</div>
+
+<div class="sketch-wrap">
+  <div class="device"><div class="screen">
+    <div class="oled-text" style="top:9mm; font-size:4.2mm; font-weight:700;">Werksreset?</div>
+    <div class="oled-text" style="top:17mm; font-size:3.8mm; font-weight:700;">14s halten</div>
+  </div></div>
+  <div class="sketch-notes">
+    <p><b>BOOT-Taster gehalten (Reset-Bestätigung)</b><br>Anders als
+    Sensormeter (WT32-ETH01, GPIO0 fest als Ethernet-Takteingang belegt,
+    kein freier Taster) ist der Onboard-<b>BOOT-Taster (GPIO0)</b> hier frei
+    nutzbar, da der W5500 komplett über SPI angebunden ist. <b>Kurzer Tipp</b>
+    (unter 3s gehalten): sofortiger Seitenwechsel, wie ein manueller
+    „nächste Seite"-Klick. <b>3s halten:</b> Overlay „Werksreset? &lt;n&gt;s
+    halten" mit 20s-Countdown. Wird der Taster jetzt losgelassen, passiert
+    <b>nichts</b> — nur ein Loslassen <b>nach</b> Ablauf der vollen 23s
+    (3s + 20s) löst den Reset tatsächlich aus (Fail-Safe: ein defekter,
+    dauerhaft gedrückter Taster kann so nie von selbst einen Reset
+    auslösen, da ein echtes Loslassen-Ereignis nötig ist). Nach Ablauf der
+    20s zeigt das Display „Loslassen zum Bestätigen". Der Reset setzt nur
+    die Konfiguration zurück (wie Werksreset-Umfang „Nur Konfiguration",
+    Abschnitt 4.2) — der 7-Tage-Verlauf bleibt erhalten. Noch nicht auf
+    echter Hardware verifiziert (kein OLED am ersten Testboard gesteckt).</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h1 class="section" id="sec4"><span class="num">4</span>Konfiguration über die Weboberfläche</h1>
+
+<h2>4.1 Zugriff</h2>
+<ol>
+  <li>IP-Adresse des Geräts ermitteln — am einfachsten über das OLED
+  (Abschnitt 3, Seite 2), sonst über den Router/DHCP-Server — oder direkt
+  per Namen zugreifen: <span class="code">http://&lt;systemname&gt;.local/</span>
+  (mDNS)</li>
+  <li>Im Browser eines Geräts im selben Netzwerk aufrufen:
+  <span class="code">http://&lt;IP-Adresse&gt;/</span></li>
+  <li>Für die Einstellungsseite fragt der Browser nach Benutzername und
+  Passwort (HTTP Basic Auth) — die Hauptseite selbst ist ohne Login
+  einsehbar</li>
+</ol>
+
+<div class="callout warn">
+  <div class="callout-title">Standard-Zugangsdaten — dringend ändern!</div>
+  <table style="margin:2mm 0;">
+    <tr><th>Benutzername</th><td><span class="code">admin</span> (fest, nicht änderbar)</td></tr>
+    <tr><th>Passwort</th><td><span class="code">installer</span> (Werkseinstellung)</td></tr>
+  </table>
+  Bitte das Web-Passwort <b>sofort nach der ersten Anmeldung</b> unter
+  „System" (Abschnitt 4.2) ändern.
+</div>
+
+<h2>4.2 Alle Einstellungen im Detail</h2>
+
+<h3>System</h3>
+<table>
+  <tr><th>Feld</th><th>Bedeutung</th></tr>
+  <tr><td>Systemname</td><td>Freier Anzeigename des Geräts (Titel der Weboberfläche, Basis für mDNS-Namen und MQTT-Topic-Präfix-Default, auch auf der OLED-Seite 1 sichtbar). Default: „Sensormeter PoE".</td></tr>
+  <tr><td>Neues Passwort</td><td>Neues Web-Passwort (Benutzername immer „admin"). Leer lassen, um das aktuelle Passwort beizubehalten.</td></tr>
+</table>
+
+<h3>LAN</h3>
+<table>
+  <tr><th>Feld</th><th>Bedeutung</th></tr>
+  <tr><td>DHCP</td><td>Aktiviert: automatische IP-Vergabe durch den Router (empfohlen). Deaktiviert: feste IP unten eintragen.</td></tr>
+  <tr><td>IP / Netzmaske / Gateway / DNS-Server</td><td>Nur bei deaktiviertem DHCP relevant. Leeres DNS-Feld = Gateway als DNS verwenden.</td></tr>
+</table>
+
+<h3>WLAN</h3>
+<table>
+  <tr><th>Feld</th><th>Bedeutung</th></tr>
+  <tr><td>DHCP</td><td>Aktiviert: automatische IP-Vergabe durch den Router. Deaktiviert: feste IP unten eintragen.</td></tr>
+  <tr><td>SSID / PSK</td><td>Name und Passwort des WLAN-Netzes.</td></tr>
+  <tr><td>IP / Netzmaske / Gateway / DNS-Server</td><td>Nur bei deaktiviertem DHCP relevant.</td></tr>
+</table>
+
+<div class="callout">
+  <div class="callout-title">Kollisions-Check vor dem Setzen einer statischen IP</div>
+  Wird bei LAN und/oder WLAN eine statische Adresse eingetragen und
+  gespeichert, prüft das Gerät vor dem Übernehmen per Ping, ob im
+  jeweiligen Netz bereits ein anderes Gerät unter dieser Adresse
+  antwortet. Ist das bei mindestens einer der beiden Adressen der Fall,
+  wird die Einstellung <b>nicht</b> übernommen und die Fehlermeldung
+  „IP-Adresse belegt" angezeigt — einfach eine andere, freie Adresse
+  wählen und erneut speichern. Der Check läuft pro Interface nur, wenn
+  sich die eingetragene Adresse tatsächlich von der aktuell aktiven
+  LAN- bzw. WLAN-IP unterscheidet.
+</div>
+
+<div class="keep">
+<h3 style="margin-top:0;">Drei Wege, um Netzwerkeinstellungen zu übernehmen</h3>
+<table>
+  <tr><th>Button</th><th>Interface</th><th>Prüft vorab?</th><th>Neustart?</th></tr>
+  <tr><td>„Verbinden &amp; testen (Neustart)"</td><td>nur WLAN</td><td>Ja — echter Verbindungsversuch nach dem Neustart</td><td>Sofort, automatisch</td></tr>
+  <tr><td>„IP-Einstellungen übernehmen &amp; neu starten"</td><td>LAN und WLAN je ein eigener Button</td><td>Ja — vorab, ohne Neustart: bei statischer IP per Ping (Kollisions-Check oben), bei DHCP per echtem Lease-Test auf der laufenden Verbindung</td><td>Nur bei erfolgreichem Test, automatisch</td></tr>
+  <tr><td>„Speichern" (unten auf der Seite)</td><td>alle Felder gemeinsam</td><td>Nein</td><td>Keiner — „Reboot" manuell nötig</td></tr>
+</table>
+<p>Der Button „IP-Einstellungen übernehmen &amp; neu starten" ist der
+sicherste Weg, gezielt nur die Netzwerkadresse eines Interfaces zu ändern:
+bei statischer IP wird sie vorab per Ping auf Kollision geprüft; bei DHCP
+schaltet das Gerät die laufende Verbindung testweise auf DHCP um und
+wartet auf eine tatsächlich erhaltene Lease, <b>bevor</b> etwas gespeichert
+wird. Schlägt der Test fehl, bleibt die bisherige Konfiguration unverändert
+aktiv, nichts wird gespeichert und <b>kein</b> Neustart ausgelöst.</p>
+</div>
+
+<h3>Sensoren</h3>
+<table>
+  <tr><th>Feld</th><th>Bedeutung</th></tr>
+  <tr><td>Sensor 1 (intern) Korrektur Temperatur/Feuchte</td><td>Fließkomma-Korrekturwert (°C/%, positiv oder negativ) für den internen <b>DHT22</b>, falls er systematisch abweicht.</td></tr>
+</table>
+
+<h3>Externe Schnittstelle</h3>
+<p>Gegliedert nach den zwei RJ45-Modulkategorien (siehe
+<span class="code">sensormeter-family/repo/module-design/README.md</span>):
+Kategorie 1 (I2C-Bus, mehrere Module gleichzeitig möglich, rein automatisch
+erkannt) und Kategorie 2 (Direkt-Module auf dediziertem Einzelpin, jeweils
+genau eines gleichzeitig, manuell gewählt).</p>
+
+<h4>Kategorie 1 — Bus-Modul (I2C)</h4>
+<table>
+  <tr><th>Feld</th><th>Bedeutung</th></tr>
+  <tr><td>Erkannter Modultyp/Chip</td><td>Nur-Anzeige — Ergebnis der automatischen RJ45-Modul-Erkennung. Bekannte Chips: BH1750 (Helligkeit), SHT30/31/35, AHT20/AHT21, BME280 (per Chip-ID-Register vom baugleichen BMP280 unterschieden), BMP280 (Luftdruck), ENS160 (Luftgüte/eCO2) — unbekannte I2C-Adressen werden als „unbekannt" gemeldet, statt ignoriert zu werden.</td></tr>
+</table>
+<div class="callout">
+  <div class="callout-title">Automatische Modul-Erkennung</div>
+  Läuft einmal beim Boot (parallel zur Netzwerk-Wartezeit) sowie erneut alle
+  60 Sekunden im laufenden Betrieb: scannt den kompletten I2C-Adressraum
+  am RJ45-Bus (Pin 3/4, geteilt mit dem OLED — Display-Adressen 0x3C/0x3D
+  werden übersprungen) und wertet dabei <b>alle</b> gefundenen Geräte aus
+  (nicht nur das erste), damit auch Kombimodule (z. B. AHT20+BMP280) korrekt
+  erkannt werden — genutzt wird weiterhin nur das primäre (niedrigste
+  Adresse). Findet der I2C-Scan nichts und ist Pin 5 als „Sensor" konfiguriert,
+  probiert die Erkennung zusätzlich einen DHT-Leseversuch auf Pin 5. Findet
+  die Erkennung ein Modul, wird „Sensor 2 aktiv" automatisch gesetzt — ein
+  bereits manuell deaktivierter Schalter wird dabei NIE stillschweigend
+  wieder aktiviert. Ein ergebnisloser erneuter Scan (Modul entfernt) setzt
+  „Sensor 2 aktiv" umgekehrt NICHT automatisch zurück. Nicht erkannt werden
+  kann die Anwesenheit eines Relais- oder Kontaktmoduls (kein auswertbares
+  Rück-Signal) sowie DHT11 vs. DHT21 (siehe „DHT-Typ" unten) — beides bleibt
+  rein manuelle Auswahl.
+</div>
+
+<h4>Kategorie 2 — Direkt-Module</h4>
+<table>
+  <tr><th>Feld</th><th>Bedeutung</th></tr>
+  <tr><td>Relais aktiv (Pin 6/7)</td><td>Manuelles Schalten — ein Relais-Modul kann nicht automatisch <b>erkannt</b> werden. Unabhängig vom Pin-5-Modultyp, da sich die RJ45-Pins nicht überschneiden — ein Kombi-Modul mit Sensor/Kontakt UND Relais ist möglich.</td></tr>
+  <tr><td>Aktueller Zustand + „Relais schalten"</td><td>Zeigt den zuletzt kommandierten Schaltzustand und schaltet ihn um. Startet nach jedem Neustart sicherheitshalber immer mit AUS (kein persistierter Zustand) — ein wieder angelaufenes Gerät reaktiviert einen zuvor eingeschalteten Verbraucher nicht stumm.</td></tr>
+  <tr><td>Automatisch schalten</td><td>Auswahl „Nein" (Default, rein manuell) oder „Sensor" — blendet bei „Sensor" die Felder Quelle/Wert/Bedingung/Schwellenwert bzw. Zustand ein. Wird bei jedem Durchlauf neu ausgewertet und überschreibt dabei ein manuelles Schalten.</td></tr>
+  <tr><td>Quelle (Automatik)</td><td>Nur bei „Automatisch schalten" = „Sensor" sichtbar. Auswahl „Sensor 1 (intern)" / „Sensor 2 (extern)" / „Kontakt" als Datenquelle für die Schaltbedingung.</td></tr>
+  <tr><td>Wert / Bedingung / Schwellenwert</td><td>Nur bei Quelle „Sensor 1"/„Sensor 2" sichtbar. „Wert" wählt Temperatur oder Luftfeuchte, „Bedingung" größer/kleiner als, „Schwellenwert" den Vergleichswert.</td></tr>
+  <tr><td>Zustand (Automatik)</td><td>Nur bei Quelle „Kontakt" sichtbar. Relais schaltet EIN, sobald der Kontakt den gewählten Zustand (Offen/Geschlossen) erreicht.</td></tr>
+  <tr><td>Modultyp Pin 5</td><td>Auswahl „Sensor" oder „Kontakt" — beide Belegungen liegen auf demselben Pin und schließen sich gegenseitig aus.</td></tr>
+  <tr><td>Sensor 2 (extern) aktiv</td><td>Nur bei Modultyp „Sensor" sichtbar. Aktiviert Sensor 2.</td></tr>
+  <tr><td>Sensor-2-Name</td><td>Freier Anzeigename für Sensor 2 (Default „Extern").</td></tr>
+  <tr><td>DHT-Typ</td><td>Nur relevant, falls tatsächlich ein DHT-Modul auf Pin 5 gesteckt ist (I2C-Module ignorieren dieses Feld). Auswahl „DHT11" oder „DHT21" (Default) — automatische Unterscheidung ist unzuverlässig, daher rein manuelle Wahl.</td></tr>
+  <tr><td>Sensor 2 Korrektur Temperatur/Feuchte</td><td>Wie Sensor 1, für den externen Sensor (nur bei Temperatur/Feuchte-liefernden Modulen wirksam).</td></tr>
+  <tr><td>Name (Kontakt)</td><td>Nur bei Modultyp „Kontakt" sichtbar. Freier Anzeigename (max. 20 Zeichen), z. B. „Haustür".</td></tr>
+  <tr><td>Alarm bei</td><td>Nur bei Modultyp „Kontakt" sichtbar. „Offen" / „Geschlossen" / „Zustandswechsel" (Default „Offen"). „Zustandswechsel" ist kantengetriggert.</td></tr>
+</table>
+<p class="hint">Modultyp-Auswahl rein manuell — ein offener Kontakt ist
+elektrisch nicht von „kein Modul gesteckt" unterscheidbar. Jeder
+Zustandswechsel wird ins lokale Ereignisprotokoll geschrieben. Der Kontakt
+ist rein lokal — keine MQTT-/SNMP-Anbindung. Der Schreibpfad
+(<span class="code">/api/relay</span>) für das Relais wird von
+Weboberfläche, REST-API und — falls MQTT aktiv ist — von Home Assistant
+genutzt (Abschnitt 6.3), auch bei aktiver Automatik.</p>
+<div class="callout warn">
+  <div class="callout-title">Relais, Kontakt und Sensor 2 noch nicht auf echter Hardware verifiziert</div>
+  Das erste Testboard hatte weder ein Relais-, Kontakt- noch ein
+  Sensor-2-RJ45-Modul gesteckt. Verkabelung/Pin-Zuordnung sind gegen das
+  Herstellerdatenblatt geprüft (<span class="code">docs/verdrahtungsplan.html</span>),
+  das tatsächliche Schaltverhalten und die I2C-Erkennung realer Module
+  stehen noch aus.
+</div>
+
+<h3>Syslog</h3>
+<table>
+  <tr><th>Feld</th><th>Bedeutung</th></tr>
+  <tr><td>Syslog-Server-IP</td><td>IP-Adresse eines Syslog-Empfängers im Netzwerk (UDP 514). Bei „0.0.0.0" (Default) ist der Versand deaktiviert — siehe Abschnitt 6.</td></tr>
+</table>
+
+<h3>SNMP</h3>
+<table>
+  <tr><th>Feld</th><th>Bedeutung</th></tr>
+  <tr><td>Community</td><td>SNMP-Community-String (read-only Abfrage, Port 161). Default: „public" — siehe Abschnitt 6.</td></tr>
+</table>
+
+<h3>MQTT (Home Assistant)</h3>
+<table>
+  <tr><th>Feld</th><th>Bedeutung</th></tr>
+  <tr><td>Aktiv</td><td>Schaltet die MQTT-Anbindung ein/aus. Bleibt zusätzlich inaktiv, solange keine Broker-Adresse eingetragen ist.</td></tr>
+  <tr><td>Broker-Adresse / Port</td><td>IP/Hostname und Port des MQTT-Brokers. Default-Port <span class="code">1883</span>.</td></tr>
+  <tr><td>Benutzername / Passwort</td><td>Nur nötig, falls der Broker eine Anmeldung verlangt.</td></tr>
+  <tr><td>Topic-Präfix</td><td>Leer = wie der mDNS-Hostname automatisch aus dem Systemnamen abgeleitet (als Platzhalter im Feld sichtbar); alternativ frei überschreibbar und dann dauerhaft gespeichert — ändert sich in dem Fall <b>nicht</b> mehr automatisch mit dem Systemnamen.</td></tr>
+  <tr><td>Interface</td><td>„LAN" (Default) oder „WLAN" — legt fest, über welches Netzwerk-Interface die Verbindung zum Broker aufgebaut wird, falls beide gleichzeitig eine IP haben. Ist das gewählte Interface gerade nicht verbunden, schlägt der Connect-Versuch fehl, auch wenn das andere Interface erreichbar wäre.</td></tr>
+</table>
+<p class="hint">Meldet Sensor 1/2 sowie — falls „Relais (Aktor) aktiv" oben
+angehakt ist — eine Relais-Switch-Entity über Home-Assistant-MQTT-Discovery
+an, siehe Abschnitt 6.3.</p>
+
+<h3>Anbieter-Branding</h3>
+<table>
+  <tr><th>Feld</th><th>Bedeutung</th></tr>
+  <tr><td>Anbietername</td><td>Erscheint zusätzlich zum Systemnamen auf einer eigenen OLED-Seite und im Kopfbereich der Weboberfläche, sobald Name und/oder Logo gesetzt sind.</td></tr>
+  <tr><td>Logo hochladen</td><td>Erwartet eine vorkonvertierte Rohdatei: 128×64 Pixel, 1 Bit pro Pixel, MSB-zuerst je Zeile, genau 1024 Byte (kein PNG/JPEG) — erzeugbar mit <span class="code">scripts/convert-logo.ps1</span>. Ein vorbelegtes Familien-Standardlogo wird beim ersten Boot automatisch geschrieben, falls kein eigenes Logo hochgeladen wurde.</td></tr>
+  <tr><td>Logo entfernen</td><td>Nur sichtbar, wenn aktuell ein Logo hinterlegt ist.</td></tr>
+</table>
+
+<h3>Externes Display (optional, SH1107)</h3>
+<table>
+  <tr><th>Feld</th><th>Bedeutung</th></tr>
+  <tr><td>Seiten (7 Kontrollkästchen)</td><td>Systemname, IP-Adressen, Uhrzeit, Sensorwerte, Netzwerkstatus, WLAN-Signal, Anbieter-Branding (nur wenn gesetzt) — welche Infoseiten auf dem optionalen externen 1,5"/128×128-SH1107-Steckmodul (I2C 0x3D) rotieren. Default: alle aktiv.</td></tr>
+  <tr><td>Slide-Dauer je Seite</td><td>2–60 Sekunden, Default 10s. Läuft mit einer eigenen, vom internen Display unabhängigen Zeitbasis — kein Boot-Countdown, keine Fallback-Sonderseite und kein BOOT-Taster-Overlay auf dem externen Modul, diese bleiben Aufgabe des internen SSD1306.</td></tr>
+</table>
+<p class="hint">Reine Zusatzanzeige für den Normalbetrieb, komplett optional
+— ohne gestecktes Modul bleibt <span class="code">begin()</span> erfolglos
+und <span class="code">loop()</span> ein No-op, identisch zum Verhalten des
+internen Displays ohne gestecktes OLED.</p>
+
+<h3>Konfiguration (XML)</h3>
+<p>„XML Export" lädt die aktuelle Konfiguration als
+<span class="code">config.xml</span> herunter. „XML Import" spielt eine
+zuvor exportierte (oder manuell angepasste) Datei zurück — ein Neustart
+danach wird empfohlen. Genauer Aufbau der Datei: Abschnitt 7.1. Dieselbe
+Export-/Import-Logik steht auch per USB über die Serial-Kommandozeile zur
+Verfügung (Abschnitt 8, Kommandos <span class="code">dump</span>/<span class="code">upload</span>).</p>
+<p>Ein Auswahlmenü legt fest, welcher Umfang zurückgesetzt wird, bevor der
+Button „Werksreset durchführen" ausgelöst wird (Bestätigungsdialog nennt
+den gewählten Umfang noch einmal):</p>
+<div class="keep">
+<table>
+  <tr><th>Umfang</th><th>Wirkung</th></tr>
+  <tr><td>Alles</td><td>Setzt <span class="code">config.xml</span> auf Werkswerte zurück, löscht den 7-Tage-Verlauf <b>und</b> das Anbieter-Logo. Nicht rückgängig zu machen.</td></tr>
+  <tr><td>Nur Konfiguration</td><td>Wie oben, aber ohne den 7-Tage-Verlauf und ohne Branding zu löschen.</td></tr>
+  <tr><td>Nur Messwerte</td><td>Löscht ausschließlich den 7-Tage-Verlauf. <span class="code">config.xml</span> und Branding bleiben unangetastet.</td></tr>
+  <tr><td>Nur Anbieter-Branding</td><td>Setzt nur den Anbietername zurück und entfernt ein hinterlegtes Logo. Alle übrigen Einstellungen und der Verlauf bleiben unangetastet.</td></tr>
+</table>
+</div>
+<div class="callout warn">
+  <div class="callout-title">Werksreset über die Weboberfläche noch nicht auf echter Hardware verifiziert</div>
+  Bislang nur der Werksreset-Codepfad selbst per Quellcode-Review geprüft
+  (identisch zum bereits mehrfach real getesteten Sensormeter-Projekt) —
+  am ersten Testboard wurde bewusst kein Reset ausgelöst, um die
+  produktive Konfiguration nicht zu verlieren.
+</div>
+
+<h3>Firmware</h3>
+<p>Siehe Abschnitt 5.</p>
+
+<h3>Reboot</h3>
+<p>Startet das Gerät sofort neu (mit Sicherheitsabfrage im Browser).</p>
+
+<h2>4.3 Hauptseite (ohne Login)</h2>
+<p>Zeigt Systemwerte (Zeit, Firmware-Version, Systemtyp, Uptime, freier
+Heap, Chip-Temperatur), Netzwerkstatus (LAN-Link/-IP, WLAN-IP/-SSID/-RSSI),
+die aktuellen Sensorwerte (inkl. Kontaktzustand, falls Pin 5 als „Kontakt"
+konfiguriert ist), einen 7-Tage-Verlaufsgraph sowie die letzten
+Syslog-Meldungen. Über die Schaltflächen „values.csv" (Rohdaten-Download,
+Aufbau siehe Abschnitt 7.2) und „Log" (persistentes Ereignisprotokoll,
+Abschnitt 6.2) sowie „Einstellungen" (Abschnitt 4.2, login-geschützt)
+erreichbar.</p>
+
+<!-- ============================================================ -->
+<h1 class="section" id="sec5"><span class="num">5</span>Firmware-Updates</h1>
+<p>Zwei Wege, eine neue Firmware-Version einzuspielen:</p>
+<h2>5.1 Lokales OTA-Update über das Webinterface</h2>
+<ol>
+  <li>Neue <span class="code">.bin</span>-Datei besorgen (z. B. von den
+  GitHub-Releases, verlinkt unten auf der Einstellungsseite)</li>
+  <li>Im Bereich „Firmware" die Datei auswählen und „.bin hochladen" klicken</li>
+  <li>Nach erfolgreichem Upload startet das Gerät automatisch neu</li>
+</ol>
+<div class="callout">
+  <div class="callout-title">Herkunfts- und Versionsprüfung</div>
+  Die Firmware sucht im hochgeladenen Byte-Stream nach einem eingebetteten
+  Marker (Projekt-ID <span class="code">SENSORMETER-POE</span> + Version) und
+  lehnt Uploads ab, die von einem Schwesterprojekt stammen oder eine ältere
+  Version als die aktuell laufende sind. Ein Kontrollkästchen „Downgrade
+  erzwingen" erlaubt bei Bedarf einen bewussten Rücksprung auf eine ältere
+  Version (z. B. nach einer fehlerhaften Vorabversion).
+</div>
+<h2>5.2 Erneutes Ausführen des PowerShell-Skripts</h2>
+<p>Alternativ das Skript aus Abschnitt 1.3 im vorhandenen Checkout erneut
+ausführen — es aktualisiert den Quellcode (<span class="code">git
+pull</span>, sofern keine lokalen Änderungen vorliegen) und flasht per
+natives USB neu (kein manueller Handgriff nötig, Abschnitt 1.2).</p>
+
+<!-- ============================================================ -->
+<h1 class="section" id="sec6"><span class="num">6</span>SNMP, Syslog, MQTT &amp; Branding (für Netzwerk-Admins)</h1>
+<p>Zusätzlich zur Weboberfläche bietet das Gerät drei maschinenlesbare
+Schnittstellen, z. B. für Monitoring-Systeme, das
+Sensormeter-Display-Projekt oder Home Assistant.</p>
+
+<h2>6.1 SNMP (v1, read-only, Port 161)</h2>
+<p>Feste Basis-OID <span class="code">.1.3.6.1.4.1.99999</span> — dieselbe
+Basis wie Sensormeter und Sensormeter WLAN, damit ein Sensormeter-Display
+alle Produktvarianten ohne Codeänderung abfragen kann. Die Community
+entspricht dem in Abschnitt 4.2 konfigurierten Wert (Default:
+<span class="code">public</span>).</p>
+<table>
+  <tr><th>OID</th><th>Bedeutung</th></tr>
+  <tr><td><span class="code">.1.3.6.1.4.1.99999.1.1.0</span></td><td>Systemname</td></tr>
+  <tr><td><span class="code">.1.3.6.1.4.1.99999.1.2.0</span></td><td>Firmwareversion</td></tr>
+  <tr><td><span class="code">.1.3.6.1.4.1.99999.1.3.0</span></td><td>Systemtyp</td></tr>
+  <tr><td><span class="code">.1.3.6.1.4.1.99999.2.1.0</span></td><td>LAN-IP</td></tr>
+  <tr><td><span class="code">.1.3.6.1.4.1.99999.2.2.0</span></td><td>WLAN-IP</td></tr>
+  <tr><td><span class="code">.1.3.6.1.4.1.99999.2.3.0</span></td><td>WLAN-RSSI (dBm)</td></tr>
+  <tr><td><span class="code">.1.3.6.1.4.1.99999.3.1.0</span></td><td>Sensor 1 Name („Intern")</td></tr>
+  <tr><td><span class="code">.1.3.6.1.4.1.99999.3.2.0</span></td><td>Sensor 1 Temperatur (°C ×10)</td></tr>
+  <tr><td><span class="code">.1.3.6.1.4.1.99999.3.3.0</span></td><td>Sensor 1 Luftfeuchte (% ×10)</td></tr>
+  <tr><td><span class="code">.1.3.6.1.4.1.99999.4.1.0</span></td><td>Sensor 2 Name (nur bei aktivem Sensor 2)</td></tr>
+  <tr><td><span class="code">.1.3.6.1.4.1.99999.4.2.0</span></td><td>Sensor 2 Temperatur</td></tr>
+  <tr><td><span class="code">.1.3.6.1.4.1.99999.4.3.0</span></td><td>Sensor 2 Luftfeuchte</td></tr>
+  <tr><td><span class="code">.1.3.6.1.4.1.99999.5.1.0</span></td><td>Uptime (TimeTicks, 1/100 s)</td></tr>
+  <tr><td><span class="code">.1.3.6.1.4.1.99999.5.2.0</span></td><td>Freier Heap (Bytes)</td></tr>
+</table>
+<div class="callout">
+  <div class="callout-title">Hinweis: nur Temperatur/Feuchte über SNMP</div>
+  Der Zweig <span class="code">.4</span> (Sensor 2) transportiert nur
+  Temperatur und Luftfeuchte. Steckt an Sensor 2 stattdessen ein reiner
+  Luftdruck-, Helligkeits- oder Luftgüte-Sensor (BMP280/BH1750/ENS160),
+  bleiben diese Werte über SNMP unbeantwortet — abrufbar sind sie in dem
+  Fall nur über die Weboberfläche, <span class="code">values.csv</span>
+  oder MQTT (Abschnitt 6.3, 7.2).
+</div>
+<pre class="code-block">snmpget -v1 -c public &lt;IP-Adresse&gt; .1.3.6.1.4.1.99999.3.2.0</pre>
+<p>Zusätzlich zum reinen SNMP-Abgleich existiert ein fertiges
+Zabbix-Template, siehe <span class="code">docs/ZABBIX.md</span> für
+Import/Host-Einrichtung/Trigger.</p>
+
+<h2>6.2 Syslog (UDP 514) &amp; persistentes Log</h2>
+<p>Nur per UDP aktiv, wenn unter „Syslog" (Abschnitt 4.2) eine Server-IP
+ungleich <span class="code">0.0.0.0</span> eingetragen ist. Drei
+Severity-Stufen (RFC5424-Konvention):</p>
+<ul>
+  <li><b>Statusreport</b> — bei jedem Sensorzyklus (alle 60s), Severity
+  „Informational" (6)</li>
+  <li><b>Fehler-Events</b> — sofort bei Sensor-/Netzwerk-/NTP-Fehlern und
+  echten Werksreset-Aktionen, Severity „Error" (3)</li>
+  <li><b>Warnungen</b> — für transiente, selbstheilende Ereignisse (z. B.
+  ein kurzer LAN-/WLAN-Aussetzer, der sich von selbst erholt), Severity
+  „Warning" (4)</li>
+</ul>
+<p>Unabhängig vom UDP-Versand schreibt das Gerät dieselben Ereignisse
+zusätzlich dauerhaft nach <span class="code">/log.txt</span> auf der
+LittleFS-Datenpartition (32&nbsp;KB je Datei, bei Überschreiten Rotation
+nach <span class="code">/log.old.txt</span>, max. 64&nbsp;KB gesamt) —
+abrufbar über den „Log"-Button auf der Hauptseite (Abschnitt 4.3), auch
+ohne konfigurierten Syslog-Empfänger. Praktisch, um die Vorgeschichte
+eines Geräts nachzuvollziehen, ohne dauerhaft einen Syslog-Server
+mitlaufen lassen zu müssen.</p>
+
+<h2>6.3 MQTT &amp; Home Assistant (Discovery)</h2>
+<p>Nur aktiv, wenn unter „MQTT (Home Assistant)" (Abschnitt 4.2) sowohl
+„Aktiv" angehakt als auch eine Broker-Adresse eingetragen ist. Nutzt das
+etablierte
+<a href="https://www.home-assistant.io/integrations/mqtt/#mqtt-discovery">Home-Assistant-MQTT-Discovery-Format</a>.</p>
+<table>
+  <tr><th>Topic</th><th>Inhalt</th></tr>
+  <tr><td><span class="code">homeassistant/sensor/&lt;prefix&gt;/temperature1/config</span><br>
+      <span class="code">homeassistant/sensor/&lt;prefix&gt;/humidity1/config</span></td>
+      <td>Discovery-Payload für Sensor 1 (intern), retained, einmalig nach jedem (Re-)Connect gesendet</td></tr>
+  <tr><td><span class="code">homeassistant/sensor/&lt;prefix&gt;/temperature2/config</span><br>
+      <span class="code">homeassistant/sensor/&lt;prefix&gt;/humidity2/config</span></td>
+      <td>Wie oben für Sensor 2 — nur gesendet, wenn Sensor 2 aktiviert ist</td></tr>
+  <tr><td><span class="code">&lt;prefix&gt;/state</span></td>
+      <td>JSON-Statuspayload mit den aktuellen Messwerten, gesendet bei jedem neuen Sensorzyklus (alle 60s)</td></tr>
+  <tr><td><span class="code">homeassistant/switch/&lt;prefix&gt;/relay/config</span></td>
+      <td>Discovery-Payload für den Relais-Schalter — nur gesendet, wenn „Relais (Aktor) aktiv" (Abschnitt 4.2) angehakt ist</td></tr>
+  <tr><td><span class="code">&lt;prefix&gt;/relay/state</span></td>
+      <td>Aktueller Schaltzustand („ON"/„OFF", retained), sofort bei jeder Änderung gesendet</td></tr>
+  <tr><td><span class="code">&lt;prefix&gt;/relay/set</span></td>
+      <td>Command-Topic, abonniert wenn das Relais aktiv ist — derselbe Schreibpfad wie Weboberfläche/REST-API</td></tr>
+</table>
+<p><span class="code">&lt;prefix&gt;</span> ist — anders als bei
+Sensormeter/Sensormeter WLAN — ein echtes, persistiertes Feld
+(„Topic-Präfix" in Abschnitt 4.2): leer gelassen wird er wie der
+mDNS-Hostname aus dem Systemnamen abgeleitet, explizit gesetzt bleibt er
+auch nach einer Änderung des Systemnamens unverändert. Welches
+Netzwerk-Interface (LAN/WLAN) für die Broker-Verbindung genutzt wird, legt
+das Feld „Interface" fest (Abschnitt 4.2) — bei gleichzeitig aktivem LAN
+und WLAN sonst nicht deterministisch festgelegt.</p>
+<div class="callout warn">
+  <div class="callout-title">Nicht auf echter Hardware verifiziert</div>
+  Am ersten Testboard war kein MQTT-Broker konfiguriert. Discovery-Payload
+  und Zustandssynchronisation mit Home Assistant sind daher noch nicht
+  gegen einen echten Broker bestätigt.
+</div>
+
+<h2>6.4 Anbieter-Branding (Weisslabel)</h2>
+<p>Optionale Zusatzkennzeichnung, unabhängig vom Systemnamen: freier
+Anbietername und/oder ein Logo (Abschnitt 4.2). Beides einzeln optional —
+ohne beides bleibt das Gerät unverändert.</p>
+<ul>
+  <li><b>OLED (intern und optional extern)</b>: eigene Seite in der
+  Rotation, nur wenn Name oder Logo gesetzt sind (siehe Abschnitt 3). Zeigt
+  bevorzugt das Logo vollflächig, ohne Logo den Anbietername als
+  Textzeile.</li>
+  <li><b>Weboberfläche</b>: Logo (falls vorhanden) und Anbietername
+  erscheinen im Kopfbereich jeder Seite.</li>
+  <li><b>Logo-Format</b>: 128×64 Pixel, 1 Bit pro Pixel, MSB-zuerst je
+  Zeile, exakt 1024 Byte (kein PNG/JPEG) — erzeugbar mit
+  <span class="code">scripts/convert-logo.ps1</span>.</li>
+</ul>
+<div class="callout warn">
+  <div class="callout-title">Noch nicht auf echter Hardware verifiziert</div>
+  Logo-Upload und -Anzeige (weder internes noch externes Display, weder
+  Weboberfläche) sind am ersten Testboard noch nicht geprüft worden.
+</div>
+
+<!-- ============================================================ -->
+<h1 class="section" id="sec7"><span class="num">7</span>Konfigurations- und Datenexport</h1>
+<p>Mehrere Dateien lassen sich über die Weboberfläche herunterladen — sie
+liegen auf der LittleFS-Datenpartition des Geräts (siehe Callout in
+Abschnitt 1.4) und überstehen daher ein normales Neuflashen der Firmware.</p>
+
+<h2>7.1 config.xml — Aufbau</h2>
+<p>Enthält die komplette Gerätekonfiguration (identisch zu dem, was
+„XML Export" auf der Einstellungsseite liefert, Abschnitt 4.2). Ein
+gültiges XML-Dokument mit <span class="code">&lt;config&gt;</span> als
+Wurzelelement; fehlt beim Import ein Feld, bleibt der zuletzt gültige
+bzw. Werks-Default aktiv statt eines Fehlers.</p>
+<div class="keep">
+<table>
+  <tr><th>Element</th><th>Attribut / Kindelement</th><th>Bedeutung</th></tr>
+  <tr><td rowspan="5"><span class="code">&lt;network&gt;&lt;lan&gt;</span></td><td><span class="code">dhcp</span></td><td>„true"/„false" — DHCP oder statische IP</td></tr>
+  <tr><td><span class="code">ip</span></td><td>Statische IP (nur bei <span class="code">dhcp="false"</span> wirksam)</td></tr>
+  <tr><td><span class="code">mask</span></td><td>Subnetzmaske</td></tr>
+  <tr><td><span class="code">gateway</span></td><td>Gateway-Adresse</td></tr>
+  <tr><td><span class="code">dns</span></td><td>DNS-Server (leer = Gateway verwenden)</td></tr>
+  <tr><td rowspan="8"><span class="code">&lt;network&gt;&lt;wlan&gt;</span></td><td><span class="code">dhcp</span></td><td>„true"/„false" — DHCP oder statische IP</td></tr>
+  <tr><td><span class="code">ssid</span></td><td>WLAN-Netzwerkname</td></tr>
+  <tr><td><span class="code">psk</span></td><td>WLAN-Passwort (Klartext)</td></tr>
+  <tr><td><span class="code">ip</span></td><td>Statische IP</td></tr>
+  <tr><td><span class="code">mask</span></td><td>Subnetzmaske</td></tr>
+  <tr><td><span class="code">gateway</span></td><td>Gateway-Adresse</td></tr>
+  <tr><td><span class="code">dns</span></td><td>DNS-Server</td></tr>
+  <tr><td><span class="code">pendingTest</span></td><td>Internes Einmal-Flag für „Verbinden &amp; testen" (Abschnitt 4.2) - normalerweise „false"</td></tr>
+  <tr><td rowspan="3"><span class="code">&lt;system&gt;</span></td><td><span class="code">&lt;name&gt;</span></td><td>Systemname (Abschnitt 4.2)</td></tr>
+  <tr><td><span class="code">&lt;type&gt;</span></td><td>Systemtyp, automatisch ermittelt</td></tr>
+  <tr><td><span class="code">&lt;password&gt;</span></td><td>Web-Login-Passwort (Klartext, Benutzername immer fest „admin")</td></tr>
+  <tr><td><span class="code">&lt;syslog&gt;</span></td><td><span class="code">&lt;server&gt;</span></td><td>Syslog-Empfänger-IP, „0.0.0.0" = deaktiviert</td></tr>
+  <tr><td rowspan="3"><span class="code">&lt;sensors&gt;&lt;sensor1&gt;</span></td><td><span class="code">tempOffset</span></td><td>Temperatur-Korrektur in °C (interner DHT22)</td></tr>
+  <tr><td><span class="code">humOffset</span></td><td>Feuchte-Korrektur in %</td></tr>
+  <tr><td><span class="code">calibratedTs</span></td><td>Unix-Zeitstempel der letzten Kalibrierung (0 = nie)</td></tr>
+  <tr><td rowspan="5"><span class="code">&lt;sensors&gt;&lt;sensor2&gt;</span></td><td><span class="code">enabled</span></td><td>„true"/„false" — aktiviert Sensor 2</td></tr>
+  <tr><td><span class="code">name</span></td><td>Anzeigename (Default „Extern")</td></tr>
+  <tr><td><span class="code">tempOffset</span></td><td>Temperatur-Korrektur in °C</td></tr>
+  <tr><td><span class="code">humOffset</span></td><td>Feuchte-Korrektur in %</td></tr>
+  <tr><td><span class="code">calibratedTs</span></td><td>Unix-Zeitstempel der letzten Kalibrierung</td></tr>
+  <tr><td rowspan="3"><span class="code">&lt;kontakt&gt;</span></td><td><span class="code">pin5Mode</span></td><td>„sensor"/„contact" — Belegung von RJ45 Pin 5. Schließt sich mit Sensor 2 gegenseitig aus.</td></tr>
+  <tr><td><span class="code">name</span></td><td>Anzeigename des Kontakts (max. 20 Zeichen, Default „Kontakt")</td></tr>
+  <tr><td><span class="code">alarmAt</span></td><td>„open"/„closed"/„change" — welcher Zustand als Alarm gilt (Default „open")</td></tr>
+  <tr><td><span class="code">&lt;snmp&gt;</span></td><td><span class="code">community</span></td><td>SNMP-Community-String</td></tr>
+  <tr><td rowspan="7"><span class="code">&lt;aktor&gt;</span></td><td><span class="code">relayEnabled</span></td><td>„true"/„false" — Relais (Aktor) aktiv. Der Schaltzustand selbst wird NICHT persistiert.</td></tr>
+  <tr><td><span class="code">autoMode</span></td><td>„off"/„sensor" — automatisches Schalten (Default „off")</td></tr>
+  <tr><td><span class="code">autoSource</span></td><td>„sensor1"/„sensor2"/„contact" — Datenquelle der Automatik</td></tr>
+  <tr><td><span class="code">autoValue</span></td><td>„temp"/„humidity" — nur bei Quelle sensor1/sensor2</td></tr>
+  <tr><td><span class="code">autoCompare</span></td><td>„above"/„below" — nur bei Quelle sensor1/sensor2</td></tr>
+  <tr><td><span class="code">autoThreshold</span></td><td>Schwellenwert (Fließkommazahl) — nur bei Quelle sensor1/sensor2</td></tr>
+  <tr><td><span class="code">autoContactState</span></td><td>„open"/„closed" — nur bei Quelle contact</td></tr>
+  <tr><td rowspan="6"><span class="code">&lt;mqtt&gt;</span></td><td><span class="code">enabled</span></td><td>„true"/„false" — MQTT-Anbindung aktiv</td></tr>
+  <tr><td><span class="code">server</span></td><td>Broker-Adresse (IP oder Hostname)</td></tr>
+  <tr><td><span class="code">port</span></td><td>Broker-Port, Default 1883</td></tr>
+  <tr><td><span class="code">user</span> / <span class="code">password</span></td><td>Broker-Zugangsdaten (leer = anonym)</td></tr>
+  <tr><td><span class="code">topicPrefix</span></td><td>Fester Topic-Präfix (leer = aus Systemname abgeleitet, siehe Abschnitt 6.3)</td></tr>
+  <tr><td><span class="code">&lt;branding&gt;</span></td><td><span class="code">vendorName</span></td><td>Anbietername (Abschnitt 4.2, 6.4). Das Logo-Bild selbst steht NICHT hier, sondern separat auf LittleFS.</td></tr>
+  <tr><td rowspan="2"><span class="code">&lt;display&gt;</span></td><td><span class="code">pages</span></td><td>Bitmaske (0-127) der aktiven Seiten auf dem optionalen externen SH1107-Modul (Abschnitt 4.2)</td></tr>
+  <tr><td><span class="code">slideSec</span></td><td>Sekunden je Seite auf dem externen Modul (Default 10)</td></tr>
+</table>
+</div>
+<p><b>Beispiel</b> (Werte anonymisiert, Sensor 2 aktiv):</p>
+<pre class="code-block">&lt;config&gt;
+    &lt;network&gt;
+        &lt;lan dhcp="true" ip="" mask="" gateway="" dns=""/&gt;
+        &lt;wlan dhcp="false" ssid="Heimnetz" psk="geheim123" ip="192.168.1.42"
+              mask="255.255.255.0" gateway="192.168.1.1" dns="" pendingTest="false"/&gt;
+    &lt;/network&gt;
+    &lt;system&gt;
+        &lt;name&gt;Sensormeter PoE&lt;/name&gt;
+        &lt;type&gt;Sensormeter PoE PRO&lt;/type&gt;
+        &lt;password&gt;installer&lt;/password&gt;
+    &lt;/system&gt;
+    &lt;syslog&gt;
+        &lt;server&gt;0.0.0.0&lt;/server&gt;
+    &lt;/syslog&gt;
+    &lt;sensors&gt;
+        &lt;sensor1 tempOffset="0.0" humOffset="0.0" calibratedTs="0"/&gt;
+        &lt;sensor2 enabled="true" name="Extern" tempOffset="0.0" humOffset="0.0" calibratedTs="0"/&gt;
+    &lt;/sensors&gt;
+    &lt;kontakt pin5Mode="sensor" name="Kontakt" alarmAt="open"/&gt;
+    &lt;snmp community="public"/&gt;
+    &lt;aktor relayEnabled="false" autoMode="off" autoSource="sensor1" autoValue="temp"
+           autoCompare="above" autoThreshold="25.0" autoContactState="closed"/&gt;
+    &lt;mqtt enabled="false" server="" port="1883" user="" password="" topicPrefix=""/&gt;
+    &lt;branding vendorName=""/&gt;
+    &lt;display pages="127" slideSec="10"/&gt;
+&lt;/config&gt;</pre>
+<div class="callout warn">
+  <div class="callout-title">Enthält Klartext-Zugangsdaten</div>
+  WLAN-Passwort, Web-Login-Passwort und MQTT-Broker-Passwort stehen
+  unverschlüsselt in der Datei. Exportierte <span class="code">config.xml</span>-Dateien
+  entsprechend wie ein Passwort behandeln.
+</div>
+
+<h2>7.2 values.csv — Aufbau</h2>
+<p>Der 7-Tage-Sensorverlauf (stündliche Messpunkte, Ringpuffer, 168 Zeilen)
+als CSV-Datei zum Download über den Button „values.csv" auf der Hauptseite
+(Abschnitt 4.3). Anders als bei Sensormeter (nur eine gemeinsame
+Temperatur-/Feuchte-Spalte für Sensor 1) hat diese Firmware ein erweitertes
+Sensor-2-Datenmodell — die CSV-Spalten decken alle vier möglichen
+Sensor-2-Modultypen ab, nicht angewendete Felder bleiben leer:</p>
+<div class="keep">
+<table>
+  <tr><th>Spalte</th><th>Format</th><th>Belegt bei</th></tr>
+  <tr><td><span class="code">timestamp</span></td><td>ISO 8601, lokale Zeit (<span class="code">YYYY-MM-DD HH:MM:SS</span>)</td><td>immer</td></tr>
+  <tr><td><span class="code">sensor1_temperature</span></td><td>°C, 1 Nachkommastelle</td><td>immer (interner DHT22)</td></tr>
+  <tr><td><span class="code">sensor1_humidity</span></td><td>%, 1 Nachkommastelle</td><td>immer</td></tr>
+  <tr><td><span class="code">sensor2_temperature</span></td><td>°C, 1 Nachkommastelle</td><td>Sensor 2 = DHT11/DHT21/AHT20/AHT21/BME280</td></tr>
+  <tr><td><span class="code">sensor2_humidity</span></td><td>%, 1 Nachkommastelle</td><td>wie oben</td></tr>
+  <tr><td><span class="code">sensor2_pressure_hpa</span></td><td>hPa, 1 Nachkommastelle</td><td>Sensor 2 = BMP280/BME280</td></tr>
+  <tr><td><span class="code">sensor2_lux</span></td><td>lx, 1 Nachkommastelle</td><td>Sensor 2 = BH1750</td></tr>
+  <tr><td><span class="code">sensor2_eco2_ppm</span></td><td>ppm, 1 Nachkommastelle</td><td>Sensor 2 = ENS160</td></tr>
+</table>
+</div>
+<pre class="code-block">timestamp,sensor1_temperature,sensor1_humidity,sensor2_temperature,sensor2_humidity,sensor2_pressure_hpa,sensor2_lux,sensor2_eco2_ppm
+2026-07-17 14:00:00,21.4,53.0,19.8,61.0,,,
+2026-07-17 15:00:00,21.6,52.3,,,1013.2,,
+2026-07-17 16:00:00,22.1,51.8,,,,420.0,</pre>
+<p class="hint">Bei einem Kombimodul mit mehreren I2C-Chips (z. B.
+AHT20+BMP280) wird nur der primäre erkannte Chip gelesen (Abschnitt 4.2) —
+die übrigen Spalten bleiben trotz gestecktem Zweitchip leer.</p>
+
+<!-- ============================================================ -->
+<h1 class="section" id="sec8"><span class="num">8</span>Serial-Kommandozeile (USB)</h1>
+<p>Zusätzlich zur Weboberfläche lässt sich das Gerät direkt über die
+native USB-Verbindung steuern — ohne Netzwerkzugriff, ohne Passwort.
+Praktisch, wenn das Gerät nur per USB, aber nicht per Netzwerk erreichbar
+ist (z. B. falsche WLAN-Zugangsdaten, statische IP in einem fremden
+Netzsegment), oder als zweiter, netzwerkunabhängiger Weg für einen
+Werksreset neben dem BOOT-Taster (Abschnitt 3). Baudrate 115200, jede Zeile
+mit Enter abschließen.</p>
+
+<div class="callout">
+  <div class="callout-title">Gleiches Vertrauensmodell wie beim BOOT-Taster</div>
+  Wer das Gerät per USB-Kabel anschließen kann, gilt als vertrauenswürdig —
+  kein Passwort nötig. Alle Kommandos außer <span class="code">reset</span>/<span class="code">reset all</span>
+  sind nicht destruktiv.
+</div>
+
+<h2>8.1 Kommandoübersicht</h2>
+<p>Zwei Netzwerk-Interfaces (LAN + optionales WLAN) — <span class="code">dhcp</span>
+und <span class="code">ip</span> nehmen deshalb ein Interface-Argument
+(<span class="code">lan</span> oder <span class="code">wlan</span>).</p>
+<table>
+  <tr><th>Kommando</th><th>Wirkung</th></tr>
+  <tr><td><span class="code">status</span></td><td>Aktuellen Zustand ausgeben (Systemzustand, LAN- und WLAN-Status/IP/Modus, WLAN-Signal, beide Sensorwerte falls Sensor 2 aktiv, Relais-Zustand, Kontakt-Zustand falls Modultyp „Kontakt", freier Heap, Laufzeit) — rein lesend, kein Neustart</td></tr>
+  <tr><td><span class="code">dhcp &lt;lan|wlan&gt;</span></td><td>Gewähltes Interface auf DHCP umstellen, statische IP/Maske/Gateway/DNS dieses Interfaces löschen, Gerät startet neu</td></tr>
+  <tr><td><span class="code">ip &lt;lan|wlan&gt; &lt;adresse&gt; &lt;maske&gt; &lt;gateway&gt; [dns]</span></td><td>Statische IP für das gewählte Interface setzen, Gerät startet neu. Anders als die Einstellungsseite ohne Ping-Kollisionsprüfung — bewusst einfach gehalten</td></tr>
+  <tr><td><span class="code">wifi &lt;ssid&gt; &lt;passwort&gt;</span></td><td>Neue WLAN-Zugangsdaten setzen, Gerät startet neu und probiert die Verbindung mit verkürztem Timeout. Kein LAN-Äquivalent, da Ethernet kein Zugangsdaten-Konzept hat</td></tr>
+  <tr><td><span class="code">dump</span></td><td>Aktuelle <span class="code">config.xml</span> als XML ausgeben, eingerahmt von <span class="code">-----BEGIN CONFIG-----</span>/<span class="code">-----END CONFIG-----</span></td></tr>
+  <tr><td><span class="code">upload</span></td><td>Wartet auf eingefügte XML-Zeilen (z. B. eine zuvor per <span class="code">dump</span> gesicherte Konfiguration), Abschluss mit einer Zeile <span class="code">-----END CONFIG-----</span>. Bei gültigem XML wird gespeichert und neu gestartet, bei ungültigem passiert nichts</td></tr>
+  <tr><td><span class="code">reset</span></td><td>Werksreset der Konfiguration (Branding wird dabei <b>mit</b> zurückgesetzt, anders als der Weboberflächen-Umfang „Nur Konfiguration"), Gerät startet neu — der 7-Tage-Verlauf bleibt erhalten</td></tr>
+  <tr><td><span class="code">reset all</span></td><td>Wie oben, zusätzlich wird der 7-Tage-Verlauf gelöscht. Nicht rückgängig zu machen</td></tr>
+</table>
+
+<div class="callout warn">
+  <div class="callout-title">Backup vor destruktiven Kommandos</div>
+  Vor <span class="code">reset</span>/<span class="code">reset all</span>
+  empfiehlt sich ein vorheriges <span class="code">dump</span> — die
+  Ausgabe lässt sich danach per <span class="code">upload</span>
+  unverändert zurückspielen, um exakt zum vorherigen Zustand
+  zurückzukehren.
+</div>
+
+<h2>8.2 Nutzung mit Windows-Boardmitteln (ohne Zusatzsoftware)</h2>
+<p>Für einen seriellen Terminal wird üblicherweise ein Zusatzprogramm wie
+PuTTY oder Tera Term verwendet — beides funktioniert, ist aber nicht
+vorinstalliert. Windows bringt mit der <span class="code">.NET</span>-Klasse
+<span class="code">System.IO.Ports.SerialPort</span> bereits alles Nötige
+mit; PowerShell (ab Windows 7 vorinstalliert) reicht für eine vollständige
+interaktive Sitzung, ganz ohne Download.</p>
+
+<h3>COM-Port ermitteln</h3>
+<p>Geräte-Manager öffnen (<span class="code">Win+X</span> →
+Geräte-Manager) → „Anschlüsse (COM &amp; LPT)" — das native USB-CDC-Gerät
+erscheint dort z. B. als „USB Serial Device (COM&lt;n&gt;)". Alternativ per
+PowerShell auflisten:</p>
+<pre class="code-block">[System.IO.Ports.SerialPort]::GetPortNames()</pre>
+
+<h3>Interaktive Sitzung (empfohlen)</h3>
+<p>Folgendes Skript als <span class="code">.ps1</span>-Datei speichern
+(<span class="code">COM8</span> durch den tatsächlichen Port ersetzen) und
+mit <span class="code">powershell -ExecutionPolicy Bypass -File
+.\seriell.ps1</span> ausführen, oder direkt zeilenweise in ein
+PowerShell-Fenster einfügen:</p>
+<pre class="code-block">$port = New-Object System.IO.Ports.SerialPort "COM8", 115200, "None", 8, "One"
+$port.NewLine = "`n"
+$port.Open()
+Write-Host "Verbunden mit $($port.PortName). Kommando eingeben und Enter druecken."
+Write-Host "Zum Beenden 'exit' eingeben."
+while ($true) {
+    Start-Sleep -Milliseconds 200
+    while ($port.BytesToRead -gt 0) {
+        try { Write-Host $port.ReadLine() } catch {}
+    }
+    $cmd = Read-Host
+    if ($cmd -eq "exit") { break }
+    $port.WriteLine($cmd)
+}
+$port.Close()</pre>
+<p>Das Skript öffnet den Port, gibt eingehende Zeilen laufend aus und
+sendet jede Eingabe als eigenes Kommando — genau wie ein grafisches
+Terminalprogramm, nur ganz ohne Installation. Für
+<span class="code">upload</span> einfach die per <span class="code">dump</span>
+angezeigten Zeilen (inkl. Marker) einzeln einfügen, jede mit Enter
+abschließen.</p>
+
+<h3>Einzelnes Kommando (Kurzform)</h3>
+<p>Für einen schnellen einmaligen Aufruf, z. B. nur den Status abfragen,
+genügt auch ein Einzeiler ohne Schleife:</p>
+<pre class="code-block">$port = New-Object System.IO.Ports.SerialPort "COM8", 115200
+$port.Open(); Start-Sleep -Seconds 3   # Boot-Log abwarten
+$port.DiscardInBuffer()
+$port.WriteLine("status")
+Start-Sleep -Milliseconds 500
+$port.ReadExisting()
+$port.Close()</pre>
+<div class="callout">
+  <div class="callout-title">Natives USB-CDC: kurze Log-Lücke nach einem Reset</div>
+  Auf dem ersten Testboard beobachtet: nach einem RTS-ausgelösten Reset
+  (z. B. beim Öffnen eines Terminals) gehen die ersten Boot-Log-Zeilen
+  gelegentlich verloren, bis der Host die USB-Neuanmeldung des Geräts
+  abgeschlossen hat — eine Eigenschaft des nativen USB-CDC, kein
+  Firmware-Fehler. Für zuverlässige Statusabfragen kurz nach einem Reset
+  ggf. 2-3 Sekunden Wartezeit einplanen, wie im Beispiel oben.
+</div>
+
+<h3>Beispielsitzung: LAN auf statische IP umstellen</h3>
+<pre class="code-block">&gt; status
+[SERIAL] --- Status ---
+Zustand: RUN_NORMAL
+LAN: verbunden
+LAN-IP: 192.168.178.108
+LAN-Modus: DHCP
+WLAN: nicht verbunden
+...
+[SERIAL] --- Ende Status ---
+
+&gt; ip lan 192.168.178.50 255.255.255.0 192.168.178.1
+[SERIAL] Statische IP (lan) gesetzt, starte neu...
+(Geraet startet neu, LAN ist danach unter der neuen Adresse erreichbar)</pre>
+
+<!-- ============================================================ -->
+<h1 class="section" id="sec-anhang">Anhang — Troubleshooting</h1>
+<table>
+  <tr><th>Problem</th><th>Mögliche Ursache / Lösung</th></tr>
+  <tr><td>Kein COM-Port beim Flashen erkannt</td><td>USB-Kabel mit Datenleitungen verwenden (kein reines Ladekabel); ein anderes Programm blockiert ggf. den Port (offenes Terminal schließen); native USB-CDC-Treiber sind unter Windows 10/11 in der Regel bereits vorhanden</td></tr>
+  <tr><td>Flash-Vorgang schlägt fehl</td><td>Falscher COM-Port, oder ein inkrementeller Build nach einem zuvor abgebrochenen Upload-Versuch ist inkonsistent — <span class="code">.pio\build\esp32-s3-eth</span> löschen und neu bauen</td></tr>
+  <tr><td>OLED bleibt dunkel</td><td>I2C-Verdrahtung prüfen (SDA→GPIO1, SCL→GPIO2, siehe <span class="code">docs/verdrahtungsplan.html</span>), I2C-Adresse muss 0x3C sein (0x3D ist für ein optionales externes SH1107-Modul reserviert); ohne gestecktes Display bleibt der Screen bewusst einfach dunkel (Abschnitt 3), keine Fehlfunktion</td></tr>
+  <tr><td>Sensorwert Sensor 1 bleibt „---"</td><td>Interner DHT22 (GPIO15, Pull-up 10k gegen 3,3V erforderlich) — Verdrahtung prüfen, Sensor braucht nach dem Boot ggf. einen Moment bis zur ersten gültigen Messung</td></tr>
+  <tr><td>Sensor 2 wird nicht erkannt</td><td>RJ45-Modul auf Pin 3/4 (I2C) bzw. Pin 5 (DHT) korrekt gesteckt? Pin5Mode auf „Sensor" statt „Kontakt" gestellt (Abschnitt 4.2)? Erkennung läuft beim Boot und danach alle 60s erneut — Button „Erkennung neu starten" auf der Einstellungsseite erzwingt einen sofortigen Rescan</td></tr>
+  <tr><td>Gerät bleibt dauerhaft im Fallback-Modus („Fallback aktiv" auf dem OLED)</td><td>Weder LAN-Kabel gesteckt noch gültiges WLAN konfiguriert — mit dem Access Point „installer"/„installer" verbinden (Abschnitt 2.2) und Zugangsdaten über „Verbinden &amp; testen" korrigieren, oder LAN-Kabel stecken</td></tr>
+  <tr><td>Webinterface nicht erreichbar</td><td>IP-Adresse über das OLED (Abschnitt 3, Seite 2), Router/DHCP-Server oder <span class="code">http://&lt;systemname&gt;.local/</span> (mDNS) prüfen</td></tr>
+  <tr><td>Neue statische IP wird als „belegt" abgelehnt</td><td>Ein anderes Gerät im jeweiligen Netz (LAN oder WLAN) antwortet unter dieser Adresse (Abschnitt 4.2) — im Router/DHCP-Server nachsehen, wer die Adresse belegt, oder eine andere, freie Adresse wählen</td></tr>
+  <tr><td>„IP-Einstellungen übernehmen" meldet „Kein DHCP-Server gefunden"</td><td>Im Zielnetz (LAN oder WLAN) ist kein DHCP-Server aktiv, oder das Interface ist gerade nicht verbunden — bei Bedarf stattdessen eine statische IP eintragen, oder DHCP im Router prüfen (Abschnitt 4.2)</td></tr>
+  <tr><td>Web-Login schlägt fehl / Gerät im Netzwerk gar nicht erreichbar</td><td>Benutzername immer „admin"; bei Passwortverlust hilft ein Werksreset mit Umfang „Nur Konfiguration" oder „Alles" auf der Einstellungsseite (Abschnitt 4.2) — ist auch das nicht erreichbar, per USB das <span class="code">reset</span>-Kommando über die Serial-Kommandozeile nutzen (Abschnitt 8) oder den BOOT-Taster 23s halten und dann loslassen (Abschnitt 3)</td></tr>
+  <tr><td>SNMP/Syslog liefert keine Daten</td><td>Community-String bzw. Server-IP in den Einstellungen prüfen (Abschnitt 4.2), Firewall auf dem Empfänger prüfen (UDP 161/514); für Sensor-2-Werte jenseits Temperatur/Feuchte (Druck/Helligkeit/Luftgüte) ist SNMP grundsätzlich nicht vorgesehen (Abschnitt 6.1) — dafür values.csv/Weboberfläche/MQTT nutzen</td></tr>
+  <tr><td>Zeitstempel in values.csv/Log wirken falsch (Versatz von ca. 2 Stunden)</td><td>Bekannter, in dieser Firmware-Version bereits behobener Zeitzonen-Bug (TZ wurde nach einem reinen Software-Reset nicht neu gesetzt) — betrifft nur Firmware-Stände vor dem entsprechenden Fix vom 18.07.2026, siehe <span class="code">docs/entscheidungen.md</span>; mit aktueller Firmware neu flashen falls noch beobachtet</td></tr>
+</table>
+
+<p style="margin-top:8mm; font-size:10px; color:#6b7280;">
+Sensormeter PoE — Admin-Guide · github.com/peterhagelhof7-cmd/sensormeter-poe ·
+Entwickelt mit Unterstützung von Claude (Anthropic) als Coding-Assistent
+</p>
+
+</body>
+</html>
