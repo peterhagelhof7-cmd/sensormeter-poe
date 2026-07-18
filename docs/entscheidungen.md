@@ -850,3 +850,43 @@ Fix uebernommen: `OtaManager::scanChunkForMarker()` auf rohe
 22,5%/RAM 19,8%, praktisch unveraendert). Nicht getestet: echter
 OTA-Upload auf echter Hardware - kein Board in dieser Sitzung
 angeschlossen.
+
+## 2026-07-18 — Task-Watchdog (TWDT): Panic-on-Hang aktiviert, portiert von ESP-BMC
+
+Bislang lief der ESP-IDF-eigene Task-Watchdog-Timer (TWDT) nur mit
+Default-Konfiguration mit: Timeout ab Werk, beide Idle-Tasks angemeldet,
+aber `panic=false` - ein haengender Task erzeugt damit nur eine Logzeile,
+kein Reboot. Nach dem Vorbild von ESP-BMCs `watchdog_manager` jetzt auch
+hier scharf geschaltet, aber bewusst NUR der reine
+Watchdog-Mechanismus - keine RGB-LED (kein bestaetigtes adressierbares
+LED auf diesem Board, und ohnehin nicht Teil dieses Backlog-Punkts).
+
+**Framework-Unterschied zu sm/sm-wlan beachtet**: dieses Projekt laeuft
+auf Arduino-ESP32 3.x (pioarduino-Fork, siehe Kommentar oben in
+`platformio.ini`, IDF5.x-Basis) - dort ist `esp_task_wdt_init()` bereits
+auf die neue struct-basierte Signatur (`esp_task_wdt_config_t` mit
+`timeout_ms`/`idle_core_mask`/`trigger_panic`) umgestellt, anders als die
+alte zweiargumentige API bei sm/sm-wlan (Arduino-ESP32 2.0.17). Da der
+TWDT je nach Core-Version bereits implizit initialisiert sein kann, prueft
+der Code auf `ESP_ERR_INVALID_STATE` und ruft in dem Fall stattdessen
+`esp_task_wdt_reconfigure()` mit derselben Konfiguration auf.
+`idle_core_mask = 0x3` deckt weiterhin beide Idle-Tasks ab (Verhalten wie
+bei impliziter Default-Initialisierung), zusaetzlich zum Haupt-Loop.
+
+**Timeout bewusst auf 10s statt ESP-BMCs 5s gesetzt**: `loop()` durchlaeuft
+hier synchron sehr viele Manager (u.a. `MqttManager::loop()` mit einem
+alle 5s versuchten `_client.connect()`, dessen TCP-Verbindungsaufbau bei
+einem nicht erreichbaren Broker mehrere Sekunden blockieren kann) - 5s
+waere zu knapp gewesen und haette ohne echten Hang faelschlich einen
+Panic-Reboot ausgeloest.
+
+**Anmeldezeitpunkt**: erst am Ende von `setup()`, nicht ganz am Anfang -
+die vorangehenden `*.begin()`-Aufrufe (v.a. ein etwaiger
+LittleFS-Erststart-Format) sind einmalig und duerfen laenger dauern, ohne
+als Hang gewertet zu werden. Ab `loop()` sind alle Zyklen kurz und
+beschraenkt (bestehende `delay(50)`-Taktung), `esp_task_wdt_reset()` wird
+dort einmal pro Durchlauf aufgerufen.
+
+Verifiziert per `pio run` unter PowerShell (siehe Hinweis oben zu
+MSYS/Git-Bash), sauberer Build, RAM/Flash-Nutzung unveraendert gegenueber
+vorher, noch nicht auf echter Hardware geflasht/getestet.

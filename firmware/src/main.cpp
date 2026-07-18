@@ -36,6 +36,7 @@
 #include <Arduino.h>
 #include <ESPmDNS.h>
 #include <LittleFS.h>
+#include <esp_task_wdt.h>
 
 #include "BrandingManager.h"
 #include "ButtonManager.h"
@@ -393,6 +394,35 @@ void setup() {
   networkManager.begin();     // setzt Zustand auf INIT, dann NETWORK_CHECK
   webServerManager.begin();   // async - kein eigener loop()-Aufruf noetig
   snmpManager.begin();
+
+  // Task-Watchdog-Timer (TWDT), siehe docs/entscheidungen.md "Task-
+  // Watchdog (TWDT)": Arduino-ESP32 3.x (dieses Projekt, anders als
+  // sm/sm-wlan auf 2.x) nutzt die neue struct-basierte
+  // esp_task_wdt_init()-Signatur und initialisiert den TWDT je nach
+  // Core-Version teils schon selbst - in dem Fall liefert
+  // esp_task_wdt_init() ESP_ERR_INVALID_STATE, dann stattdessen
+  // esp_task_wdt_reconfigure() mit derselben Konfiguration. idle_core_mask
+  // deckt weiterhin beide Idle-Tasks ab (Standardverhalten bei impliziter
+  // Default-Initialisierung), nicht nur den Haupt-Loop. Bewusst erst hier
+  // am Ende von setup() statt ganz am Anfang angemeldet - die
+  // vorangehenden *.begin()-Aufrufe (v.a. ein etwaiger LittleFS-
+  // Erststart-Format) sind einmalig und duerfen laenger dauern, ohne dass
+  // das als Hang gewertet wird; ab jetzt (loop()) sind alle Zyklen kurz
+  // und beschraenkt. 10s statt der ESP-BMC-Vorgabe von 5s, weil loop()
+  // hier sehr viele Manager synchron durchlaeuft, u.a. einen MQTT-
+  // Reconnect-Versuch mit potenziell mehrsekuendigem TCP-Connect-Timeout -
+  // 5s waere ohne echten Hang zu knapp. Nur der Haupt-Loop (loopTask,
+  // hier via NULL) wird zusaetzlich angemeldet - kein anderer Task im
+  // Projekt hat einen kurzen, begrenzten Zyklus.
+  esp_task_wdt_config_t twdtConfig = {
+      .timeout_ms = 10000,
+      .idle_core_mask = 0x3,
+      .trigger_panic = true,
+  };
+  if (esp_task_wdt_init(&twdtConfig) == ESP_ERR_INVALID_STATE) {
+    esp_task_wdt_reconfigure(&twdtConfig);
+  }
+  esp_task_wdt_add(NULL);
 }
 
 void loop() {
@@ -424,5 +454,6 @@ void loop() {
     mdnsStarted = true;
   }
 
+  esp_task_wdt_reset();
   delay(50);
 }
