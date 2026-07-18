@@ -83,6 +83,9 @@ Framework Arduino).
 **Version:** `0.9.0-rc4` (Beta) — Versionsschema siehe
 [docs/entscheidungen.md](docs/entscheidungen.md#versionierung).
 
+Fertiges Binary für das lokale OTA-Update (kein PlatformIO nötig):
+[Releases → v0.9.0-rc4](https://github.com/peterhagelhof7-cmd/sensormeter-poe/releases/tag/v0.9.0-rc4).
+
 Aktueller Stand: **Board-Bringup abgeschlossen (2026-07-18),
 Qualitätskontrolle läuft**. Erstes Gerät (nur interner DHT bestückt,
 noch kein Display gesteckt) über natives USB geflasht und live
