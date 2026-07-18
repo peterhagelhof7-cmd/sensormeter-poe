@@ -995,3 +995,38 @@ eigene Tooling-Einschraenkung, kein Firmware-Problem):
 `{"systemName":"Sensormeter PoE","firmwareVersion":"0.9.0-rc4",
 "uptimeSeconds":24,"freeHeap":218808,"timeSynced":true}` - Geraet laeuft
 sauber, ueber Ethernet erreichbar (`192.168.178.108`, per PoE-Modul).
+
+## 2026-07-18, spaeter am selben Tag — Korrektur: PSRAM-Fehler war ein veralteter Bootloader-Cache, keine Hardware-/Konfigurationsursache
+
+Punkt 1 oben ("PSRAM-Init schlaegt fehl") war voreilig als Hardware-
+Problem eingestuft und PSRAM komplett deaktiviert worden. Nutzer wies
+auf die Waveshare-Produktseite hin: der verbaute Chip ist ein echtes
+ESP32-S3R8 mit 8MB Octal-PSRAM im Chip-Package (vom Hersteller
+bestaetigt), nicht ein PSRAM-loses N8. Recherche in mehreren
+Community-Faellen mit identischem Fehlerbild
+(`forum.arduino.cc/t/psram-not-detected-on-esp32-s3-n16r8...`) bestaetigt:
+fuer echte R8-Boards ist Octal (`opi`) der korrekte Modus, nicht Quad -
+`opi` war auch bereits unsere urspruengliche, korrekte erste Wahl.
+Pruefung der pioarduino-Build-Skripte (`builder/frameworks/espidf.py`)
+zeigt, dass `board_build.psram_type = opi` bereits korrekt zu
+`CONFIG_SPIRAM_MODE_OCT=y` uebersetzt wird - die Konfiguration war also
+nie falsch.
+
+**Tatsaechliche Ursache:** ein veralteter `bootloader.bin` aus einem
+fruehen Build-Versuch, der mitten im Flash-Vorgang durch einen
+PowerShell/Python-Encoding-Absturz (Unicode-Fortschrittsbalken-Zeichen
+von `esptool` gegen die `cp1252`-Konsolenkodierung, unabhaengig von
+PSRAM) abgebrochen wurde - PlatformIOs inkrementeller Build hat das
+danach nicht sauber invalidiert. Nach einem kompletten Leeren von
+`.pio/build/esp32-s3-eth` und erneutem Bauen mit identischer
+`psram_type = opi`-Einstellung lief die PSRAM-Initialisierung sauber
+durch - kein Crash-Loop mehr, per `/api/status` bestaetigt (`uptimeSeconds`
+steigt ueber mehrere Abfragen sauber, kein Reset).
+
+`board_build.psram_type = opi` wieder aktiviert, `-D BOARD_HAS_PSRAM`
+wieder ergaenzt. **Lehre:** nach einem durch einen Absturz/Interrupt
+unterbrochenen `pio run --target upload`-Versuch immer erst
+`.pio/build/<env>` loeschen, bevor aus einem fehlgeschlagenen Ergebnis
+auf eine Hardware-/Konfigurationsursache geschlossen wird - passt zum
+bereits bekannten Component-Manager-Cache-Muster bei ESP-BMC (dort:
+`REQUIRES`-Aenderungen brauchen ebenfalls einen manuellen Cache-Wipe).
