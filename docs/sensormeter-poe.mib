@@ -1,0 +1,280 @@
+-- ===========================================================================
+-- SENSORMETER-POE-MIB
+--
+-- Tool-unabhaengige SNMPv2-SMI-MIB fuer das Sensormeter-PoE-Projekt
+-- (Waveshare ESP32-S3-ETH+PoE, DHT-22 intern + optionaler externer
+-- DHT-22/I2C-Sensor ueber RJ45-Steckmodul).
+--
+-- WICHTIGER HINWEIS ZUR ENTERPRISE-OID:
+-- Die hier verwendete Enterprise-Nummer 99999 unter .1.3.6.1.4.1 ist eine
+-- inoffizielle, NICHT bei der IANA registrierte Platzhalter-OID fuer dieses
+-- Hobby-Projekt. Sie ist NICHT bei der IANA (Internet Assigned Numbers
+-- Authority) eingetragen und darf nicht mit einer echten, offiziell
+-- zugeteilten Enterprise-Number verwechselt werden. Gedacht ausschliesslich
+-- fuer den privaten Einsatz in einem geschlossenen Netz - NICHT fuer
+-- oeffentliche oder kommerzielle Nutzung ohne eine eigene, bei der IANA
+-- registrierte Enterprise-Number (Registrierung unter
+-- https://www.iana.org/assignments/enterprise-numbers). Wer diese MIB
+-- weiterverwendet, muss sich dessen bewusst sein.
+--
+-- Ground truth fuer alle OIDs: firmware/src/SNMPManager.cpp/.h in diesem
+-- Repository (nicht das Zabbix-YAML-Template, das nur als Kreuzreferenz
+-- diente). Identisches OID-Schema wie das Sensormeter-Projekt (WT32-ETH01)
+-- - bewusst so gewaehlt, damit z.B. das Sensormeter-Display-Projekt beide
+-- Produktlinien mit denselben OID-Offsets abfragen kann. Der Agent ist
+-- bewusst read-only (SNMP v1/v2c, Port 161) - auch OIDs, die intern per
+-- "ReadWrite-String-Handler" abgebildet sind, lehnen SNMP SET ab
+-- (isSettable=false in der Firmware), siehe Einzelbeschreibungen unten.
+--
+-- Das Relais/Aktor (Lastenheft Abschnitt 16.2) ist bewusst NICHT Teil
+-- dieser MIB - es wird nicht ueber SNMP gesteuert/gemeldet (SNMP bleibt
+-- read-only), sondern ausschliesslich ueber Web/REST/MQTT.
+--
+-- Werte werden geraeteseitig alle 5 Sekunden aktualisiert (kein Live-Read
+-- bei jedem GET, "polling optimized") - schnelleres Pollen als 5s liefert
+-- wiederholt denselben Cache-Wert.
+--
+-- Default SNMP-Community: "public" (auf der Einstellungsseite des Geraets
+-- aenderbar, Feld "SNMP-Community").
+-- ===========================================================================
+
+SENSORMETER-POE-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-IDENTITY, OBJECT-TYPE, enterprises,
+    Integer32, Gauge32, TimeTicks
+        FROM SNMPv2-SMI
+    DisplayString
+        FROM SNMPv2-TC;
+
+smPoeMIB MODULE-IDENTITY
+    LAST-UPDATED "202607180000Z"
+    ORGANIZATION "Privates Hobby-Projekt (keine Organisation/Firma)"
+    CONTACT-INFO
+        "Privates Hobby-Projekt ohne offiziellen Support-Kanal.
+         Projekt-Repository:
+         https://github.com/peterhagelhof7-cmd/sensormeter-poe"
+    DESCRIPTION
+        "MIB fuer das Sensormeter-PoE-Projekt (Waveshare ESP32-S3-ETH+PoE,
+         DHT-22 intern + optionaler externer Sensor ueber RJ45-Modul).
+         Bildet den read-only SNMP v1/v2c Agenten unter der privaten
+         Enterprise-OID .1.3.6.1.4.1.99999 ab.
+
+         WICHTIG: Enterprise-Nummer 99999 ist eine inoffizielle, NICHT bei
+         der IANA registrierte Platzhalter-OID fuer dieses Hobby-Projekt -
+         nicht fuer oeffentliche/kommerzielle Nutzung ohne eigene,
+         registrierte Enterprise-Number (siehe
+         https://www.iana.org/assignments/enterprise-numbers). Nur fuer
+         den privaten Einsatz in einem geschlossenen Netz gedacht.
+
+         Ground truth: firmware/src/SNMPManager.cpp dieses Repositories."
+    REVISION    "202607180000Z"
+    DESCRIPTION
+        "Erste Veroeffentlichung dieser MIB-Datei (14 Objekte)."
+    ::= { enterprises 99999 }
+
+-- ---------------------------------------------------------------------------
+-- Gruppe 1: System
+-- ---------------------------------------------------------------------------
+
+smPoeSystem OBJECT-IDENTITY
+    STATUS      current
+    DESCRIPTION
+        "Systeminformationen: Anzeigename, Firmwareversion, Systemtyp."
+    ::= { smPoeMIB 1 }
+
+smPoeSystemName OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..32))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Anzeigename des Geraets, frei konfigurierbar auf der
+         Einstellungsseite ('Systemname'). Intern per SNMP-ReadWrite-
+         String-Handler abgebildet, SNMP-SET wird jedoch von der Firmware
+         abgelehnt (isSettable=false) - dieser OID ist effektiv
+         read-only."
+    ::= { smPoeSystem 1 }
+
+smPoeFirmwareVersion OBJECT-TYPE
+    SYNTAX      DisplayString
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Firmware-Versionsstring (z.B. '1.4.2'), statischer Wert aus dem
+         Build-Zeit-Makro DEVICE_FIRMWARE_VERSION."
+    ::= { smPoeSystem 2 }
+
+smPoeSystemType OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..23))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Freitext-Systemtyp/-Kategorie, konfigurierbar auf der
+         Einstellungsseite. Wie smPoeSystemName per ReadWrite-Handler mit
+         isSettable=false abgebildet - SNMP-SET wird abgelehnt."
+    ::= { smPoeSystem 3 }
+
+-- ---------------------------------------------------------------------------
+-- Gruppe 2: Netzwerk
+-- ---------------------------------------------------------------------------
+
+smPoeNetwork OBJECT-IDENTITY
+    STATUS      current
+    DESCRIPTION
+        "Netzwerkstatus: LAN-IP, WLAN-IP, WLAN-Signalstaerke."
+    ::= { smPoeMIB 2 }
+
+smPoeLanIpAddress OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (7..15))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "LAN(Ethernet)-IPv4-Adresse als druckbare Punkt-Dezimal-
+         Zeichenkette (z.B. '192.168.1.42') - NICHT als binaeres
+         IpAddress-Encoding (SNMP-Typ IpAddress); die Firmware liefert
+         hier einen reinen ASCII-String. '0.0.0.0' wenn kein LAN-Link
+         besteht."
+    ::= { smPoeNetwork 1 }
+
+smPoeWlanIpAddress OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (7..15))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "WLAN-IPv4-Adresse als druckbare Punkt-Dezimal-Zeichenkette,
+         siehe smPoeLanIpAddress fuer das Format. '0.0.0.0' wenn kein
+         WLAN-Link besteht."
+    ::= { smPoeNetwork 2 }
+
+smPoeWlanRssi OBJECT-TYPE
+    SYNTAX      Integer32
+    UNITS       "dBm"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "WLAN-Empfangsfeldstaerke (RSSI) in dBm, typischerweise negativ
+         (z.B. -55). Liefert 0, wenn kein WLAN-Link besteht - 0 dBm ist
+         physikalisch kein plausibler RSSI-Messwert und dient hier als
+         'kein WLAN' Sentinel-Wert."
+    ::= { smPoeNetwork 3 }
+
+-- ---------------------------------------------------------------------------
+-- Gruppe 3: Sensor 1 (intern)
+-- ---------------------------------------------------------------------------
+
+smPoeSensor1 OBJECT-IDENTITY
+    STATUS      current
+    DESCRIPTION
+        "Messwerte des internen Sensors (Sensor 1, DHT-22)."
+    ::= { smPoeMIB 3 }
+
+smPoeSensor1Name OBJECT-TYPE
+    SYNTAX      DisplayString
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Fester Anzeigename fuer Sensor 1, statisch 'Intern'."
+    ::= { smPoeSensor1 1 }
+
+smPoeSensor1Temperature OBJECT-TYPE
+    SYNTAX      Integer32
+    UNITS       "0.1 Grad Celsius"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Temperatur von Sensor 1 in Grad Celsius, als Ganzzahl mit
+         Faktor 10 uebertragen (z.B. 235 = 23.5 Grad C). Liefert 0, wenn
+         keine gueltige Sensorlesung vorliegt - ueber SNMP nicht von
+         einer echten 0.0-Grad-Messung unterscheidbar."
+    ::= { smPoeSensor1 2 }
+
+smPoeSensor1Humidity OBJECT-TYPE
+    SYNTAX      Integer32
+    UNITS       "0.1 Prozent"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Relative Luftfeuchtigkeit von Sensor 1 in Prozent, als Ganzzahl
+         mit Faktor 10 uebertragen (z.B. 455 = 45.5 %). 0 bei
+         ungueltiger Lesung, siehe smPoeSensor1Temperature."
+    ::= { smPoeSensor1 3 }
+
+-- ---------------------------------------------------------------------------
+-- Gruppe 4: Sensor 2 (extern, RJ45-Modul, optional)
+-- ---------------------------------------------------------------------------
+
+smPoeSensor2 OBJECT-IDENTITY
+    STATUS      current
+    DESCRIPTION
+        "Messwerte des optionalen externen Sensors (Sensor 2) ueber ein
+         RJ45-Steckmodul. Nur sinnvoll befuellt, wenn Sensor 2 aktiviert
+         ist (Einstellungsseite 'Sensor 2 aktiv' - manuell oder per
+         RJ45-Modul-Auto-Erkennung waehrend des Boot-Countdowns)."
+    ::= { smPoeMIB 4 }
+
+smPoeSensor2Name OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..24))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Frei konfigurierbarer Anzeigename fuer Sensor 2. Wie
+         smPoeSystemName per ReadWrite-Handler mit isSettable=false
+         abgebildet - SNMP-SET wird abgelehnt."
+    ::= { smPoeSensor2 1 }
+
+smPoeSensor2Temperature OBJECT-TYPE
+    SYNTAX      Integer32
+    UNITS       "0.1 Grad Celsius"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Temperatur von Sensor 2 in Grad Celsius x10, siehe
+         smPoeSensor1Temperature fuer das Format. Liefert 0, wenn Sensor
+         2 deaktiviert ist ODER wenn das angeschlossene Modul (z.B.
+         BMP280/BH1750/ENS160) gar keine Temperatur misst (reines Druck-/
+         Lux-/Luftguete-Modul) - beide Faelle sind ueber SNMP nicht
+         unterscheidbar."
+    ::= { smPoeSensor2 2 }
+
+smPoeSensor2Humidity OBJECT-TYPE
+    SYNTAX      Integer32
+    UNITS       "0.1 Prozent"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Relative Luftfeuchtigkeit von Sensor 2 in Prozent x10, siehe
+         smPoeSensor2Temperature fuer die 0-Wert-Faelle."
+    ::= { smPoeSensor2 3 }
+
+-- ---------------------------------------------------------------------------
+-- Gruppe 5: Status
+-- ---------------------------------------------------------------------------
+
+smPoeStatus OBJECT-IDENTITY
+    STATUS      current
+    DESCRIPTION
+        "Geraetestatus: Laufzeit, freier Heap-Speicher."
+    ::= { smPoeMIB 5 }
+
+smPoeUptime OBJECT-TYPE
+    SYNTAX      TimeTicks
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Geraete-Laufzeit seit dem letzten Boot in Hundertstelsekunden
+         (Standard-TimeTicks-Einheit), abgeleitet aus
+         esp_timer_get_time(). KEIN sysUpTime-Objekt aus der
+         Standard-SNMPv2-MIB (.1.3.6.1.2.1.1.3) - dieser Agent
+         implementiert nur den privaten Zweig, nicht MIB-II."
+    ::= { smPoeStatus 1 }
+
+smPoeFreeHeap OBJECT-TYPE
+    SYNTAX      Gauge32
+    UNITS       "Bytes"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Freier Heap-Speicher in Bytes (ESP.getFreeHeap())."
+    ::= { smPoeStatus 2 }
+
+END
