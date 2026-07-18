@@ -40,11 +40,19 @@ phasenbasiert auf SemVer) siehe
 
 | Datei | Inhalt |
 |---|---|
-| [docs/sensormeter-poe-onepager.html](docs/sensormeter-poe-onepager.html) | One-Pager: Projektübersicht, Architektur, Kennzahlen auf einer Seite |
+| [Schnellstart](https://github.com/peterhagelhof7-cmd/sensormeter-family/blob/main/docs/schnellstart.pdf) (im `sensormeter-family`-Repo) | Gerät in unter 10 Minuten ans Laufen bringen: Strom, Erststart, Netzwerk, erste Anmeldung — für Sensormeter, Sensormeter WLAN und Sensormeter PoE gemeinsam |
+| [docs/systemuebersicht.pdf](docs/systemuebersicht.pdf) | Familienweite Systemübersicht: Funktionsumfang, Zusammenspiel, Zabbix-Anbindung aller vier Projekte (identisch in allen vier Repos) |
+| [docs/sensormeter-poe-onepager.pdf](docs/sensormeter-poe-onepager.pdf) ([HTML](docs/sensormeter-poe-onepager.html)) | One-Pager: Projektübersicht, Architektur, Kennzahlen auf einer Seite |
+| [docs/admin-guide.pdf](docs/admin-guide.pdf) ([HTML](docs/admin-guide.html)) | Admin-Guide: Inbetriebnahme, OLED-Anzeige, Weboberfläche, Fallback-Access-Point, Werksreset, SNMP/Syslog/MQTT/Branding |
+| [docs/implementierungsplan.html](docs/implementierungsplan.html) | Visueller Implementierungsplan: Reihenfolge P0–P8 vom Prototyp zur vollständigen Firmware (lokal im Browser öffnen) |
 | [docs/projektfamilie.html](docs/projektfamilie.html) | Architekturskizze: wie die vier Sensormeter-Projekte zusammenhängen |
 | [docs/lastenheft.txt](docs/lastenheft.txt) | Fachliche Anforderungen: Webseite, Einstellungen, SNMP-OIDs, RJ45-Modularanschluss, Aktor, MQTT |
 | [docs/pflichtenheft.txt](docs/pflichtenheft.txt) | Technische Umsetzung: Tasks, Softwaremodule, Speicherlayout |
-| [docs/verdrahtungsplan.html](docs/verdrahtungsplan.html) | Pinbelegung + Verdrahtungsschema (ungeprüft, siehe Hinweis dort) |
+| [docs/verdrahtungsschema.pdf](docs/verdrahtungsschema.pdf) ([HTML](docs/verdrahtungsschema.html)) | Vollständiges Verdrahtungsschema (Legende, Hauptübersicht, Bauteile-/Pinbelegungstabelle) |
+| [docs/verdrahtungsplan.html](docs/verdrahtungsplan.html) | Interaktive Kurzfassung: Klick auf einen Draht hebt ihn hervor und zeigt Start-/Zielpin |
+| [docs/stueckliste.md](docs/stueckliste.md) | Bauteile pro Gerät + RJ45-Pinbelegung-Referenz |
+| [docs/stromversorgung.md](docs/stromversorgung.md) | Strombudget pro Komponente/Gerät, USB-C- und PoE-Versorgungsweg |
+| [docs/systemlast.md](docs/systemlast.md) | CPU/RAM/Flash-Last (gemessen), Zielwert-Abgleich gegen Pflichtenheft 8 |
 | [docs/entscheidungen.md](docs/entscheidungen.md) | Entscheidungsprotokoll: Toolchain (W5500/pioarduino), Namenskollision, Paket-Isolation, GPIO-Vorsicht |
 | [docs/PRTG.md](docs/PRTG.md) | PRTG-Integration: OIDs, Geräte-Template-Import, Sensor-Übersicht |
 | [docs/prtg-template-sensormeter-poe.odt](docs/prtg-template-sensormeter-poe.odt) | Fertiges PRTG-Geräte-Template für Auto-Discovery |
