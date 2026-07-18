@@ -31,6 +31,23 @@ DisplayManager::DisplayManager(DataManager& dataManager, ConfigManager& configMa
 
 void DisplayManager::begin() {
   Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
+
+  // Adafruit_SSD1306::begin() prueft selbst NICHT, ob am I2C-Bus ueberhaupt
+  // ein Geraet antwortet - es gibt nur bei einem malloc()-Fehler false
+  // zurueck, sonst immer true ("Success"), unabhaengig vom tatsaechlichen
+  // I2C-Erfolg (bekannte Bibliotheks-Einschraenkung, siehe
+  // docs/entscheidungen.md). Ohne diesen expliziten Vorab-Probe wuerde
+  // _initialized faelschlich true werden, drawBootScreen()/loop() wuerden
+  // danach dauerhaft gegen ein nicht vorhandenes Display schreiben - erster
+  // echter Boot ohne gestecktes Display zeigte genau das: endlose
+  // "i2c_master_transmit failed"-Spam, jede loop()-Runde erneut.
+  Wire.beginTransmission(SSD1306_I2C_ADDRESS);
+  if (Wire.endTransmission() != 0) {
+    _initialized = false;
+    Serial.println("[DISPLAY] SSD1306 nicht gefunden (I2C 0x3C) - Anzeige deaktiviert");
+    return;
+  }
+
   _initialized = display.begin(SSD1306_SWITCHCAPVCC, SSD1306_I2C_ADDRESS);
   if (!_initialized) {
     Serial.println("[DISPLAY] SSD1306 nicht gefunden (I2C 0x3C) - Anzeige deaktiviert");

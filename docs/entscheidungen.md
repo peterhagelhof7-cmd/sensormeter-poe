@@ -914,3 +914,84 @@ den echten Tail-Grenzfall gebraucht. `pio run` (PowerShell) erfolgreich
 (Flash 22,5%/RAM 19,8%, praktisch unveraendert). Noch nicht auf echter
 Hardware geflasht/per echtem OTA-Upload getestet - kein Board in dieser
 Sitzung angeschlossen.
+
+## 2026-07-18 — Erster echter Board-Bringup: vier reale Bugs gefunden und behoben
+
+Erstes physisches sensormeter-poe-Board (Waveshare ESP32-S3-ETH+PoE,
+nur interner DHT bestueckt, noch kein internes/externes OLED gesteckt)
+diese Sitzung erstmals angeschlossen und geflasht (COM8, natives USB,
+automatischer Upload funktioniert ohne manuellen BOOT/EN-Handgriff -
+anders als bei sensormeter/WT32-ETH01). Vier voneinander unabhaengige,
+echte Bugs aufgedeckt, jeder erst durch den vorherigen Fix sichtbar
+geworden:
+
+**1. PSRAM-Init schlaegt fehl** (`quad_psram: PSRAM chip is not
+connected, or wrong PSRAM line mode`, Guru-Meditation-Crash noch vor
+jedem eigenen Code): weder `opi`- noch `qio`-Modus (`board_build.
+psram_type`) funktionierten auf diesem konkreten Board. `esptool`s
+Chip-Erkennung meldet zwar "Embedded PSRAM 8MB" (Efuse-Feature-Flag),
+die tatsaechliche Initialisierung schlaegt aber in beiden Bus-Modi fehl.
+PSRAM komplett deaktiviert (`board_build.psram_type` entfernt,
+`-D BOARD_HAS_PSRAM` raus) - Anwendungscode nutzt PSRAM ohnehin nirgends
+direkt (`ps_malloc`/`MALLOC_CAP_SPIRAM` kommt im gesamten `src/` nicht
+vor). Die seit laengerem offene GPIO33/34-PSRAM-Frage bleibt trotzdem
+offen (echte Ursache - defekte Bestueckung, falsche Verdrahtung oder
+grundsaetzlich kein PSRAM auf dieser Boardvariante - nicht ermittelt,
+nur der Software-Workaround).
+
+**2. SNMPManager-Konstruktor crasht** (`Guru Meditation Error:
+StoreProhibited`, `std::list::_M_hook`, noch vor `app_main()`/`setup()`,
+per `addr2line` dekodiert): `SNMPAgent` (SNMP_Agent-Bibliothek,
+`SNMP_Agent.h`) registriert sich im eigenen Konstruktor in einer
+STATISCHEN Klassenmitglied-Liste `SNMPAgent::agents`
+(`SNMPAgent::agents.push_back(this)`), die in einer anderen
+Uebersetzungseinheit (`SNMP_Agent.cpp`) definiert ist. Die Reihenfolge
+globaler C++-Konstruktoren ueber Dateigrenzen hinweg ist im Standard
+NICHT garantiert ("static initialization order fiasco") - auf diesem
+Board (Arduino-ESP32 3.x/pioarduino, anderer Compiler/Linker als
+sensormeter/sensormeter-wlan) lief `SNMPManager`s globaler Konstruktor
+in `main.cpp` vor dem der Bibliotheks-Liste, Schreibzugriff auf einen
+noch nicht konstruierten `std::list` fuehrte zum Absturz. Bei sm/sm-wlan
+lief es bisher nur zufaellig in der richtigen Reihenfolge (aelterer
+Toolchain, andere Konstruktor-Reihenfolge). Fix: `snmpManager` von einem
+globalen Objekt auf einen Pointer umgestellt, der erst am Ende von
+`setup()` per `new` angelegt wird - zu diesem Zeitpunkt sind garantiert
+alle globalen Konstruktoren (auch die der Bibliothek) bereits
+durchgelaufen, unabhaengig von der Link-Reihenfolge. Nur `main.cpp`
+betroffen (`snmpManager.begin()`/`.loop()` -> `snmpManager->begin()`/
+`->loop()`), keine andere Datei referenziert das Objekt.
+
+**3. loopTask-Stack-Overflow** (`Stack canary watchpoint triggered
+(loopTask)`, Core 1, erst nach Fix 2 sichtbar geworden - vorher crashte
+das Geraet schon vorher): identischer Befund und Fix wie bei sensormeter
+(WT32-ETH01) - dort zuerst gefunden, hier beim ersten echten Boot dieses
+Projekts unabhaengig reproduziert. `SET_LOOP_TASK_STACK_SIZE(16384)`
+uebernommen (Standard-Arduino-ESP32-Stack von 8192 Byte reicht bei der
+Zahl gleichzeitig in `loop()` laufender Manager nicht mehr).
+
+**4. SSD1306-Anzeige "initialisiert" ohne Geraet** (kein Crash, aber
+endlose `i2c_master_transmit failed`-Spam-Kaskade jede `loop()`-Runde,
+erst nach Fix 3 als eigenstaendiges Problem sichtbar geworden):
+`Adafruit_SSD1306::begin()` prueft nach Bibliotheks-Quellcode NICHT, ob
+am I2C-Bus ueberhaupt ein Geraet antwortet - es gibt nur bei einem
+`malloc()`-Fehler `false` zurueck, sonst immer `true` ("Success"),
+unabhaengig vom tatsaechlichen I2C-Erfolg (bekannte Einschraenkung
+dieser Bibliothek). Ohne gestecktes internes Display wurde `_initialized`
+faelschlich `true`, `DisplayManager::loop()` versuchte danach jede
+50ms-Runde erneut, gegen ein nicht vorhandenes Display zu zeichnen -
+alle Schreibversuche schlugen fehl, aber ohne Ende. `ExternalDisplayManager`
+(SH1107) ist NICHT betroffen - `Adafruit_SH1107::begin()` prueft den
+Rueckgabewert von `oled_commandList()` korrekt und gibt bei Fehler
+`false` zurueck. Fix: expliziter `Wire.beginTransmission(addr);
+Wire.endTransmission() == 0`-Probe vor `display.begin()` in
+`DisplayManager::begin()` - nur bei echtem ACK wird die Bibliothek
+ueberhaupt aufgerufen.
+
+**Ergebnis:** alle vier Fixes zusammen geflasht, per `curl` gegen
+`/api/status` verifiziert (nicht per seriellem Log - natives USB-CDC
+verliert offenbar Log-Zeilen kurz nach einem RTS-ausgeloesten Reset,
+bevor der Host die Neuanmeldung des USB-Geraets abgeschlossen hat,
+eigene Tooling-Einschraenkung, kein Firmware-Problem):
+`{"systemName":"Sensormeter PoE","firmwareVersion":"0.9.0-rc4",
+"uptimeSeconds":24,"freeHeap":218808,"timeSynced":true}` - Geraet laeuft
+sauber, ueber Ethernet erreichbar (`192.168.178.108`, per PoE-Modul).

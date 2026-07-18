@@ -71,6 +71,18 @@
 // ihn nicht wegoptimiert.
 const char kFirmwareIdentityMarker[] = "SM-FW-ID:" FIRMWARE_PROJECT_ID ":" DEVICE_FIRMWARE_VERSION ":SM-FW-END";
 
+// Arduino-ESP32-Standardstack fuer loopTask ist 8192 Byte (siehe
+// framework-arduinoespressif32/cores/esp32/main.cpp) - reicht bei der
+// mittlerweile gewachsenen Zahl gleichzeitig in loop() laufender Manager
+// (SNMP, MQTT, Syslog, zwei Displays, mehrere Sensor-Bibliotheken) nicht
+// mehr: reproduzierbarer Crash "Guru Meditation Error ... Stack canary
+// watchpoint triggered (loopTask)" beim ersten echten Hardware-Boot dieser
+// Firmware-Version, siehe docs/entscheidungen.md. Identischer Befund und
+// Fix wie bei sensormeter (WT32-ETH01) - dort zuerst gefunden, hier beim
+// ersten echten Boot dieses Projekts ebenfalls reproduziert. Verdoppelt
+// auf 16 KB - Standardfix fuer dieses Panic-Muster bei Arduino-ESP32.
+SET_LOOP_TASK_STACK_SIZE(16384);
+
 DataManager dataManager;
 ConfigManager configManager;
 StorageManager storageManager;
@@ -89,7 +101,20 @@ ExternalDisplayManager externalDisplayManager(dataManager, configManager, networ
 OtaManager otaManager;
 WebServerManager webServerManager(dataManager, configManager, networkManager, otaManager, relayManager,
                                    sensorDetector, contactManager, brandingManager);
-SNMPManager snmpManager(dataManager, configManager, networkManager);
+// Bewusst ein Pointer, erst in setup() per "new" angelegt (siehe dort) -
+// nicht wie die uebrigen Module ein globales Objekt mit sofortiger
+// Konstruktion. Grund: SNMPAgent (SNMP_Agent-Bibliothek, SNMPManager.h)
+// registriert sich in seinem Konstruktor in einer STATISCHEN
+// Klassenmitglied-Liste (SNMPAgent::agents, in einer anderen
+// Uebersetzungseinheit definiert) - die Reihenfolge globaler Konstruktoren
+// ueber Dateigrenzen hinweg ist im C++-Standard nicht garantiert. Auf
+// diesem Board (Arduino-ESP32 3.x/pioarduino) lief SNMPManagers
+// Konstruktor vor dem der Bibliotheks-Liste, Schreibzugriff auf einen noch
+// nicht konstruierten std::list fuehrte zu einem Absturz (StoreProhibited)
+// noch vor app_main()/setup() - siehe docs/entscheidungen.md. Durch die
+// verzoegerte Konstruktion in setup() sind zu diesem Zeitpunkt garantiert
+// alle globalen Konstruktoren (auch die der Bibliothek) bereits gelaufen.
+SNMPManager* snmpManager = nullptr;
 SyslogManager syslogManager(dataManager, configManager, networkManager);
 MqttManager mqttManager(dataManager, configManager, networkManager, relayManager);
 
@@ -393,7 +418,8 @@ void setup() {
 
   networkManager.begin();     // setzt Zustand auf INIT, dann NETWORK_CHECK
   webServerManager.begin();   // async - kein eigener loop()-Aufruf noetig
-  snmpManager.begin();
+  snmpManager = new SNMPManager(dataManager, configManager, networkManager);
+  snmpManager->begin();
 
   // Task-Watchdog-Timer (TWDT), siehe docs/entscheidungen.md "Task-
   // Watchdog (TWDT)": Arduino-ESP32 3.x (dieses Projekt, anders als
@@ -436,7 +462,7 @@ void loop() {
   buttonManager.loop();
   displayManager.loop();
   externalDisplayManager.loop();
-  snmpManager.loop();
+  snmpManager->loop();  // setup() ist zu diesem Zeitpunkt immer schon durchgelaufen (Arduino-Framework-Garantie)
   syslogManager.loop();
   mqttManager.loop();
 
