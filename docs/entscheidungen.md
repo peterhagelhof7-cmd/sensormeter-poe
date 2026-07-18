@@ -1030,3 +1030,49 @@ unterbrochenen `pio run --target upload`-Versuch immer erst
 auf eine Hardware-/Konfigurationsursache geschlossen wird - passt zum
 bereits bekannten Component-Manager-Cache-Muster bei ESP-BMC (dort:
 `REQUIRES`-Aenderungen brauchen ebenfalls einen manuellen Cache-Wipe).
+
+## 2026-07-18, spaeter am selben Tag — Zeitzonen-Bug identisch zu sensormeter, aber nie hierher portiert
+
+Nutzer bemerkte (remote, ohne physischen Zugriff auf das Geraet):
+`values.csv`-Zeitstempel wirkten falsch bzw. es schien kein aktueller
+Wert geloggt zu werden. Diagnose komplett per HTTP-API (kein serieller
+Zugriff noetig, Geraet war nicht vor Ort erreichbar):
+
+- `/api/status`s `time`-Feld (roher Unix-Epoch) war durchgehend korrekt.
+- `values.csv` zeigte nach einem per `/api/reboot` ausgeloesten
+  Software-Reset einen Zeitstempel ca. 2 Stunden VOR der echten Zeit
+  (z.B. `15:19:17` statt real `17:19`) - klassisches UTC/CEST-
+  Differenzmuster.
+
+Root Cause identisch zum bereits bekannten sensormeter-Bug (siehe
+dortiges `docs/entscheidungen.md`), aber nie nach sensormeter-poe
+uebertragen: `TimeManager::loop()` prueft `if (!_synced &&
+isTimeSynced())` - die ESP32-Hardware-RTC ueberlebt einen Software-Reset
+(`ESP.restart()`), daher liefert `isTimeSynced()` (reine Epoch-
+Plausibilitaetspruefung) nach jedem Neustart ausser dem allerersten
+sofort `true`. Der "bereits synchronisiert"-Schnellpfad ruft
+`startSyncAttempt()`/`configTzTime()` in diesem Bootzyklus dann gar
+nicht mehr auf - die POSIX-TZ-Umgebungsvariable (reiner Prozessspeicher,
+anders als die Hardware-RTC bei jedem Neustart geloescht) faellt auf UTC
+zurueck, obwohl der Epoch-Wert selbst korrekt bleibt.
+
+Fix identisch zu sensormeter uebernommen: `TimeManager::begin()` ruft
+jetzt unbedingt `setenv("TZ", TZ_GERMANY, 1); tzset();` auf, unabhaengig
+vom Sync-Status - TZ wird ab sofort bei jedem Boot gesetzt, bevor
+ueberhaupt geprueft wird, ob schon eine gueltige Zeit vorliegt.
+
+**Live verifiziert, komplett remote per HTTP** (kein physischer Zugriff
+verfuegbar): Fix gebaut und ueber die bereits bestehende
+COM8-USB-Verbindung geflasht, danach per wiederholten `/api/status`-
+Abfragen bestaetigt, dass das Geraet wieder online kam. `values.csv`
+zeigt danach sowohl neue als auch (rueckwirkend neu formatierte) alte
+Zeilen korrekt: `17:24:31` bei tatsaechlicher Zeit ~17:25 - kein
+UTC-Versatz mehr.
+
+**Separat beobachtet, bewusst NICHT gefixt**: die erste
+`maybeRecordHourValue()`-Zeile nach einem Neustart kann leere
+Sensorwerte haben, falls der allererste DHT-Leseversuch (der im selben
+`loop()`-Aufruf laeuft) noch fehlschlaegt - der Stundenslot ist dann bis
+zur naechsten Stunde verbraucht. Identischer Code/identisches Verhalten
+in sensormeter, dort nie als Bug behandelt - familienweite Eigenschaft,
+nicht Ursache der urspruenglich gemeldeten Beobachtung.

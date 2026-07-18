@@ -16,6 +16,20 @@ TimeManager::TimeManager(DataManager& dataManager, NetManager& networkManager)
     : _data(dataManager), _network(networkManager) {}
 
 void TimeManager::begin() {
+  // TZ unabhaengig vom Sync-Status setzen: die ESP32-RTC ueberlebt einen
+  // Software-Reset (ESP.restart()), daher ist isTimeSynced() (reine
+  // Epoch-Pruefung) nach jedem Neustart sofort wieder true - loop()'s
+  // "bereits synchronisiert"-Schnellpfad ruft dann startSyncAttempt()/
+  // configTzTime() in diesem Bootzyklus gar nicht mehr auf, und ohne den
+  // faellt die POSIX-TZ-Umgebungsvariable auf UTC zurueck (Prozessspeicher,
+  // wird bei jedem Neustart geloescht, anders als die Hardware-RTC). Effekt:
+  // Uhrzeit/Log zeigen nach jedem Neustart ausser dem allerersten UTC statt
+  // Ortszeit an, obwohl der Epoch-Wert selbst korrekt ist. Identischer Bug
+  // wie bei sensormeter (siehe dortiges docs/entscheidungen.md), hier beim
+  // ersten echten Boot dieses Projekts unabhaengig reproduziert (values.csv
+  // zeigte nach einem Software-Reset einen ca. 2h zu fruehen Zeitstempel).
+  setenv("TZ", TZ_GERMANY, 1);
+  tzset();
   Serial.println("[TIME] Grundgeruest bereit, erster NTP-Versuch 60s nach Boot");
   _nextAttemptDueMillis = millis() + FIRST_SYNC_DELAY_MS;
 }
