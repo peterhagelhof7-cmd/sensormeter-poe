@@ -1161,3 +1161,17 @@ Betriebszustand widerspiegelt. Kein Sicherheitsgewinn (weiterhin
 Community-String im Klartext) - rein pragmatische Umstellung, siehe
 sensormeter-display fuer die vorher geprueften und verworfenen
 SNMPv3-Alternativen.
+
+## 2026-07-21 — I2C-Vorab-Probe fuer ExternalDisplayManager nachgezogen (Fix umgesetzt)
+
+Der oben als "zurueckgestellt" dokumentierte Fix ist jetzt eingebaut:
+`ExternalDisplayManager::begin()` prueft jetzt wie `DisplayManager::begin()`
+per `Wire.beginTransmission(EXTERNAL_DISPLAY_I2C_ADDRESS)`/
+`endTransmission()` vor, ob am Bus ueberhaupt ein Geraet antwortet, bevor
+`display.begin()` aufgerufen wird - vermeidet die rohen
+"i2c_master_transmit failed"-HAL-Zeilen bei fehlendem externem SH1107.
+
+`pio run -e esp32-s3-eth` erfolgreich (Flash 22,5%, RAM 19,3%,
+Speicherbedarf praktisch unveraendert). OTA-Bin unter
+`firmware/.pio/build/esp32-s3-eth/firmware.bin` bereitgestellt - Nutzer
+laedt selbst per OTA hoch, nicht ueber diese Sitzung geflasht/verifiziert.

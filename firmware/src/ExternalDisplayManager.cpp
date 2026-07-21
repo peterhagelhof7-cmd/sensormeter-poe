@@ -25,6 +25,22 @@ ExternalDisplayManager::ExternalDisplayManager(DataManager& dataManager, ConfigM
 
 void ExternalDisplayManager::begin() {
   Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
+
+  // Analog zu DisplayManager::begin() (internes SSD1306): Adafruit_SH110X::
+  // begin() prueft selbst nicht, ob am I2C-Bus ueberhaupt ein Geraet
+  // antwortet, sondern faehrt bei Nichtantworten direkt in die volle
+  // Init-Sequenz - das erzeugte bislang zwei rohe "i2c_master_transmit
+  // failed"-Zeilen auf HAL-Ebene bei jedem Boot ohne gestecktes externes
+  // Modul (dem Normalfall, da optional), bevor die eigentliche
+  // "nicht gefunden"-Meldung unten lief. Vorab-Probe vermeidet das - siehe
+  // docs/entscheidungen.md (2026-07-21).
+  Wire.beginTransmission(EXTERNAL_DISPLAY_I2C_ADDRESS);
+  if (Wire.endTransmission() != 0) {
+    _initialized = false;
+    Serial.println("[EXT-DISPLAY] Kein externes SH1107 gefunden (I2C 0x3D) - optionales Modul, kein Fehler");
+    return;
+  }
+
   _initialized = display.begin(EXTERNAL_DISPLAY_I2C_ADDRESS, true);
   if (!_initialized) {
     // Kein Fehler, sondern der Normalfall ohne gestecktes externes
