@@ -1145,3 +1145,19 @@ Beim Gegenpruefen festgestellt: **sensormeter (sm) hat das gleiche Problem
 zusaetzlich auch beim INTERNEN Display** - dort wurde der Vorab-Probe-Fix
 nie zurueckportiert, siehe eigener Eintrag in
 `sensormeter/repo/docs/entscheidungen.md`.
+
+## 2026-07-21 — Lastenheft SNMP-Vorgabe v1 -> v2c (kein Code-Aenderungsbedarf hier)
+
+Nutzerentscheidung (Details/Begruendung siehe
+`sensormeter-display/repo/docs/entscheidungen.md`, selber Tag): Client
+(sensormeter-display) stellt seine SNMP-Anfragen von v1 auf v2c um.
+Auf dieser Agenten-Seite ist **keine Code-Aenderung** noetig - die
+eingesetzte Bibliothek `SNMP_Agent@2.1.0` verhandelt die Version bereits
+pro eingehender Anfrage automatisch (`SNMPPacket.cpp` liest sie direkt
+aus dem Paket), `SNMPManager.cpp` referenziert `SNMP_VERSION` an keiner
+Stelle. `docs/lastenheft.txt` Abschnitt 7 von "SNMP (v1 READ ONLY)" auf
+"SNMP (v2c READ ONLY)" aktualisiert, damit die Spec den tatsaechlichen
+Betriebszustand widerspiegelt. Kein Sicherheitsgewinn (weiterhin
+Community-String im Klartext) - rein pragmatische Umstellung, siehe
+sensormeter-display fuer die vorher geprueften und verworfenen
+SNMPv3-Alternativen.

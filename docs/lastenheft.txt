@@ -196,7 +196,7 @@ Firmware:
 
 ------------------------------------------------------------
 
-7. SNMP (v1 READ ONLY)
+7. SNMP (v2c READ ONLY, bis 2026-07-21 v1 - siehe docs/entscheidungen.md)
 
 Bewusst dieselbe Basis-OID wie Sensormeter und Sensormeter WLAN, damit
 ein Sensormeter-Display alle drei Produktvarianten ohne Codeänderung
