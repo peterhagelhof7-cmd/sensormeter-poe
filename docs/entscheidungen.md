@@ -1112,3 +1112,36 @@ Logzeile, kein Blocker mehr. `board_build.psram_type = opi` bleibt
 gesetzt (schadet nicht, hilft wenn PSRAM diesmal doch initialisiert) -
 kein weiterer Handlungsbedarf, ausser ein zukuenftiges Feature braucht
 PSRAM wirklich zuverlaessig.
+
+## 2026-07-21 — Bekanntes Problem (noch nicht gefixt): ExternalDisplayManager ohne I2C-Vorab-Probe
+
+Beim Live-Check am angeschlossenen Geraet ("ERSTER-PoE") im seriellen
+Boot-Log zwei `i2c_master_transmit failed: ESP_ERR_INVALID_STATE`-Zeilen
+auf HAL-Ebene gesehen, bevor die App selbst "[EXT-DISPLAY] Kein externes
+SH1107 gefunden" meldet. Root Cause identifiziert: anders als
+`DisplayManager::begin()` (internes SSD1306, 0x3C), das seit dem
+frueheren Fix (siehe Eintrag zum "endlosen i2c_master_transmit
+failed-Spam") erst per `Wire.beginTransmission()`/`endTransmission()`
+prueft, ob am Bus ueberhaupt ein Geraet antwortet, ruft
+`ExternalDisplayManager::begin()` (externes SH1107, 0x3D) die
+Adafruit-Bibliothek direkt auf (`display.begin(EXTERNAL_DISPLAY_I2C_ADDRESS,
+true)`, `ExternalDisplayManager.cpp` Zeile 28) - ohne den gleichen
+Vorab-Probe.
+
+Konkreter Anlass des Live-Fundes war ein Wackelkontakt am Nutzer-seitigen
+Board, kein Firmware-Bug - das eigentliche Symptom bleibt aber unabhaengig
+davon bestehen: bei JEDEM Boot ohne gestecktes externes SH1107-Modul (dem
+Normalfall fuer die meisten Geraete, da optional) erzeugen diese zwei
+HAL-Zeilen unnoetigen, alarmierend wirkenden Log-Lärm. **Kein
+Funktionsbug** (kein Endlos-Spam in `loop()` wie beim urspruenglichen,
+bereits gefixten Bug - `begin()` laeuft nur einmalig in `setup()`), nur
+Inkonsistenz zum bereits saubereren internen Display.
+
+**Auf Nutzerwunsch zurueckgestellt, noch nicht behoben.** Fix waere
+analog zum internen Display: `Wire.beginTransmission(EXTERNAL_DISPLAY_I2C_ADDRESS)`
++ `endTransmission()` vor `display.begin()` in `ExternalDisplayManager::begin()`.
+
+Beim Gegenpruefen festgestellt: **sensormeter (sm) hat das gleiche Problem
+zusaetzlich auch beim INTERNEN Display** - dort wurde der Vorab-Probe-Fix
+nie zurueckportiert, siehe eigener Eintrag in
+`sensormeter/repo/docs/entscheidungen.md`.
