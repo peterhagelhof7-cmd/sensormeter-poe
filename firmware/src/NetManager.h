@@ -5,6 +5,12 @@
 #include "ConfigManager.h"
 #include "DataManager.h"
 
+// Vorwaertsdeklaration statt <lwip/netif.h> hier einzubinden - genau wie bei
+// <ETH.h> (siehe unten) soll dieser Header moeglichst wenig low-level
+// Netzwerk-Includes nach aussen tragen, ein Zeiger-Typ braucht die
+// vollstaendige Definition nicht.
+struct netif;
+
 // Treibt den Boot-Zustandsautomaten an (docs/lastenheft.txt Abschnitt 8+12):
 //   BOOT -> INIT -> NETWORK_CHECK -> RUN_NORMAL bzw. FALLBACK_MODE
 //
@@ -52,6 +58,24 @@ class NetManager {
   bool hasStaticConfig() const;
   void beginDhcpFallbackTest();
   void restoreConfiguredAddresses();
+
+  // Setzt lwIP's globalen Default-Netif fest auf "lan" oder "wlan" und
+  // liefert den bisherigen Default zurueck - fuer temporaeres Pinning
+  // waehrend eines Verbindungsversuchs auf einem bestimmten Interface
+  // (MqttManager::ensureConnected(), TimeManager's LAN-vor-WLAN-Fehlerkette).
+  // lwIP entscheidet das ausgehende Interface anhand des Default-Netif,
+  // sobald die Ziel-IP nicht im direkt angeschlossenen Subnetz eines
+  // Interfaces liegt - ohne dieses Pinning wuerde z.B. NTP einfach das
+  // zuletzt verbundene Interface benutzen (das Arduino-Core setzt es bei
+  // jedem GOT_IP-Event automatisch neu), auch wenn ein anderes Interface
+  // gerade zuverlaessiger waere. Andere Subsysteme sollen von einer
+  // einzelnen Pinning-Anfrage nicht dauerhaft betroffen sein - Aufrufer
+  // muessen daher nach ihrem Versuch stets restoreDefaultInterface()
+  // aufrufen. Liefert nullptr, wenn das gewaehlte Interface (noch) keinen
+  // Netif-Handle/-Index hat (z.B. WLAN nicht konfiguriert) - der Aufrufer
+  // laesst den Default dann unveraendert.
+  static struct netif* pinDefaultInterface(const String& choice);
+  static void restoreDefaultInterface(struct netif* previous);
 
   // Leitet aus dem frei eingebbaren Systemnamen (ConfigManager) einen
   // DNS-/mDNS-tauglichen Hostnamen ab (nur a-z/0-9/-, keine Leerzeichen/

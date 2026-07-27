@@ -1175,3 +1175,22 @@ per `Wire.beginTransmission(EXTERNAL_DISPLAY_I2C_ADDRESS)`/
 Speicherbedarf praktisch unveraendert). OTA-Bin unter
 `firmware/.pio/build/esp32-s3-eth/firmware.bin` bereitgestellt - Nutzer
 laedt selbst per OTA hoch, nicht ueber diese Sitzung geflasht/verifiziert.
+
+## 2026-07-23 — Taeglicher automatischer Neustart (portiert aus sensormeter/repo)
+
+Identischer `RebootManager` wie im Sensormeter-Projekt (WT32-ETH01)
+uebernommen: prueft bei jedem `loop()`-Durchlauf, ob `rebootScheduleEnabled`
+gesetzt ist und die aktuelle lokale Uhrzeit (`localtime_r`) mit
+`rebootHour`/`rebootMinute` uebereinstimmt - falls ja, `ESP.restart()`.
+Ausloesung nur bei per NTP synchronisierter Uhr (`isTimeSynced()` aus
+`TimeUtils.h`, hier ebenfalls bereits vorhanden). Kein persistentes "heute
+schon ausgeloest"-Flag noetig, siehe Begruendung im Sensormeter-Repo -
+gilt hier identisch.
+
+Konfiguration ueber die bestehende Einstellungsseite (neuer Block
+"Automatischer Neustart", `<input type="time">`) sowie `/api/config`
+GET/POST, neues `<reboot enabled="" hour="" minute=""/>`-Element in
+`config.xml` (Default: aus, 03:00).
+
+`pio run -e esp32-s3-eth` erfolgreich (Flash 22,5%, RAM 19,3%). Noch nicht
+per OTA auf echte Hardware ausgerollt/verifiziert.

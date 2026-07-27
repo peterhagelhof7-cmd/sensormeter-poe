@@ -186,6 +186,15 @@ bool ConfigManager::importXml(const String& xml) {
     if (cfg.extDisplaySlideSec > 60) cfg.extDisplaySlideSec = 60;
   }
 
+  const XMLElement* reboot = root->FirstChildElement("reboot");
+  if (reboot) {
+    cfg.rebootScheduleEnabled = parseBool(reboot->Attribute("enabled"), cfg.rebootScheduleEnabled);
+    int hour = reboot->IntAttribute("hour", cfg.rebootHour);
+    if (hour >= 0 && hour <= 23) cfg.rebootHour = static_cast<uint8_t>(hour);
+    int minute = reboot->IntAttribute("minute", cfg.rebootMinute);
+    if (minute >= 0 && minute <= 59) cfg.rebootMinute = static_cast<uint8_t>(minute);
+  }
+
   cfg.systemType = deriveSystemType(cfg.sensor2Enabled);
   _config = cfg;
   return true;
@@ -290,6 +299,12 @@ String ConfigManager::exportXml() const {
   display->SetAttribute("pages", _config.extDisplayPages);
   display->SetAttribute("slideSec", _config.extDisplaySlideSec);
   root->InsertEndChild(display);
+
+  XMLElement* reboot = doc.NewElement("reboot");
+  reboot->SetAttribute("enabled", _config.rebootScheduleEnabled ? "true" : "false");
+  reboot->SetAttribute("hour", _config.rebootHour);
+  reboot->SetAttribute("minute", _config.rebootMinute);
+  root->InsertEndChild(reboot);
 
   XMLPrinter printer;
   doc.Print(&printer);

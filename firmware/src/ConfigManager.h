@@ -35,6 +35,7 @@
 //   <mqtt enabled="false" server="" port="1883" user="" password="" topicPrefix=""/>
 //   <branding vendorName=""/>
 //   <display pages="127" slideSec="10"/>
+//   <reboot enabled="false" hour="3" minute="0"/>
 // </config>
 
 struct DeviceConfig {
@@ -184,6 +185,15 @@ struct DeviceConfig {
   // (siehe ExternalDisplayManager::pageEnabled).
   uint8_t extDisplayPages = 0x7F;
   uint16_t extDisplaySlideSec = 10;
+
+  // Taeglicher automatischer Neustart zu fester Uhrzeit (optional, Default
+  // aus) - ueber die Einstellungsseite aktivierbar, z.B. um sich langfristig
+  // ansammelnden Speicherfragmentierungs-/Verbindungsproblemen vorzubeugen.
+  // Braucht eine per NTP synchronisierte Uhr (siehe RebootManager) - ohne
+  // die wird nichts ausgeloest.
+  bool rebootScheduleEnabled = false;
+  uint8_t rebootHour = 3;    // 0-23
+  uint8_t rebootMinute = 0;  // 0-59
 };
 
 class ConfigManager {

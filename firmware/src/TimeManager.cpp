@@ -35,16 +35,25 @@ void TimeManager::begin() {
 }
 
 void TimeManager::startSyncAttempt() {
-  Serial.printf("[TIME] NTP-Sync-Versuch (%s)\n", NTP_SERVER);
+  const char* label = (_currentPhase == SyncPhase::Lan) ? "LAN" : "WLAN";
+  Serial.printf("[TIME] NTP-Sync-Versuch ueber %s (%s)\n", label, NTP_SERVER);
+  _pinnedPreviousNetif = NetManager::pinDefaultInterface(_currentPhase == SyncPhase::Lan ? "lan" : "wlan");
   configTzTime(TZ_GERMANY, NTP_SERVER);
   _attemptActive = true;
   _attemptStartedMillis = millis();
 }
 
+void TimeManager::unpinInterface() {
+  NetManager::restoreDefaultInterface(_pinnedPreviousNetif);
+  _pinnedPreviousNetif = nullptr;
+}
+
 void TimeManager::onSyncSuccess() {
+  unpinInterface();
   _synced = true;
   _attemptActive = false;
   _dhcpTestActive = false;
+  _currentPhase = SyncPhase::Lan;
   _nextAttemptDueMillis = millis() + RESYNC_INTERVAL_MS;
 
   time_t now = time(nullptr);
@@ -94,6 +103,18 @@ void TimeManager::loop() {
 
   if (_attemptActive) {
     if (now - _attemptStartedMillis > SYNC_FAIL_TIMEOUT_MS) {
+      unpinInterface();
+
+      // LAN-Versuch gescheitert und WLAN steht zur Verfuegung -> dort als
+      // naechstes 5 Minuten versuchen, bevor die DHCP-Fehlerkette greift.
+      if (_currentPhase == SyncPhase::Lan && _network.isWlanUp()) {
+        _data.pushLogEntry("NTP: ueber LAN nicht erreichbar, versuche WLAN", 3);
+        _currentPhase = SyncPhase::Wlan;
+        startSyncAttempt();
+        return;
+      }
+
+      _currentPhase = SyncPhase::Lan;  // fuer den naechsten Gesamtversuch zuruecksetzen
       if (_network.hasStaticConfig()) {
         _data.pushLogEntry("NTP: 5 Minuten nicht erreichbar, DHCP-Test gestartet", 3);
         _network.beginDhcpFallbackTest();
@@ -110,6 +131,7 @@ void TimeManager::loop() {
   }
 
   if ((long)(now - _nextAttemptDueMillis) >= 0) {
+    _currentPhase = _network.isLanUp() ? SyncPhase::Lan : SyncPhase::Wlan;
     startSyncAttempt();
   }
 }

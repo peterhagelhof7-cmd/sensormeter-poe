@@ -1,49 +1,9 @@
 #include "MqttManager.h"
 
 #include <ArduinoJson.h>
-#include <esp_netif.h>
-#include "lwip/netif.h"
 
 namespace {
 const unsigned long RECONNECT_INTERVAL_MS = 5000;
-
-// Setzt den lwIP-Default-Netif fest auf das per ConfigManager::mqttInterface
-// gewaehlte Interface, bevor PubSubClient/WiFiClient eine neue TCP-
-// Verbindung aufbaut - lwIP entscheidet das ausgehende Interface anhand des
-// Default-Netif, sobald die Ziel-IP (Broker) nicht im direkt angeschlossenen
-// Subnetz eines Interfaces liegt (siehe MqttManager.h-Klassenkommentar).
-//
-// Nutzt bewusst die lwIP-Funktion netif_set_default() statt
-// esp_netif_set_default_netif(): letztere gibt es zwar auf diesem Core (3.x),
-// nicht aber auf dem aelteren Arduino-ESP32-2.0.17-Core von Sensormeter - mit
-// der lwIP-Funktion darunter ist der Code auf beiden Projekten identisch.
-// esp_netif_get_netif_impl_index() liefert den lwIP-"Netif-Index"
-// (netif->num + 1, siehe esp_netif_lwip.c), passend zu lwIPs
-// netif_get_by_index() - damit laesst sich vom esp_netif-Handle
-// (ifkey "ETH_DEF"/"WIFI_STA_DEF", esp_netif_defaults.h) auf das darunter
-// liegende struct netif* schliessen, ohne dass esp_netif dessen Pointer
-// direkt exponieren muss.
-//
-// Liefert den vorherigen Default-Netif zurueck, damit ensureConnected() ihn
-// nach dem Verbindungsversuch wiederherstellen kann - andere Subsysteme
-// (NTP, mDNS, ...) sollen von dieser MQTT-spezifischen Festlegung nicht
-// dauerhaft betroffen sein. Liefert nullptr, wenn das gewaehlte Interface
-// (noch) keinen Netif-Handle/-Index hat (z.B. WLAN nicht konfiguriert) - der
-// Aufrufer laesst den Default dann unveraendert, und der nachfolgende
-// connect()-Versuch scheitert regulaer wie bei fehlendem Netz, statt auf ein
-// falsches Interface auszuweichen.
-struct netif* pinMqttInterface(const String& choice) {
-  const char* ifkey = (choice == "wlan") ? "WIFI_STA_DEF" : "ETH_DEF";
-  esp_netif_t* target = esp_netif_get_handle_from_ifkey(ifkey);
-  if (!target) return nullptr;
-  int index = esp_netif_get_netif_impl_index(target);
-  if (index <= 0) return nullptr;
-  struct netif* targetLwipNetif = netif_get_by_index((u8_t)index);
-  if (!targetLwipNetif) return nullptr;
-  struct netif* previous = netif_default;
-  netif_set_default(targetLwipNetif);
-  return previous;
-}
 }  // namespace
 
 MqttManager* MqttManager::_instance = nullptr;
@@ -102,14 +62,14 @@ void MqttManager::ensureConnected() {
   _lastReconnectAttemptMillis = now;
 
   String clientId = "sensormeter-poe-" + topicPrefix();
-  struct netif* previousDefaultNetif = pinMqttInterface(cfg.mqttInterface);
+  struct netif* previousDefaultNetif = NetManager::pinDefaultInterface(cfg.mqttInterface);
   bool ok;
   if (cfg.mqttUser.length() > 0) {
     ok = _client.connect(clientId.c_str(), cfg.mqttUser.c_str(), cfg.mqttPassword.c_str());
   } else {
     ok = _client.connect(clientId.c_str());
   }
-  if (previousDefaultNetif) netif_set_default(previousDefaultNetif);
+  NetManager::restoreDefaultInterface(previousDefaultNetif);
 
   if (ok) {
     Serial.println("[MQTT] Verbunden mit Broker " + cfg.mqttServer);

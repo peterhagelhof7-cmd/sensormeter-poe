@@ -4,6 +4,9 @@
 #include <ETH.h>   // muss nach pins.h stehen: ETH_PHY_TYPE/_ADDR/... werden
                    // von pins.h vorgegeben, ETH.h uebernimmt sie als Default
 #include <SPI.h>
+#include <esp_netif.h>
+#include "lwip/netif.h"
+#include "lwip/tcpip.h"  // LOCK_TCPIP_CORE()/UNLOCK_TCPIP_CORE()
 
 NetManager* NetManager::_instance = nullptr;
 
@@ -177,6 +180,40 @@ void NetManager::restoreConfiguredAddresses() {
   Serial.println("[NET] DHCP-Test erfolglos -> gesetzte IP-Konfiguration wiederherstellen");
   applyLanConfig();
   applyWlanConfig();
+}
+
+// esp_netif_get_netif_impl_index() liefert den lwIP-"Netif-Index"
+// (netif->num + 1, siehe esp_netif_lwip.c), passend zu lwIPs
+// netif_get_by_index() - damit laesst sich vom esp_netif-Handle (ifkey
+// "ETH_DEF"/"WIFI_STA_DEF", esp_netif_defaults.h) auf das darunterliegende
+// struct netif* schliessen, ohne dass esp_netif dessen Pointer direkt
+// exponieren muss. Frueher als anonyme Funktion in MqttManager.cpp, hierher
+// verschoben, da TimeManager denselben Mechanismus jetzt ebenfalls braucht
+// (LAN-vor-WLAN-Fehlerkette).
+struct netif* NetManager::pinDefaultInterface(const String& choice) {
+  const char* ifkey = (choice == "wlan") ? "WIFI_STA_DEF" : "ETH_DEF";
+  esp_netif_t* target = esp_netif_get_handle_from_ifkey(ifkey);
+  if (!target) return nullptr;
+  int index = esp_netif_get_netif_impl_index(target);
+  if (index <= 0) return nullptr;
+  // Rohe lwIP-netif-Zugriffe muessen den TCPIP-Core-Lock halten, sonst
+  // Assertion "Required to lock TCPIP core functionality!" (bei aktivem
+  // LWIP_CHECK_THREAD_SAFETY -> Panic/Boot-Loop) bzw. latente lwIP-State-
+  // Korruption. pinDefaultInterface() laeuft im App-Task (TimeManager/
+  // MqttManager), nicht im tcpip-Thread -> kein Deadlock-Risiko.
+  LOCK_TCPIP_CORE();
+  struct netif* targetLwipNetif = netif_get_by_index((u8_t)index);
+  struct netif* previous = netif_default;
+  if (targetLwipNetif) netif_set_default(targetLwipNetif);
+  UNLOCK_TCPIP_CORE();
+  return targetLwipNetif ? previous : nullptr;
+}
+
+void NetManager::restoreDefaultInterface(struct netif* previous) {
+  if (!previous) return;
+  LOCK_TCPIP_CORE();
+  netif_set_default(previous);
+  UNLOCK_TCPIP_CORE();
 }
 
 void NetManager::begin() {

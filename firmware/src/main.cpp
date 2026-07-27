@@ -48,6 +48,7 @@
 #include "MqttManager.h"
 #include "NetManager.h"
 #include "OtaManager.h"
+#include "RebootManager.h"
 #include "RelayManager.h"
 #include "SNMPManager.h"
 #include "SensorDetector.h"
@@ -117,6 +118,7 @@ WebServerManager webServerManager(dataManager, configManager, networkManager, ot
 SNMPManager* snmpManager = nullptr;
 SyslogManager syslogManager(dataManager, configManager, networkManager);
 MqttManager mqttManager(dataManager, configManager, networkManager, relayManager);
+RebootManager rebootManager(dataManager, configManager);
 
 // Serial-Kommandozeile fuer den Fall, dass das Geraet nur per USB, aber
 // nicht per Netzwerk erreichbar ist. Bewusst dasselbe Vertrauensmodell wie
@@ -465,6 +467,7 @@ void loop() {
   snmpManager->loop();  // setup() ist zu diesem Zeitpunkt immer schon durchgelaufen (Arduino-Framework-Garantie)
   syslogManager.loop();
   mqttManager.loop();
+  rebootManager.loop();
 
   // Einmaliger mDNS-Start, sobald ein Interface eine IP hat (LAN, WLAN oder
   // Fallback-AP) - vor RUN_NORMAL ist noch keine IP vergeben.

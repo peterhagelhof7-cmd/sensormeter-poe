@@ -514,6 +514,16 @@ String WebServerManager::buildSettingsPageBody() const {
           "Die Branding-Seite erscheint nur, wenn zusaetzlich ein Anbieter-Branding gesetzt ist.</p>";
   html += "</div>";
 
+  html += "<div class=\"block\"><h2>Automatischer Neustart</h2>";
+  html += "<label><input type=\"checkbox\" name=\"rebootScheduleEnabled\" " +
+          String(cfg.rebootScheduleEnabled ? "checked" : "") + "> Taeglichen automatischen Neustart aktivieren</label>";
+  char rebootTimeValue[6];
+  snprintf(rebootTimeValue, sizeof(rebootTimeValue), "%02u:%02u", cfg.rebootHour, cfg.rebootMinute);
+  html += "<label>Uhrzeit<input type=\"time\" name=\"rebootTime\" value=\"" + String(rebootTimeValue) + "\"></label>";
+  html += "<p class=\"hint\">Startet das Geraet einmal taeglich zur gewaehlten Uhrzeit automatisch neu - "
+          "braucht eine per NTP synchronisierte Uhr, ohne die wird nichts ausgeloest.</p>";
+  html += "</div>";
+
   html += "<div class=\"block\"><input type=\"submit\" value=\"Speichern (LittleFS)\"></div>";
   html += "</form>";
 
@@ -869,6 +879,9 @@ void WebServerManager::handleApiConfigGet(AsyncWebServerRequest* request) {
   doc["brandingHasLogo"] = _branding.hasLogo();
   doc["extDisplayPages"] = cfg.extDisplayPages;
   doc["extDisplaySlideSec"] = cfg.extDisplaySlideSec;
+  doc["rebootScheduleEnabled"] = cfg.rebootScheduleEnabled;
+  doc["rebootHour"] = cfg.rebootHour;
+  doc["rebootMinute"] = cfg.rebootMinute;
 
   String out;
   serializeJson(doc, out);
@@ -1014,6 +1027,23 @@ void WebServerManager::handleApiConfigPost(AsyncWebServerRequest* request) {
     if (s < 2) s = 2;
     if (s > 60) s = 60;
     cfg.extDisplaySlideSec = static_cast<uint16_t>(s);
+  }
+
+  cfg.rebootScheduleEnabled = request->hasParam("rebootScheduleEnabled", true);
+  if (request->hasParam("rebootTime", true)) {
+    // <input type="time"> liefert "HH:MM" (Browser validiert das Format
+    // bereits) - trotzdem defensiv parsen statt blind zu vertrauen, falls
+    // der Request nicht ueber das Formular kommt.
+    String t = request->getParam("rebootTime", true)->value();
+    int colon = t.indexOf(':');
+    if (colon > 0) {
+      int hour = t.substring(0, colon).toInt();
+      int minute = t.substring(colon + 1).toInt();
+      if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+        cfg.rebootHour = static_cast<uint8_t>(hour);
+        cfg.rebootMinute = static_cast<uint8_t>(minute);
+      }
+    }
   }
 
   // Kollisions-Check: nur wenn DHCP aus ist UND sich die statische IP
