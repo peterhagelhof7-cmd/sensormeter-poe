@@ -9,7 +9,7 @@
 // Kompilierzeit feststehen muessen.
 // ============================================================================
 
-#define DEVICE_FIRMWARE_VERSION "0.9.2"
+#define DEVICE_FIRMWARE_VERSION "0.9.3"
 
 // Projekt-Kennung fuer die OTA-Herkunftspruefung (siehe OtaManager.h/.cpp) -
 // eindeutig je Sensormeter-Projekt, damit sich z.B. die .bin von Sensormeter

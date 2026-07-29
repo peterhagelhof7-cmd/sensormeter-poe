@@ -87,10 +87,16 @@ void TimeManager::loop() {
 
   if (_dhcpTestActive) {
     if (isTimeSynced()) {
-      onSyncSuccess();
+      // Sync ueber die per DHCP bezogene Adresse hat geklappt - die Zeit steht.
+      // DHCP war NUR zum Testen gedacht: immer die konfigurierte statische
+      // Adressierung wiederherstellen, nie auf DHCP haengenbleiben.
+      _network.restoreConfiguredAddresses();
+      _data.pushLogEntry("NTP: via DHCP erreichbar, statische Konfiguration wiederhergestellt", 3);
+      onSyncSuccess();  // setzt _synced/_dhcpTestActive/_attemptActive zurueck + unpin
       return;
     }
     if (now - _dhcpTestStartedMillis > DHCP_TEST_DURATION_MS) {
+      unpinInterface();  // der im DHCP-Test gestartete Sync-Versuch hatte das Interface gepinnt
       _network.restoreConfiguredAddresses();
       _dhcpTestActive = false;
       _attemptActive = false;
@@ -121,6 +127,10 @@ void TimeManager::loop() {
         _dhcpTestActive = true;
         _dhcpTestStartedMillis = now;
         _data.setSystemState(SystemState::DHCP_TEST);
+        // Echten neuen NTP-Versuch ueber die jetzt per DHCP bezogene LAN-Adresse
+        // ausloesen (_currentPhase steht bereits auf Lan) - nicht nur passiv auf
+        // den weiterlaufenden SNTP-Client warten.
+        startSyncAttempt();
       } else {
         _data.pushLogEntry("NTP: nicht erreichbar (DHCP aktiv), spaeter erneut versuchen", 3);
         _attemptActive = false;
