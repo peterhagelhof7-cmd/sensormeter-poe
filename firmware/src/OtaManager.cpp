@@ -2,6 +2,25 @@
 
 #include <Update.h>
 #include <cstring>
+#include <esp_task_wdt.h>
+
+// 2026-07-31: Ferngesteuerte OTA-Uploads (POST /api/ota/upload) fuehrten auf
+// echter Hardware reproduzierbar zu einem harten Geraete-Reboot mittendrin
+// (bestaetigt per /api/status: uptimeSeconds fiel auf einstellige Werte) -
+// NICHT durch WLAN-Instabilitaet (auch beim Ethernet-Geraet "sensormeter"
+// reproduzierbar, nicht nur bei WLAN-Geraeten). Ursache: main.cpp registriert
+// den Task-Watchdog (Panic bei Timeout) NUR fuer den Haupt-Loop-Task
+// (esp_task_wdt_add(NULL) in setup()) - der OTA-Upload laeuft aber
+// asynchron im AsyncTCP-Task. Update.write() blockiert pro Chunk kurz mit
+// deaktivierten Interrupts/Cache (Flash-Erase/-Write) - bei vielen Chunks
+// hintereinander (>1 MB .bin) kann das den Haupt-Loop-Task lange genug vom
+// Scheduler fernhalten, dass er esp_task_wdt_reset() nicht rechtzeitig
+// erreicht -> Panic-Reboot, obwohl das Geraet gar nicht wirklich haengt.
+// Fix: waehrend eines aktiven Uploads wird GENAU der Haupt-Loop-Task aus dem
+// Watchdog ausgetragen (nicht der TWDT insgesamt deaktiviert) und danach
+// wieder eingetragen - mit Stall-Sicherung in checkStalled() fuer den Fall,
+// dass endLocalUpdate() wegen eines Verbindungsabbruchs nie aufgerufen wird.
+// Identischer Fix in sensormeter und sensormeter-wlan.
 
 #if __has_include("config.h")
 #include "config.h"
@@ -70,6 +89,24 @@ int findBytes(const uint8_t* haystack, size_t haystackLen, const char* needle, s
 }
 }  // namespace
 
+void OtaManager::disableMainLoopWatchdog() {
+  if (_watchdogDisabledForUpload || _mainLoopTaskHandle == nullptr) return;
+  esp_task_wdt_delete(_mainLoopTaskHandle);
+  _watchdogDisabledForUpload = true;
+}
+
+void OtaManager::enableMainLoopWatchdog() {
+  if (!_watchdogDisabledForUpload || _mainLoopTaskHandle == nullptr) return;
+  esp_task_wdt_add(_mainLoopTaskHandle);
+  _watchdogDisabledForUpload = false;
+}
+
+void OtaManager::checkStalled() {
+  if (_watchdogDisabledForUpload && (millis() - _lastChunkMs > kStallTimeoutMs)) {
+    enableMainLoopWatchdog();
+  }
+}
+
 bool OtaManager::beginLocalUpdate(size_t contentLength) {
   _markerFound = false;
   _identityMatches = false;
@@ -77,10 +114,13 @@ bool OtaManager::beginLocalUpdate(size_t contentLength) {
   _capturing = false;
   _tailLen = 0;
   _captureLen = 0;
+  _lastChunkMs = millis();
+  disableMainLoopWatchdog();
   return Update.begin(contentLength);
 }
 
 bool OtaManager::writeLocalUpdateChunk(uint8_t* data, size_t len) {
+  _lastChunkMs = millis();
   if (!_markerFound) scanChunkForMarker(data, len);
   return Update.write(data, len) == len;
 }
@@ -199,6 +239,7 @@ void OtaManager::handleMarkerPayload(const String& payload) {
 }
 
 bool OtaManager::endLocalUpdate() {
+  enableMainLoopWatchdog();
   if (!_markerFound || !_identityMatches || !_versionAllowed) {
     Update.abort();
     return false;

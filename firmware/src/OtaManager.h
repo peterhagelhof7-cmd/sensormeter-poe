@@ -33,11 +33,30 @@ class OtaManager {
   bool identityMatches() const { return _identityMatches; }
   bool versionAllowed() const { return _versionAllowed; }
 
+  // Muss einmalig aus setup() (im Haupt-Loop-Task-Kontext) gesetzt werden -
+  // s. .cpp fuer die Begruendung (Task-Watchdog-Reboots waehrend OTA-Uploads).
+  void setMainLoopTaskHandle(TaskHandle_t handle) { _mainLoopTaskHandle = handle; }
+
+  // Muss regelmaessig aus loop() aufgerufen werden: reaktiviert den
+  // Haupt-Loop-Watchdog automatisch, falls ein Upload haengen geblieben ist
+  // (Verbindung abgerissen/Schreibfehler, ohne dass endLocalUpdate() je
+  // aufgerufen wurde) - sonst bliebe der Watchdog nach einem fehlgeschlagenen
+  // Upload dauerhaft deaktiviert.
+  void checkStalled();
+
  private:
   bool _allowDowngrade = false;
   bool _markerFound = false;
   bool _identityMatches = false;
   bool _versionAllowed = false;
+
+  TaskHandle_t _mainLoopTaskHandle = nullptr;
+  bool _watchdogDisabledForUpload = false;
+  unsigned long _lastChunkMs = 0;
+  static const unsigned long kStallTimeoutMs = 30000;
+
+  void disableMainLoopWatchdog();
+  void enableMainLoopWatchdog();
 
   // Bewusst rohe Byte-Puffer statt Arduino String: die .bin ist Binaerdaten
   // und enthaelt reichlich eingebettete Null-Bytes (schon ab Byte 9 im
