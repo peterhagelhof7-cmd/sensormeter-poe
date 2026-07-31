@@ -71,6 +71,19 @@ void SensorManager::begin() {
   dhtExternalDht11.begin();
   dhtExternalDht21.begin();
   Serial.println("[SENSOR] DHT-22 (intern) initialisiert, DHT11/DHT21 (extern) bereit");
+
+  // _lastRecordedHour lebt nur im RAM und startet bei jedem Boot auf -1 -
+  // ohne diesen Abgleich wuerde der erste Sensor-Read nach JEDEM Neustart
+  // (geplanter Reboot, WLAN-Watchdog, OTA) einen Ringpuffer-Eintrag fuer
+  // eine Stunde erzeugen, die schon vor dem Neustart aufgezeichnet wurde -
+  // ein Duplikat mit neu gemessenen Werten statt eines echten
+  // Stundenwechsels. loadRingbuffer() laeuft in main.cpp vor begin(), der
+  // zuletzt gespeicherte Eintrag ist hier also schon verfuegbar.
+  HourValue letzte[DataManager::RINGBUFFER_SIZE];
+  size_t anzahl = _data.getRingbuffer(letzte, DataManager::RINGBUFFER_SIZE);
+  if (anzahl > 0) {
+    _lastRecordedHour = letzte[anzahl - 1].timestamp / 3600;
+  }
 }
 
 void SensorManager::readInternalSensor() {
