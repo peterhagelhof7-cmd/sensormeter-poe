@@ -22,11 +22,10 @@ Anbindung und Anbieter-Branding gibt es inzwischen auch bei Sensormeter
 und Sensormeter WLAN (Sensor-Rolle) - hier zusätzlich um die Aktor-Rolle
 (Relais) beim MQTT erweitert.
 
-**Status:** `0.9.0-rc4` (Beta) — code-vollständig gemäß
-Lastenheft/Pflichtenheft, mit `pio run` gebaut und verifiziert - **noch
-nicht auf echter Hardware getestet/geflasht** (kein Board zum
-Erstellungszeitpunkt vorhanden). Versionsschema (Umstellung von
-phasenbasiert auf SemVer) siehe
+**Status:** `0.9.4` (Beta) — code-vollständig gemäß
+Lastenheft/Pflichtenheft, auf echter Hardware geflasht und verifiziert
+(Ethernet+PoE, Webserver, SNMP, OTA-Update per Browser). Versionsschema
+(Umstellung von phasenbasiert auf SemVer) siehe
 [docs/entscheidungen.md](docs/entscheidungen.md#versionierung).
 
 [**One-Pager (HTML)**](docs/sensormeter-poe-onepager.html) — kompakte Projektübersicht auf einer Seite.
@@ -81,11 +80,11 @@ phasenbasiert auf SemVer) siehe
 `firmware/` ist ein PlatformIO-Projekt (Board `esp32-s3-devkitc-1`,
 Framework Arduino).
 
-**Version:** `0.9.0-rc4` (Beta) — Versionsschema siehe
+**Version:** `0.9.4` (Beta) — Versionsschema siehe
 [docs/entscheidungen.md](docs/entscheidungen.md#versionierung).
 
 Fertiges Binary für das lokale OTA-Update (kein PlatformIO nötig):
-[Releases → v0.9.0-rc4](https://github.com/peterhagelhof7-cmd/sensormeter-poe/releases/tag/v0.9.0-rc4).
+[Releases → v0.9.4](https://github.com/peterhagelhof7-cmd/sensormeter-poe/releases/tag/v0.9.4).
 
 Aktueller Stand: **Board-Bringup abgeschlossen (2026-07-18),
 Qualitätskontrolle läuft**. Erstes Gerät (nur interner DHT bestückt,
@@ -99,10 +98,15 @@ eine Endlos-Fehlerschleife bei fehlendem Display (`Adafruit_SSD1306`
 prüft nie den I2C-Erfolg) — sowie ein Zeitzonen-Bug (identisch zu
 Sensormeter, dort zuerst gefunden). PSRAM (Octal, ESP32-S3R8) nach
 anfänglicher Fehldiagnose als tatsächlich funktionsfähig bestätigt.
-Noch nicht live getestet mangels Modul/Broker/zweitem Gerät: Relais,
-externes RJ45-Modul, MQTT gegen echten Broker, Branding-Upload,
-Werksreset, XML-Import. Details siehe
-[docs/entscheidungen.md](docs/entscheidungen.md).
+Zuletzt (2026-07-31) einen OTA-Update-Bug gefunden und behoben:
+Uploads konnten mitten im Transfer zu einem harten Reboot führen
+(Task-Watchdog-Starvation während der Flash-Schreibvorgänge), live
+per Browser-Upload verifiziert; außerdem den Startseiten-Graph auf
+einen lesbaren 3-Tage-Ausschnitt (4 Messpunkte/Tag, Wochentag-
+Beschriftung statt nur Uhrzeit) umgestellt. Noch nicht live getestet
+mangels Modul/Broker/zweitem Gerät: Relais, externes RJ45-Modul, MQTT
+gegen echten Broker, Branding-Upload, Werksreset, XML-Import. Details
+siehe [docs/entscheidungen.md](docs/entscheidungen.md).
 
 **Wichtig (Toolchain):** braucht Arduino-ESP32 3.x für W5500-Support -
 das offizielle PlatformIO-`espressif32`-Platform bündelt das noch nicht,
