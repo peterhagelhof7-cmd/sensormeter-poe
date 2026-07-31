@@ -3,4 +3,7 @@ firmware/.pio-core/
 .vscode/
 **/include/config.h
 *.bin
+# Ausnahme: fertig gebaute Release-Artefakte zum manuellen OTA-Upload,
+# bewusst versioniert (Namensformat <FIRMWARE_PROJECT_ID>-<Version>.bin).
+!firmware/releases/*.bin
 firmware/logs/

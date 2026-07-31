@@ -90,14 +90,33 @@ int findBytes(const uint8_t* haystack, size_t haystackLen, const char* needle, s
 }  // namespace
 
 void OtaManager::disableMainLoopWatchdog() {
-  if (_watchdogDisabledForUpload || _mainLoopTaskHandle == nullptr) return;
-  esp_task_wdt_delete(_mainLoopTaskHandle);
+  if (_watchdogDisabledForUpload) return;
+  if (_mainLoopTaskHandle != nullptr) {
+    esp_task_wdt_delete(_mainLoopTaskHandle);
+  }
+  // Zusaetzlich zur Haupt-Loop-Task-Registrierung ueberwacht ESP-IDF per
+  // Default AUCH die IDLE-Tasks beider Kerne separat (esp32-hal.h) - ein
+  // erster Fix, der nur den Haupt-Loop-Task austraegt, hat auf sensormeter
+  // (Ethernet) trotzdem noch zum Reboot gefuehrt. Deckt hier zusaetzlich
+  // NICHT die idle_core_mask=0x3-Registrierung in main.cpp ab (separater
+  // TWDT-Mechanismus) - falls OTA hier trotzdem noch abstuerzt, ist das
+  // der naechste Verdaechtige.
+  disableCore0WDT();
+#ifndef CONFIG_FREERTOS_UNICORE
+  disableCore1WDT();
+#endif
   _watchdogDisabledForUpload = true;
 }
 
 void OtaManager::enableMainLoopWatchdog() {
-  if (!_watchdogDisabledForUpload || _mainLoopTaskHandle == nullptr) return;
-  esp_task_wdt_add(_mainLoopTaskHandle);
+  if (!_watchdogDisabledForUpload) return;
+  if (_mainLoopTaskHandle != nullptr) {
+    esp_task_wdt_add(_mainLoopTaskHandle);
+  }
+  enableCore0WDT();
+#ifndef CONFIG_FREERTOS_UNICORE
+  enableCore1WDT();
+#endif
   _watchdogDisabledForUpload = false;
 }
 
